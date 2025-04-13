@@ -26,7 +26,10 @@ export const verificationTypes = z.enum([
   "PREPAID_CARD",
   "GOVERNMENT_ID",
   "UTILITY_BILL",
-  "PHONE_NUMBER"
+  "PHONE_NUMBER",
+  "BUSINESS_EXPLANATION",
+  "FINANCIAL_CONTEXT",
+  "PERSONAL_REFERENCE"
 ]);
 
 export type VerificationType = z.infer<typeof verificationTypes>;
@@ -201,3 +204,63 @@ export interface ClaimResult {
   };
   reason?: string;
 }
+
+// Entrepreneur profiles
+export const entrepreneurProfiles = pgTable("entrepreneur_profiles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  businessName: text("business_name"),
+  businessDescription: text("business_description"),
+  yearsInBusiness: integer("years_in_business"),
+  industry: text("industry"),
+  previousFunding: real("previous_funding"),
+  financialContext: text("financial_context"),
+  businessModel: text("business_model"),
+  cashEarningContext: text("cash_earning_context"),
+  personalStatement: text("personal_statement"),
+  metricsData: jsonb("metrics_data"), // JSON data with business metrics
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertEntrepreneurProfileSchema = createInsertSchema(entrepreneurProfiles).pick({
+  userId: true,
+  businessName: true,
+  businessDescription: true,
+  yearsInBusiness: true,
+  industry: true,
+  previousFunding: true,
+  financialContext: true,
+  businessModel: true,
+  cashEarningContext: true,
+  personalStatement: true,
+  metricsData: true,
+});
+
+export type InsertEntrepreneurProfile = z.infer<typeof insertEntrepreneurProfileSchema>;
+export type EntrepreneurProfile = typeof entrepreneurProfiles.$inferSelect;
+
+// JSON data upload records
+export const jsonDataUploads = pgTable("json_data_uploads", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  profileId: integer("profile_id").references(() => entrepreneurProfiles.id),
+  dataType: text("data_type").notNull(), // BUSINESS_METRICS, CUSTOMER_DATA, FINANCIAL_PROJECTIONS, etc.
+  data: jsonb("data").notNull(),
+  explanation: text("explanation"), // User's explanation of the data context
+  aiInsights: text("ai_insights"), // ML-generated insights from the data
+  status: text("status").notNull(), // UPLOADED, PROCESSED, APPROVED, REJECTED
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertJsonDataUploadSchema = createInsertSchema(jsonDataUploads).pick({
+  userId: true,
+  profileId: true,
+  dataType: true,
+  data: true,
+  explanation: true,
+  status: true,
+});
+
+export type InsertJsonDataUpload = z.infer<typeof insertJsonDataUploadSchema>;
+export type JsonDataUpload = typeof jsonDataUploads.$inferSelect;

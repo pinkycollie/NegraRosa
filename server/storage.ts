@@ -5,6 +5,8 @@ import {
   Transaction, InsertTransaction,
   RiskAssessment, InsertRiskAssessment,
   Claim, InsertClaim,
+  EntrepreneurProfile, InsertEntrepreneurProfile,
+  JsonDataUpload, InsertJsonDataUpload,
   VerificationType
 } from "@shared/schema";
 
@@ -39,6 +41,19 @@ export interface IStorage {
   getClaimsByUserId(userId: number): Promise<Claim[]>;
   getClaim(id: number): Promise<Claim | undefined>;
   updateClaim(id: number, status: string, settlementAmount?: number, resolvedAt?: Date): Promise<Claim | undefined>;
+  
+  // Entrepreneur profiles
+  getEntrepreneurProfile(id: number): Promise<EntrepreneurProfile | undefined>;
+  getEntrepreneurProfileByUserId(userId: number): Promise<EntrepreneurProfile | undefined>;
+  createEntrepreneurProfile(profile: InsertEntrepreneurProfile): Promise<EntrepreneurProfile>;
+  updateEntrepreneurProfile(id: number, updates: Partial<InsertEntrepreneurProfile>): Promise<EntrepreneurProfile | undefined>;
+  
+  // JSON data uploads
+  createJsonDataUpload(upload: InsertJsonDataUpload): Promise<JsonDataUpload>;
+  getJsonDataUploadsByUserId(userId: number): Promise<JsonDataUpload[]>;
+  getJsonDataUploadsByProfileId(profileId: number): Promise<JsonDataUpload[]>;
+  getJsonDataUpload(id: number): Promise<JsonDataUpload | undefined>;
+  updateJsonDataUpload(id: number, status: string, aiInsights?: string): Promise<JsonDataUpload | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -48,6 +63,8 @@ export class MemStorage implements IStorage {
   private transactions: Map<number, Transaction>;
   private riskAssessments: Map<number, RiskAssessment>;
   private claims: Map<number, Claim>;
+  private entrepreneurProfiles: Map<number, EntrepreneurProfile>;
+  private jsonDataUploads: Map<number, JsonDataUpload>;
   
   private nextUserId: number;
   private nextVerificationId: number;
@@ -55,6 +72,8 @@ export class MemStorage implements IStorage {
   private nextTransactionId: number;
   private nextRiskAssessmentId: number;
   private nextClaimId: number;
+  private nextEntrepreneurProfileId: number;
+  private nextJsonDataUploadId: number;
 
   constructor() {
     this.users = new Map();
@@ -63,6 +82,8 @@ export class MemStorage implements IStorage {
     this.transactions = new Map();
     this.riskAssessments = new Map();
     this.claims = new Map();
+    this.entrepreneurProfiles = new Map();
+    this.jsonDataUploads = new Map();
     
     this.nextUserId = 1;
     this.nextVerificationId = 1;
@@ -70,6 +91,8 @@ export class MemStorage implements IStorage {
     this.nextTransactionId = 1;
     this.nextRiskAssessmentId = 1;
     this.nextClaimId = 1;
+    this.nextEntrepreneurProfileId = 1;
+    this.nextJsonDataUploadId = 1;
     
     // Add a test user for development
     this.createUser({
@@ -371,6 +394,120 @@ export class MemStorage implements IStorage {
     };
     this.claims.set(id, updatedClaim);
     return updatedClaim;
+  }
+
+  // Entrepreneur profiles
+  async getEntrepreneurProfile(id: number): Promise<EntrepreneurProfile | undefined> {
+    return this.entrepreneurProfiles.get(id);
+  }
+
+  async getEntrepreneurProfileByUserId(userId: number): Promise<EntrepreneurProfile | undefined> {
+    return Array.from(this.entrepreneurProfiles.values()).find(
+      (profile) => profile.userId === userId
+    );
+  }
+
+  async createEntrepreneurProfile(profile: InsertEntrepreneurProfile): Promise<EntrepreneurProfile> {
+    const id = this.nextEntrepreneurProfileId++;
+    const now = new Date();
+    const newProfile: EntrepreneurProfile = {
+      ...profile,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.entrepreneurProfiles.set(id, newProfile);
+    
+    // When a profile is created, we should boost the user's reputation
+    const reputation = await this.getReputation(profile.userId);
+    if (reputation) {
+      await this.updateReputation(profile.userId, {
+        score: this.calculateReputationScore(
+          reputation.positiveTransactions || 0,
+          reputation.totalTransactions || 0,
+          (reputation.verificationCount || 0) + 1, // Creating a profile counts as a verification
+          reputation.accountAge || 0
+        )
+      });
+    }
+    
+    return newProfile;
+  }
+
+  async updateEntrepreneurProfile(id: number, updates: Partial<InsertEntrepreneurProfile>): Promise<EntrepreneurProfile | undefined> {
+    const profile = this.entrepreneurProfiles.get(id);
+    if (!profile) return undefined;
+    
+    const updatedProfile: EntrepreneurProfile = {
+      ...profile,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.entrepreneurProfiles.set(id, updatedProfile);
+    return updatedProfile;
+  }
+
+  // JSON data uploads
+  async createJsonDataUpload(upload: InsertJsonDataUpload): Promise<JsonDataUpload> {
+    const id = this.nextJsonDataUploadId++;
+    const now = new Date();
+    const newUpload: JsonDataUpload = {
+      ...upload,
+      id,
+      createdAt: now,
+      aiInsights: null // AI insights are added later after processing
+    };
+    this.jsonDataUploads.set(id, newUpload);
+    
+    // When a JSON data upload happens, we boost reputation slightly
+    const reputation = await this.getReputation(upload.userId);
+    if (reputation) {
+      await this.updateReputation(upload.userId, {
+        score: Math.min(100, (reputation.score || 0) + 2) // +2 points for each upload, max 100
+      });
+    }
+    
+    return newUpload;
+  }
+
+  async getJsonDataUploadsByUserId(userId: number): Promise<JsonDataUpload[]> {
+    return Array.from(this.jsonDataUploads.values())
+      .filter(upload => upload.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Most recent first
+  }
+
+  async getJsonDataUploadsByProfileId(profileId: number): Promise<JsonDataUpload[]> {
+    return Array.from(this.jsonDataUploads.values())
+      .filter(upload => upload.profileId === profileId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Most recent first
+  }
+
+  async getJsonDataUpload(id: number): Promise<JsonDataUpload | undefined> {
+    return this.jsonDataUploads.get(id);
+  }
+
+  async updateJsonDataUpload(id: number, status: string, aiInsights?: string): Promise<JsonDataUpload | undefined> {
+    const upload = this.jsonDataUploads.get(id);
+    if (!upload) return undefined;
+    
+    const updatedUpload: JsonDataUpload = {
+      ...upload,
+      status,
+      aiInsights: aiInsights !== undefined ? aiInsights : upload.aiInsights
+    };
+    this.jsonDataUploads.set(id, updatedUpload);
+    
+    // If the upload is approved, we give the user a reputation boost
+    if (status === 'APPROVED') {
+      const reputation = await this.getReputation(upload.userId);
+      if (reputation) {
+        await this.updateReputation(upload.userId, {
+          score: Math.min(100, (reputation.score || 0) + 5) // +5 points for approved uploads, max 100
+        });
+      }
+    }
+    
+    return updatedUpload;
   }
 }
 
