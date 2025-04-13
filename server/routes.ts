@@ -1067,7 +1067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         triggerType: triggerType || "GENERAL",
         submissionMethod: "IMAGE",
         content: caption || null,
-        mediaData: { type: "image", data: imageData },
+        mediaUrl: JSON.stringify({ type: "image", data: imageData }), // Store as JSON string in mediaUrl
         status: "PENDING"
       });
       
@@ -1099,9 +1099,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: scanData.userId,
         triggerType: scanData.triggerType || "SCAN",
         submissionMethod: "SCAN",
-        content: content || null,
-        status: "PENDING",
-        contextData: scanData.context
+        content: content ? content + " " + JSON.stringify(scanData.context) : JSON.stringify(scanData.context),
+        status: "PENDING"
       });
       
       res.status(201).json({
