@@ -213,12 +213,15 @@ export const entrepreneurProfiles = pgTable("entrepreneur_profiles", {
   businessDescription: text("business_description"),
   yearsInBusiness: integer("years_in_business"),
   industry: text("industry"),
+  websiteUrl: text("website_url"), // URL to entrepreneur's business/project website
+  githubUrl: text("github_url"), // Optional GitHub repository URL
+  websiteVerified: boolean("website_verified").default(false), // Indicates if website has been verified
   previousFunding: real("previous_funding"),
   financialContext: text("financial_context"),
   businessModel: text("business_model"),
   cashEarningContext: text("cash_earning_context"),
   personalStatement: text("personal_statement"),
-  metricsData: jsonb("metrics_data"), // JSON data with business metrics
+  metricsData: jsonb("metrics_data"), // JSON data with business metrics and verification results
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -229,6 +232,9 @@ export const insertEntrepreneurProfileSchema = createInsertSchema(entrepreneurPr
   businessDescription: true,
   yearsInBusiness: true,
   industry: true,
+  websiteUrl: true,
+  githubUrl: true,
+  websiteVerified: true,
   previousFunding: true,
   financialContext: true,
   businessModel: true,

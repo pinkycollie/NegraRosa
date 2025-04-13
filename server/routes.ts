@@ -6,6 +6,7 @@ import { ReputationManager } from "./services/ReputationManager";
 import { RiskManager } from "./services/RiskManager";
 import { FraudDetectionEngine } from "./services/FraudDetectionEngine";
 import { ErrorsAndOmissionsManager } from "./services/ErrorsAndOmissionsManager";
+import { WebsiteVerificationService } from "./services/WebsiteVerificationService";
 import { z } from "zod";
 import { 
   insertUserSchema, 
@@ -24,6 +25,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const riskManager = new RiskManager();
   const fraudDetectionEngine = new FraudDetectionEngine();
   const errorAndOmissionsManager = new ErrorsAndOmissionsManager();
+  const websiteVerificationService = new WebsiteVerificationService();
   
   // Create API router
   const apiRouter = Router();
