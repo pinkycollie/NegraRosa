@@ -366,17 +366,17 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                 )}
                 
                 <Button type="submit" className="w-full" disabled={isLoading || !phoneNumber}>
-                  {isLoading ? "Processing..." : "Send Verification"}
+                  {isLoading ? t.common.loading : t.phoneVerification.sendCode}
                 </Button>
               </form>
               
               {!isDeafUser && verificationMethod !== "video" && (
                 <form onSubmit={handleVerifyCode} className="space-y-4 pt-4 border-t">
                   <div className="space-y-2">
-                    <Label htmlFor="verification-code">Verification Code</Label>
+                    <Label htmlFor="verification-code">{t.phoneVerification.codeLabel}</Label>
                     <Input 
                       id="verification-code"
-                      placeholder="Enter the code we sent you"
+                      placeholder={t.phoneVerification.codePlaceholder}
                       value={verificationCode}
                       onChange={(e) => setVerificationCode(e.target.value)}
                       required
@@ -384,7 +384,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                   </div>
                   
                   <Button type="submit" variant="outline" className="w-full" disabled={isLoading || !verificationCode}>
-                    {isLoading ? "Verifying..." : "Verify Code"}
+                    {isLoading ? t.common.loading : t.phoneVerification.verifyCode}
                   </Button>
                 </form>
               )}
@@ -394,7 +394,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">In-Person Verification</CardTitle>
+                    <CardTitle className="text-base">{t.verificationTypes.inPerson}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <p className="text-sm text-muted-foreground">
@@ -409,7 +409,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                 
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Document Verification</CardTitle>
+                    <CardTitle className="text-base">{t.verificationTypes.document}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <p className="text-sm text-muted-foreground">
@@ -424,7 +424,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                 
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Community Verification</CardTitle>
+                    <CardTitle className="text-base">{t.verificationTypes.community}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <p className="text-sm text-muted-foreground">
@@ -439,7 +439,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                 
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Biometric Verification</CardTitle>
+                    <CardTitle className="text-base">{t.verificationTypes.biometric}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <p className="text-sm text-muted-foreground">
@@ -457,14 +457,12 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-yellow-700">Verification Access Statement</h4>
+                    <h4 className="font-medium text-yellow-700">{t.phoneVerification.alternative.title}</h4>
                     <p className="text-sm text-yellow-600 mt-1">
-                      We believe verification should never exclude people due to disabilities, economic circumstances, 
-                      or international status. If none of these methods work for you, please contact our inclusive 
-                      verification team for personalized assistance.
+                      {t.phoneVerification.alternative.description}
                     </p>
                     <Button variant="link" className="h-auto p-0 mt-1 text-yellow-700">
-                      Contact Inclusive Verification Team
+                      {t.accessibility.contactSupport}
                     </Button>
                   </div>
                 </div>
@@ -477,9 +475,9 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
               <div className="flex items-start gap-3">
                 <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
                 <div>
-                  <h4 className="font-medium text-green-700">Verification Complete</h4>
+                  <h4 className="font-medium text-green-700">{t.phoneVerification.success.title}</h4>
                   <p className="text-sm text-green-600">
-                    Your phone number has been successfully verified.
+                    {t.phoneVerification.success.description}
                   </p>
                 </div>
               </div>
@@ -490,21 +488,19 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                 <div className="flex items-start gap-3">
                   <Shield className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <h4 className="font-medium">FCC Marker Applied</h4>
+                    <h4 className="font-medium">{t.phoneVerification.fccMarker.title}</h4>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Your phone number now has an FCC marker indicating you're a deaf caller.
-                      This helps companies identify legitimate deaf-service calls and prevents
-                      them from being flagged as spam or being hung up on.
+                      {t.phoneVerification.fccMarker.description}
                     </p>
                     
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div className="flex items-center gap-2 border border-primary/20 bg-primary/5 rounded p-2">
                         <Badge variant="outline" className="text-primary whitespace-nowrap">FCC-D</Badge>
-                        <span className="text-xs">Deaf Caller Marker</span>
+                        <span className="text-xs">{t.phoneVerification.phoneTypes.deaf}</span>
                       </div>
                       
                       <div className="flex items-center gap-2 border rounded p-2">
-                        <Badge variant="secondary" className="whitespace-nowrap">Verification</Badge>
+                        <Badge variant="secondary" className="whitespace-nowrap">{t.common.success}</Badge>
                         <span className="text-xs">Enhanced Trust Score: +20</span>
                       </div>
                     </div>
@@ -514,13 +510,13 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
             )}
             
             <div className="border-t pt-4">
-              <h4 className="font-medium mb-2">Connected Verification Factors</h4>
+              <h4 className="font-medium mb-2">{t.accessibility.title}</h4>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div className="flex items-center gap-2 border rounded p-2">
                   <Phone className="h-4 w-4 text-muted-foreground" />
                   <div className="text-sm">
                     <div>{phoneNumber}</div>
-                    <div className="text-xs text-muted-foreground">Phone</div>
+                    <div className="text-xs text-muted-foreground">{t.verificationTypes.phone}</div>
                   </div>
                 </div>
                 
@@ -528,8 +524,8 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                   <div className="flex items-center gap-2 border rounded p-2">
                     <Video className="h-4 w-4 text-muted-foreground" />
                     <div className="text-sm">
-                      <div>Video Verified</div>
-                      <div className="text-xs text-muted-foreground">Sign Language</div>
+                      <div>{t.videoVerification.title}</div>
+                      <div className="text-xs text-muted-foreground">{t.videoVerification.signLanguageSelect}</div>
                     </div>
                   </div>
                 )}
@@ -537,8 +533,8 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                 <div className="flex items-center gap-2 border rounded p-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <div className="text-sm">
-                    <div>Identity</div>
-                    <div className="text-xs text-muted-foreground">Verified</div>
+                    <div>{t.common.success}</div>
+                    <div className="text-xs text-muted-foreground">{t.verificationTypes.phone}</div>
                   </div>
                 </div>
               </div>
@@ -549,10 +545,10 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
       
       <CardFooter className="border-t px-6 py-4 flex justify-between">
         <div className="text-xs text-muted-foreground">
-          {isDeafUser ? "Accessibility-enhanced verification process" : "Inclusive verification system"}
+          {isDeafUser ? t.accessibility.title : t.accessibility.alternativeMethods}
         </div>
         <Button variant="link" size="sm" className="h-5 p-0">
-          Need Help?
+          {t.accessibility.needHelp}
         </Button>
       </CardFooter>
       
@@ -560,25 +556,25 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
       <Dialog open={isVideoOpen} onOpenChange={setIsVideoOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Sign Language Video Verification</DialogTitle>
+            <DialogTitle>{t.videoVerification.title}</DialogTitle>
             <DialogDescription>
-              Verify your identity using sign language with one of our interpreters.
+              {t.videoVerification.description}
             </DialogDescription>
           </DialogHeader>
           
           <div className="aspect-video bg-black rounded-md flex items-center justify-center">
             <div className="text-white text-center">
               <Video className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Video feed would appear here</p>
+              <p>{t.videoVerification.preparingVideo}</p>
               <p className="text-sm opacity-70 mt-1">
-                Connect with a sign language interpreter
+                {isDeafUser ? "Connect with a sign language interpreter" : t.common.loading}
               </p>
             </div>
           </div>
           
           <div className="mt-2 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Select preferred sign language:</span>
+              <span className="text-sm font-medium">{t.videoVerification.signLanguageSelect}</span>
               <select className="text-sm border rounded p-1">
                 <option>American Sign Language (ASL)</option>
                 <option>British Sign Language (BSL)</option>
@@ -588,22 +584,22 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
             </div>
             
             <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-              For privacy and security, this video call is not recorded. Our interpreters are bound by confidentiality agreements.
+              {t.videoVerification.privacyNote}
             </div>
           </div>
           
           <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={() => setIsVideoOpen(false)}>
-              Cancel
+              {t.videoVerification.cancelVideo}
             </Button>
             <Button onClick={simulateVideoVerification} disabled={isLoading}>
               {isLoading ? (
                 <>
                   <span className="animate-spin mr-2">⟳</span>
-                  Processing...
+                  {t.common.loading}
                 </>
               ) : (
-                "Start Verification"
+                t.videoVerification.startVideo
               )}
             </Button>
           </div>
