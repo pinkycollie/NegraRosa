@@ -1495,6 +1495,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Server error deleting webhook" });
     }
   });
+  
+  // Get all webhooks (admin view)
+  apiRouter.get("/webhooks", async (req, res) => {
+    try {
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      
+      let webhooks = [];
+      if (userId) {
+        webhooks = await storage.getWebhooksByUserId(userId);
+      } else {
+        // Get all webhooks - in a real app, this would require admin permissions
+        const users = await storage.getAllUsers();
+        for (const user of users) {
+          const userWebhooks = await storage.getWebhooksByUserId(user.id);
+          webhooks.push(...userWebhooks);
+        }
+      }
+      
+      res.json(webhooks);
+    } catch (error) {
+      console.error("Error fetching webhooks:", error);
+      res.status(500).json({ message: "Server error fetching webhooks" });
+    }
+  });
 
   // Webhook trigger endpoints
   apiRouter.post("/webhooks/:id/trigger", async (req, res) => {
