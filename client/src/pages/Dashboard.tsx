@@ -10,6 +10,11 @@ import VerificationMethods from "@/components/authentication/VerificationMethods
 import AccessTiers from "@/components/authentication/AccessTiers";
 import ReputationBuildingCard from "@/components/reputation/ReputationBuildingCard";
 import RiskManagementWidget from "@/components/risk/RiskManagementWidget";
+import { IdentityOverview } from "@/components/identity/IdentityOverview";
+import { BiometricRecovery } from "@/components/identity/BiometricRecovery";
+import { CompanyPerspectiveWidget } from "@/components/identity/CompanyPerspectiveWidget";
+import { Badge } from "@/components/ui/badge";
+import { ArrowUpRight, TrendingUp, Award, Users } from "lucide-react";
 
 interface DashboardProps {
   userId: number;
@@ -133,6 +138,84 @@ export default function Dashboard({ userId }: DashboardProps) {
                     Eligibility depends on your account age, verification status, and reputation score.
                     The higher your reputation, the more coverage you qualify for.
                   </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Identity Overview Tab - NEW */}
+        {activeTab === AuthTab.IDENTITY && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="mb-8">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">Identity Overview</h2>
+                  <p className="text-muted-foreground max-w-3xl">
+                    Your digital identity hub. See what companies know about you, control your data, and own your online presence.
+                  </p>
+                </div>
+                <div>
+                  <div className="mb-2 flex items-center justify-end gap-2">
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3" />
+                      <span>Valuation: 72%</span>
+                    </Badge>
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <Award className="h-3 w-3" />
+                      <span>Level 3</span>
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-right">
+                    The more you share and explain, the higher your trust score
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              {/* Main Identity Overview Component */}
+              <IdentityOverview userId={userId} />
+              
+              {/* Biometric Recovery System */}
+              <BiometricRecovery userId={userId} />
+              
+              {/* Company Perspective Widget */}
+              <CompanyPerspectiveWidget userId={userId} />
+              
+              {/* Community Impact Section */}
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-100 rounded-lg p-6">
+                <div className="flex items-start gap-4">
+                  <div className="bg-white p-3 rounded-full">
+                    <Users className="h-8 w-8 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium text-purple-900 mb-2">Community Impact & Empowerment</h3>
+                    <p className="text-sm text-purple-800 mb-4">
+                      Your "I AM WHO I AM" NFT also serves as a key to community resources, collective bargaining, and economic opportunities.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      <div className="bg-white/80 p-4 rounded-lg">
+                        <h4 className="font-medium text-sm mb-1">Shared Resources</h4>
+                        <p className="text-xs text-muted-foreground">Access to pooled community resources and support networks</p>
+                      </div>
+                      <div className="bg-white/80 p-4 rounded-lg">
+                        <h4 className="font-medium text-sm mb-1">Economic Opportunities</h4>
+                        <p className="text-xs text-muted-foreground">Priority access to jobs, loans, and investment opportunities</p>
+                      </div>
+                      <div className="bg-white/80 p-4 rounded-lg">
+                        <h4 className="font-medium text-sm mb-1">Collective Voice</h4>
+                        <p className="text-xs text-muted-foreground">Participate in community governance and decision-making</p>
+                      </div>
+                    </div>
+                    <a 
+                      href="#" 
+                      className="text-sm font-medium text-purple-700 flex items-center hover:text-purple-800"
+                    >
+                      Explore Community Opportunities
+                      <ArrowUpRight className="h-3 w-3 ml-1" />
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
