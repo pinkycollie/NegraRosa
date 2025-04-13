@@ -11,6 +11,7 @@ import { riskAssessmentService } from "./services/RiskAssessmentService";
 import { InclusiveVerificationService } from "./services/InclusiveVerificationService";
 import { AuthService } from "./services/AuthService";
 import { webhookService } from "./services/WebhookService";
+import { csvImportService } from "./services/CSVImportService";
 import { z } from "zod";
 import { 
   insertUserSchema, 
@@ -1386,6 +1387,255 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error performing financial risk assessment:", error);
       res.status(500).json({ message: "Server error performing financial risk assessment" });
+    }
+  });
+
+  // Webhook management routes
+  apiRouter.post("/users/:userId/webhooks", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Validate webhook data
+      const webhookId = uuidv4(); // Generate unique ID for webhook
+      const webhookData = {
+        ...req.body,
+        id: webhookId,
+        userId,
+        active: req.body.active !== undefined ? req.body.active : true,
+      };
+      
+      const validatedData = insertWebhookSchema.parse(webhookData);
+      
+      // Create webhook
+      const webhook = await storage.createWebhook(validatedData);
+      
+      res.status(201).json(webhook);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid webhook data", errors: error.errors });
+      }
+      console.error("Error creating webhook:", error);
+      res.status(500).json({ message: "Server error creating webhook" });
+    }
+  });
+
+  apiRouter.get("/users/:userId/webhooks", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const webhooks = await storage.getWebhooksByUserId(userId);
+      
+      res.json(webhooks);
+    } catch (error) {
+      console.error("Error fetching webhooks:", error);
+      res.status(500).json({ message: "Server error fetching webhooks" });
+    }
+  });
+
+  apiRouter.get("/webhooks/:id", async (req, res) => {
+    try {
+      const webhookId = req.params.id;
+      
+      const webhook = await storage.getWebhook(webhookId);
+      if (!webhook) {
+        return res.status(404).json({ message: "Webhook not found" });
+      }
+      
+      res.json(webhook);
+    } catch (error) {
+      console.error("Error fetching webhook:", error);
+      res.status(500).json({ message: "Server error fetching webhook" });
+    }
+  });
+
+  apiRouter.patch("/webhooks/:id", async (req, res) => {
+    try {
+      const webhookId = req.params.id;
+      
+      const webhook = await storage.getWebhook(webhookId);
+      if (!webhook) {
+        return res.status(404).json({ message: "Webhook not found" });
+      }
+      
+      const updatedWebhook = await storage.updateWebhook(webhookId, req.body);
+      
+      res.json(updatedWebhook);
+    } catch (error) {
+      console.error("Error updating webhook:", error);
+      res.status(500).json({ message: "Server error updating webhook" });
+    }
+  });
+
+  apiRouter.delete("/webhooks/:id", async (req, res) => {
+    try {
+      const webhookId = req.params.id;
+      
+      const webhook = await storage.getWebhook(webhookId);
+      if (!webhook) {
+        return res.status(404).json({ message: "Webhook not found" });
+      }
+      
+      const deleted = await storage.deleteWebhook(webhookId);
+      
+      if (deleted) {
+        res.status(204).end();
+      } else {
+        res.status(500).json({ message: "Failed to delete webhook" });
+      }
+    } catch (error) {
+      console.error("Error deleting webhook:", error);
+      res.status(500).json({ message: "Server error deleting webhook" });
+    }
+  });
+
+  // Webhook trigger endpoints
+  apiRouter.post("/webhooks/:id/trigger", async (req, res) => {
+    try {
+      const webhookId = req.params.id;
+      
+      const webhook = await storage.getWebhook(webhookId);
+      if (!webhook) {
+        return res.status(404).json({ message: "Webhook not found" });
+      }
+      
+      // Generate test payload if not provided
+      const customPayload = req.body.payload;
+      
+      const result = await webhookService.simulateWebhookTrigger(webhookId, customPayload);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error triggering webhook:", error);
+      res.status(500).json({ message: "Server error triggering webhook" });
+    }
+  });
+
+  // Webhook payload history
+  apiRouter.get("/webhooks/:id/payloads", async (req, res) => {
+    try {
+      const webhookId = req.params.id;
+      
+      const webhook = await storage.getWebhook(webhookId);
+      if (!webhook) {
+        return res.status(404).json({ message: "Webhook not found" });
+      }
+      
+      const payloads = await storage.getWebhookPayloadsByWebhookId(webhookId);
+      
+      res.json(payloads);
+    } catch (error) {
+      console.error("Error fetching webhook payloads:", error);
+      res.status(500).json({ message: "Server error fetching webhook payloads" });
+    }
+  });
+
+  // Notion connection endpoints
+  apiRouter.post("/notion/test-connection", async (req, res) => {
+    try {
+      if (!process.env.NOTION_API_KEY) {
+        return res.status(400).json({ 
+          message: "Notion API key is not configured. Please set NOTION_API_KEY environment variable."
+        });
+      }
+      
+      if (!process.env.NOTION_DATABASE_ID) {
+        return res.status(400).json({ 
+          message: "Notion database ID is not configured. Please set NOTION_DATABASE_ID environment variable."
+        });
+      }
+      
+      const result = await webhookService.testNotionConnection();
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error testing Notion connection:", error);
+      res.status(500).json({ message: "Server error testing Notion connection" });
+    }
+  });
+
+  // CSV Import/Export endpoints
+  apiRouter.get("/webhooks/sample-csv", (req, res) => {
+    try {
+      const csvData = csvImportService.generateSampleCSV();
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=sample-webhooks.csv');
+      res.send(csvData);
+    } catch (error) {
+      console.error("Error generating sample CSV:", error);
+      res.status(500).json({ message: "Server error generating sample CSV" });
+    }
+  });
+  
+  apiRouter.post("/webhooks/import-csv", async (req, res) => {
+    try {
+      const { csvData, userId } = req.body;
+      
+      if (!csvData) {
+        return res.status(400).json({ message: "Missing CSV data" });
+      }
+      
+      const defaultUserId = userId ? parseInt(userId) : 1;
+      
+      const result = await csvImportService.importWebhooksFromCSV(csvData, defaultUserId);
+      
+      res.json({
+        success: result.imported.length > 0,
+        imported: result.imported.length,
+        errors: result.errors
+      });
+    } catch (error) {
+      console.error("Error importing CSV:", error);
+      res.status(500).json({ message: "Server error importing CSV" });
+    }
+  });
+  
+  apiRouter.get("/webhooks/export-csv", async (req, res) => {
+    try {
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      
+      // Get webhooks
+      let webhooks = [];
+      if (userId) {
+        webhooks = await storage.getWebhooksByUserId(userId);
+      } else {
+        // Get all webhooks - in a real app, this would require admin permissions
+        // This is a simplification for our demo
+        const users = await storage.getAllUsers();
+        for (const user of users) {
+          const userWebhooks = await storage.getWebhooksByUserId(user.id);
+          webhooks.push(...userWebhooks);
+        }
+      }
+      
+      // Generate CSV
+      const header = 'id,name,url,event,userId,active,createdAt,updatedAt,lastTriggeredAt';
+      const rows = webhooks.map(webhook => [
+        webhook.id,
+        webhook.name,
+        webhook.url,
+        webhook.event,
+        webhook.userId,
+        webhook.active,
+        webhook.createdAt,
+        webhook.updatedAt,
+        webhook.lastTriggeredAt || ''
+      ].join(','));
+      
+      const csvData = [header, ...rows].join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=webhooks-export.csv');
+      res.send(csvData);
+    } catch (error) {
+      console.error("Error exporting webhooks to CSV:", error);
+      res.status(500).json({ message: "Server error exporting webhooks to CSV" });
     }
   });
 
