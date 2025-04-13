@@ -86,10 +86,47 @@ export enum AuthTab {
   REPUTATION = "reputation",
   RISK = "risk",
   FRAUD = "fraud",
-  ENO = "eno"
+  ENO = "eno",
+  IDENTITY = "identity"
 }
 
 export interface TabItem {
   id: AuthTab;
   label: string;
+}
+
+export interface ContextualFactor {
+  type: string;
+  explanation: string;
+  impact: 'positive' | 'negative' | 'neutral';
+  dataSource: string;
+}
+
+export interface IdentityDataPoint {
+  category: string;
+  label: string;
+  value: string | number | boolean;
+  source: string;
+  visibleTo: string[];
+  explainable: boolean;
+  userExplanation?: string;
+  lastUpdated: string;
+}
+
+export interface IdentitySummary {
+  identityScore: number;
+  verifiedAttributes: string[];
+  missingAttributes: string[];
+  dataSources: {
+    name: string;
+    count: number;
+    lastAccessed?: string;
+  }[];
+  contextualFactors: ContextualFactor[];
+  riskAssessments: {
+    date: string;
+    decision: string;
+    score: number;
+    factors: string[];
+  }[];
 }

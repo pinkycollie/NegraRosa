@@ -12,6 +12,7 @@ export default function DashboardTabs({ activeTab, onChange }: DashboardTabsProp
     { id: AuthTab.RISK, label: "Risk Management" },
     { id: AuthTab.FRAUD, label: "Fraud Detection" },
     { id: AuthTab.ENO, label: "E&O Protection" },
+    { id: AuthTab.IDENTITY, label: "Identity Overview" },
   ];
 
   return (
