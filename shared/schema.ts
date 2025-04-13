@@ -474,6 +474,7 @@ export const webhookPayloads = pgTable("webhook_payloads", {
   responseCode: integer("response_code"),
   responseBody: text("response_body"),
   notionEntryId: text("notion_entry_id"), // ID of the corresponding Notion database entry
+  retryCount: integer("retry_count").default(0), // Count of delivery retry attempts
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
@@ -486,6 +487,7 @@ export const insertWebhookPayloadSchema = createInsertSchema(webhookPayloads).pi
   responseCode: true,
   responseBody: true,
   notionEntryId: true,
+  retryCount: true,
 });
 
 export type InsertWebhook = z.infer<typeof insertWebhookSchema>;

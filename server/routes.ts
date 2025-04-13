@@ -11,6 +11,8 @@ import { riskAssessmentService } from "./services/RiskAssessmentService";
 import { InclusiveVerificationService } from "./services/InclusiveVerificationService";
 import { AuthService } from "./services/AuthService";
 import { webhookService } from "./services/WebhookService";
+import { webhookDataService } from "./services/WebhookDataService";
+import { backgroundTaskService } from "./services/BackgroundTaskService";
 import { csvImportService } from "./services/CSVImportService";
 import { z } from "zod";
 import { 
@@ -1570,6 +1572,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating sample CSV:", error);
       res.status(500).json({ message: "Server error generating sample CSV" });
+    }
+  });
+  
+  // Background task management endpoints
+  apiRouter.post("/background-tasks/start", (req, res) => {
+    try {
+      backgroundTaskService.start();
+      res.json({ 
+        message: "Background tasks started",
+        status: backgroundTaskService.getStatus()
+      });
+    } catch (error) {
+      console.error("Error starting background tasks:", error);
+      res.status(500).json({ message: "Server error starting background tasks" });
+    }
+  });
+  
+  apiRouter.post("/background-tasks/stop", (req, res) => {
+    try {
+      backgroundTaskService.stop();
+      res.json({ 
+        message: "Background tasks stopped",
+        status: backgroundTaskService.getStatus()
+      });
+    } catch (error) {
+      console.error("Error stopping background tasks:", error);
+      res.status(500).json({ message: "Server error stopping background tasks" });
+    }
+  });
+  
+  apiRouter.get("/background-tasks/status", (req, res) => {
+    try {
+      const status = backgroundTaskService.getStatus();
+      res.json(status);
+    } catch (error) {
+      console.error("Error getting background tasks status:", error);
+      res.status(500).json({ message: "Server error getting background tasks status" });
+    }
+  });
+  
+  // API endpoint to process a webhook payload
+  apiRouter.post("/webhooks/test-process", async (req, res) => {
+    try {
+      const { webhookId, event, data } = req.body;
+      
+      if (!webhookId || !event || !data) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Create webhook payload
+      const payloadId = uuidv4();
+      const payload = {
+        id: payloadId,
+        webhookId,
+        event,
+        data,
+        deliveryStatus: 'PENDING',
+        timestamp: new Date()
+      };
+      
+      // Save payload
+      await storage.createWebhookPayload(payload);
+      
+      // Process payload with data service
+      const processingResult = await webhookDataService.processWebhookPayload(payload);
+      
+      // Add to Notion database
+      let notionResult = null;
+      try {
+        notionResult = await webhookService.addPayloadToNotionDatabase(payload);
+      } catch (err) {
+        console.error("Error adding to Notion:", err);
+      }
+      
+      res.json({
+        success: true,
+        payload: processingResult.normalizedPayload || payload,
+        validationResults: processingResult.validationResults,
+        notionResult: notionResult || { status: 'FAILED', message: 'Notion integration not available or failed' }
+      });
+    } catch (error) {
+      console.error("Error processing test webhook:", error);
+      res.status(500).json({ message: "Server error processing test webhook" });
     }
   });
   
