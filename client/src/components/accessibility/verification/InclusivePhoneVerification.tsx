@@ -22,7 +22,10 @@ import {
   User,
   Smartphone,
   AlertTriangle,
-  Languages
+  Languages,
+  Mail,
+  Users,
+  ScanLine
 } from "lucide-react";
 import {
   Dialog,

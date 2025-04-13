@@ -8,6 +8,7 @@ import { FraudDetectionEngine } from "./services/FraudDetectionEngine";
 import { ErrorsAndOmissionsManager } from "./services/ErrorsAndOmissionsManager";
 import { WebsiteVerificationService } from "./services/WebsiteVerificationService";
 import { riskAssessmentService } from "./services/RiskAssessmentService";
+import { InclusiveVerificationService } from "./services/InclusiveVerificationService";
 import { z } from "zod";
 import { 
   insertUserSchema, 
@@ -27,6 +28,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const fraudDetectionEngine = new FraudDetectionEngine();
   const errorAndOmissionsManager = new ErrorsAndOmissionsManager();
   const websiteVerificationService = new WebsiteVerificationService();
+  const inclusiveVerificationService = new InclusiveVerificationService(
+    process.env.N8N_VERIFICATION_WEBHOOK
+  );
   
   // Create API router
   const apiRouter = Router();
@@ -151,6 +155,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching access tier:", error);
       res.status(500).json({ message: "Server error fetching access tier" });
+    }
+  });
+  
+  // Inclusive verification endpoints
+  apiRouter.post("/verifications/phone", async (req, res) => {
+    try {
+      const { userId, phoneNumber, metadata } = req.body;
+      
+      if (!userId || !phoneNumber) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      const result = await inclusiveVerificationService.verifyPhone(
+        parseInt(userId),
+        phoneNumber,
+        metadata
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error with phone verification:", error);
+      res.status(500).json({ message: "Server error during phone verification" });
+    }
+  });
+  
+  apiRouter.post("/verifications/:id/complete", async (req, res) => {
+    try {
+      const verificationId = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      if (isNaN(verificationId) || !status) {
+        return res.status(400).json({ message: "Invalid request" });
+      }
+      
+      const result = await inclusiveVerificationService.completeVerification(
+        verificationId,
+        status
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error completing verification:", error);
+      res.status(500).json({ message: "Server error completing verification" });
+    }
+  });
+  
+  apiRouter.post("/verifications/:id/video", async (req, res) => {
+    try {
+      const verificationId = parseInt(req.params.id);
+      const { videoData } = req.body;
+      
+      if (isNaN(verificationId)) {
+        return res.status(400).json({ message: "Invalid verification ID" });
+      }
+      
+      const result = await inclusiveVerificationService.processVideoVerification(
+        verificationId,
+        videoData
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error processing video verification:", error);
+      res.status(500).json({ message: "Server error processing video verification" });
     }
   });
   
