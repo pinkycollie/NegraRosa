@@ -27,7 +27,7 @@ import {
   Languages,
   Mail,
   Users,
-  ScanLine
+  Scan
 } from "lucide-react";
 import {
   Dialog,
@@ -172,17 +172,17 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
         {!isVerified ? (
           <Tabs defaultValue="standard" className="space-y-4">
             <TabsList className="grid grid-cols-2">
-              <TabsTrigger value="standard">Standard</TabsTrigger>
-              <TabsTrigger value="alternative">Alternative</TabsTrigger>
+              <TabsTrigger value="standard">{t.common.continue}</TabsTrigger>
+              <TabsTrigger value="alternative">{t.phoneVerification.alternative.title}</TabsTrigger>
             </TabsList>
             
             <TabsContent value="standard" className="space-y-4">
               <form onSubmit={handlePhoneSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="phone-number">Phone Number</Label>
+                  <Label htmlFor="phone-number">{t.phoneVerification.phoneNumberLabel}</Label>
                   <Input 
                     id="phone-number"
-                    placeholder="+1 (555) 123-4567"
+                    placeholder={t.phoneVerification.phoneNumberPlaceholder}
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     required
@@ -190,7 +190,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Phone Type</Label>
+                  <Label>{t.phoneVerification.title}</Label>
                   <RadioGroup defaultValue="standard" className="grid grid-cols-2 gap-2">
                     <div className="flex items-center space-x-2 border rounded-md p-3">
                       <RadioGroupItem 
@@ -200,7 +200,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                         onClick={() => setPhoneType("standard")}
                       />
                       <Label htmlFor="standard" className="cursor-pointer font-normal">
-                        Standard Plan
+                        {t.phoneVerification.phoneTypes.standard}
                       </Label>
                     </div>
                     
@@ -212,7 +212,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                         onClick={() => setPhoneType("prepaid")}
                       />
                       <Label htmlFor="prepaid" className="cursor-pointer font-normal">
-                        Prepaid
+                        {t.phoneVerification.phoneTypes.prepaid}
                       </Label>
                     </div>
                     
@@ -224,7 +224,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                         onClick={() => setPhoneType("international")}
                       />
                       <Label htmlFor="international" className="cursor-pointer font-normal">
-                        International
+                        {t.phoneVerification.phoneTypes.international}
                       </Label>
                     </div>
                     
@@ -240,7 +240,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                         }}
                       />
                       <Label htmlFor="deaf-plan" className="cursor-pointer font-normal">
-                        Deaf Plan
+                        {t.phoneVerification.phoneTypes.deaf}
                       </Label>
                     </div>
                   </RadioGroup>
@@ -251,16 +251,16 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                     <div className="flex items-start gap-2">
                       <Info className="h-5 w-5 text-blue-600 mt-0.5" />
                       <div>
-                        <h4 className="font-medium text-blue-700">Deaf Plan Selected</h4>
+                        <h4 className="font-medium text-blue-700">{t.phoneVerification.phoneTypes.deaf}</h4>
                         <p className="text-sm text-blue-600">
-                          We'll adapt our verification process to accommodate your needs
+                          {t.phoneVerification.alternative.description}
                         </p>
                       </div>
                     </div>
                     
                     <div className="flex items-center justify-between pt-1">
                       <Label htmlFor="fcc-marker" className="text-sm text-blue-700">
-                        Add FCC marker to your phone number
+                        {t.phoneVerification.fccMarker.toggle}
                       </Label>
                       <Switch 
                         id="fcc-marker" 
@@ -270,14 +270,13 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                     </div>
                     
                     <p className="text-xs text-blue-600">
-                      This helps companies identify you as a deaf caller, not a robocall,
-                      and routes you through accessible verification methods
+                      {t.phoneVerification.fccMarker.explainer}
                     </p>
                   </div>
                 )}
                 
                 <div className="space-y-2">
-                  <Label>Verification Method</Label>
+                  <Label>{t.verificationTypes.phone}</Label>
                   <RadioGroup defaultValue="text" className="grid grid-cols-2 gap-2">
                     {!isDeafUser && (
                       <div className="flex items-center space-x-2 border rounded-md p-3">
@@ -289,7 +288,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                         />
                         <Label htmlFor="voice" className="cursor-pointer font-normal flex items-center">
                           <Phone className="h-4 w-4 mr-2" />
-                          Voice Call
+                          {t.phoneVerification.methods.voice}
                         </Label>
                       </div>
                     )}
@@ -303,7 +302,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                       />
                       <Label htmlFor="text" className="cursor-pointer font-normal flex items-center">
                         <MessageSquare className="h-4 w-4 mr-2" />
-                        Text Message
+                        {t.phoneVerification.methods.text}
                       </Label>
                     </div>
                     
@@ -317,7 +316,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                         />
                         <Label htmlFor="video" className="cursor-pointer font-normal flex items-center">
                           <Video className="h-4 w-4 mr-2" />
-                          Video Verification
+                          {t.phoneVerification.methods.video}
                         </Label>
                       </div>
                     )}
@@ -331,7 +330,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                       />
                       <Label htmlFor="email" className="cursor-pointer font-normal flex items-center">
                         <Mail className="h-4 w-4 mr-2" />
-                        Email Link
+                        {t.phoneVerification.methods.email}
                       </Label>
                     </div>
                   </RadioGroup>
@@ -345,7 +344,7 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                     >
                       <Label className="flex items-center cursor-pointer">
                         <HelpCircle className="h-4 w-4 mr-2 text-muted-foreground" />
-                        Explain your situation (optional)
+                        {t.phoneVerification.explanation.title} {t.common.optional}
                       </Label>
                       <ArrowRight className={`h-4 w-4 transition-transform ${showExplanationField ? 'rotate-90' : ''}`} />
                     </div>
@@ -353,11 +352,10 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
                     {showExplanationField && (
                       <div className="mt-2 space-y-2">
                         <p className="text-sm text-muted-foreground">
-                          Providing context helps us verify your identity more effectively. 
-                          Your explanation is reviewed by our AI and can improve your verification experience.
+                          {t.phoneVerification.explanation.description}
                         </p>
                         <textarea 
-                          placeholder="Explain why you're using this type of phone plan, or any challenges you face with traditional verification..."
+                          placeholder={t.phoneVerification.explanation.placeholder}
                           className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2"
                           value={explanation}
                           onChange={(e) => setExplanation(e.target.value)}
