@@ -139,8 +139,14 @@ export interface IStorage {
   // Webhook payloads
   createWebhookPayload(payload: InsertWebhookPayload): Promise<WebhookPayload>;
   getWebhookPayloadsByWebhookId(webhookId: string): Promise<WebhookPayload[]>;
-  updateWebhookPayloadStatus(id: string, status: string, responseCode?: number, responseBody?: string): Promise<WebhookPayload | undefined>;
+  getWebhookPayloadsByStatus(status: string): Promise<WebhookPayload[]>;
+  getWebhookPayloadsByIds(ids: string[]): Promise<WebhookPayload[]>;
+  updateWebhookPayloadStatus(id: string, status: string, responseCode?: number | null, responseBody?: string): Promise<WebhookPayload | undefined>;
   updateWebhookPayloadNotionId(id: string, notionEntryId: string): Promise<WebhookPayload | undefined>;
+  updateWebhookPayloadRetryCount(id: string, retryCount: number): Promise<WebhookPayload | undefined>;
+  
+  // User utilities
+  getAllUsers(): Promise<User[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -1026,6 +1032,35 @@ export class MemStorage implements IStorage {
     };
     this.webhookPayloads.set(id, updatedPayload);
     return updatedPayload;
+  }
+  
+  async getWebhookPayloadsByStatus(status: string): Promise<WebhookPayload[]> {
+    return Array.from(this.webhookPayloads.values())
+      .filter(payload => payload.deliveryStatus === status)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()); // Most recent first
+  }
+  
+  async getWebhookPayloadsByIds(ids: string[]): Promise<WebhookPayload[]> {
+    return Array.from(this.webhookPayloads.values())
+      .filter(payload => ids.includes(payload.id))
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()); // Most recent first
+  }
+  
+  async updateWebhookPayloadRetryCount(id: string, retryCount: number): Promise<WebhookPayload | undefined> {
+    const payload = this.webhookPayloads.get(id);
+    if (!payload) return undefined;
+    
+    const updatedPayload: WebhookPayload = {
+      ...payload,
+      retryCount
+    };
+    this.webhookPayloads.set(id, updatedPayload);
+    return updatedPayload;
+  }
+  
+  // User utilities
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
   }
 }
 
