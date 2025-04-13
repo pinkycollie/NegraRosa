@@ -7,6 +7,9 @@ import {
   Claim, InsertClaim,
   EntrepreneurProfile, InsertEntrepreneurProfile,
   JsonDataUpload, InsertJsonDataUpload,
+  JobProfile, InsertJobProfile,
+  BackgroundVerification, InsertBackgroundVerification,
+  JobApplication, InsertJobApplication,
   VerificationType
 } from "@shared/schema";
 
@@ -54,6 +57,47 @@ export interface IStorage {
   getJsonDataUploadsByProfileId(profileId: number): Promise<JsonDataUpload[]>;
   getJsonDataUpload(id: number): Promise<JsonDataUpload | undefined>;
   updateJsonDataUpload(id: number, status: string, aiInsights?: string): Promise<JsonDataUpload | undefined>;
+  
+  // Job profiles
+  getJobProfile(id: number): Promise<JobProfile | undefined>;
+  getJobProfileByUserId(userId: number): Promise<JobProfile | undefined>;
+  createJobProfile(profile: InsertJobProfile): Promise<JobProfile>;
+  updateJobProfile(id: number, updates: Partial<InsertJobProfile>): Promise<JobProfile | undefined>;
+  updateJobProfileActivityScore(id: number, score: number): Promise<JobProfile | undefined>;
+  
+  // Background verifications
+  createBackgroundVerification(verification: InsertBackgroundVerification): Promise<BackgroundVerification>;
+  getBackgroundVerificationsByUserId(userId: number): Promise<BackgroundVerification[]>;
+  getBackgroundVerificationsByProfileId(profileId: number): Promise<BackgroundVerification[]>;
+  getBackgroundVerification(id: number): Promise<BackgroundVerification | undefined>;
+  updateBackgroundVerification(
+    id: number, 
+    updates: {
+      verificationStatus?: string;
+      aiAnalysis?: string;
+      recommendedAction?: string;
+      probationaryPeriod?: number;
+      alternativePositions?: any;
+      verifiedAt?: Date;
+    }
+  ): Promise<BackgroundVerification | undefined>;
+  
+  // Job applications
+  createJobApplication(application: InsertJobApplication): Promise<JobApplication>;
+  getJobApplicationsByUserId(userId: number): Promise<JobApplication[]>;
+  getJobApplicationsByProfileId(profileId: number): Promise<JobApplication[]>;
+  getJobApplication(id: number): Promise<JobApplication | undefined>;
+  updateJobApplication(
+    id: number,
+    updates: {
+      status?: string;
+      rejectionReason?: string;
+      userResponse?: string;
+      transparencyReport?: any;
+      aiRecommendedImprovements?: string;
+      activitiesCompleted?: any;
+    }
+  ): Promise<JobApplication | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -65,6 +109,9 @@ export class MemStorage implements IStorage {
   private claims: Map<number, Claim>;
   private entrepreneurProfiles: Map<number, EntrepreneurProfile>;
   private jsonDataUploads: Map<number, JsonDataUpload>;
+  private jobProfiles: Map<number, JobProfile>;
+  private backgroundVerifications: Map<number, BackgroundVerification>;
+  private jobApplications: Map<number, JobApplication>;
   
   private nextUserId: number;
   private nextVerificationId: number;
@@ -74,6 +121,9 @@ export class MemStorage implements IStorage {
   private nextClaimId: number;
   private nextEntrepreneurProfileId: number;
   private nextJsonDataUploadId: number;
+  private nextJobProfileId: number;
+  private nextBackgroundVerificationId: number;
+  private nextJobApplicationId: number;
 
   constructor() {
     this.users = new Map();
@@ -84,6 +134,9 @@ export class MemStorage implements IStorage {
     this.claims = new Map();
     this.entrepreneurProfiles = new Map();
     this.jsonDataUploads = new Map();
+    this.jobProfiles = new Map();
+    this.backgroundVerifications = new Map();
+    this.jobApplications = new Map();
     
     this.nextUserId = 1;
     this.nextVerificationId = 1;
@@ -93,6 +146,9 @@ export class MemStorage implements IStorage {
     this.nextClaimId = 1;
     this.nextEntrepreneurProfileId = 1;
     this.nextJsonDataUploadId = 1;
+    this.nextJobProfileId = 1;
+    this.nextBackgroundVerificationId = 1;
+    this.nextJobApplicationId = 1;
     
     // Add a test user for development
     this.createUser({
@@ -508,6 +564,210 @@ export class MemStorage implements IStorage {
     }
     
     return updatedUpload;
+  }
+  
+  // Job profiles
+  async getJobProfile(id: number): Promise<JobProfile | undefined> {
+    return this.jobProfiles.get(id);
+  }
+
+  async getJobProfileByUserId(userId: number): Promise<JobProfile | undefined> {
+    return Array.from(this.jobProfiles.values()).find(
+      (profile) => profile.userId === userId
+    );
+  }
+
+  async createJobProfile(profile: InsertJobProfile): Promise<JobProfile> {
+    const id = this.nextJobProfileId++;
+    const now = new Date();
+    const newProfile: JobProfile = {
+      ...profile,
+      id,
+      activityScore: 0, // Initialize with zero activity
+      lastUpdated: now,
+      createdAt: now
+    };
+    this.jobProfiles.set(id, newProfile);
+    
+    // Creating a job profile boosts reputation
+    const reputation = await this.getReputation(profile.userId);
+    if (reputation) {
+      await this.updateReputation(profile.userId, {
+        score: this.calculateReputationScore(
+          reputation.positiveTransactions || 0,
+          reputation.totalTransactions || 0,
+          (reputation.verificationCount || 0) + 1, // Creating a profile counts as a verification
+          reputation.accountAge || 0
+        )
+      });
+    }
+    
+    return newProfile;
+  }
+
+  async updateJobProfile(id: number, updates: Partial<InsertJobProfile>): Promise<JobProfile | undefined> {
+    const profile = this.jobProfiles.get(id);
+    if (!profile) return undefined;
+    
+    const now = new Date();
+    const updatedProfile: JobProfile = {
+      ...profile,
+      ...updates,
+      lastUpdated: now
+    };
+    this.jobProfiles.set(id, updatedProfile);
+    return updatedProfile;
+  }
+
+  async updateJobProfileActivityScore(id: number, score: number): Promise<JobProfile | undefined> {
+    const profile = this.jobProfiles.get(id);
+    if (!profile) return undefined;
+    
+    const now = new Date();
+    const updatedProfile: JobProfile = {
+      ...profile,
+      activityScore: score,
+      lastUpdated: now
+    };
+    this.jobProfiles.set(id, updatedProfile);
+    return updatedProfile;
+  }
+
+  // Background verifications
+  async createBackgroundVerification(verification: InsertBackgroundVerification): Promise<BackgroundVerification> {
+    const id = this.nextBackgroundVerificationId++;
+    const now = new Date();
+    const newVerification: BackgroundVerification = {
+      ...verification,
+      id,
+      aiAnalysis: null,
+      recommendedAction: null,
+      probationaryPeriod: null,
+      alternativePositions: null,
+      verifiedAt: null,
+      createdAt: now
+    };
+    this.backgroundVerifications.set(id, newVerification);
+    return newVerification;
+  }
+
+  async getBackgroundVerificationsByUserId(userId: number): Promise<BackgroundVerification[]> {
+    return Array.from(this.backgroundVerifications.values())
+      .filter(verification => verification.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Most recent first
+  }
+
+  async getBackgroundVerificationsByProfileId(profileId: number): Promise<BackgroundVerification[]> {
+    return Array.from(this.backgroundVerifications.values())
+      .filter(verification => verification.profileId === profileId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Most recent first
+  }
+
+  async getBackgroundVerification(id: number): Promise<BackgroundVerification | undefined> {
+    return this.backgroundVerifications.get(id);
+  }
+
+  async updateBackgroundVerification(
+    id: number, 
+    updates: {
+      verificationStatus?: string;
+      aiAnalysis?: string;
+      recommendedAction?: string;
+      probationaryPeriod?: number;
+      alternativePositions?: any;
+      verifiedAt?: Date;
+    }
+  ): Promise<BackgroundVerification | undefined> {
+    const verification = this.backgroundVerifications.get(id);
+    if (!verification) return undefined;
+    
+    const updatedVerification: BackgroundVerification = {
+      ...verification,
+      ...updates
+    };
+    this.backgroundVerifications.set(id, updatedVerification);
+    return updatedVerification;
+  }
+
+  // Job applications
+  async createJobApplication(application: InsertJobApplication): Promise<JobApplication> {
+    const id = this.nextJobApplicationId++;
+    const now = new Date();
+    const newApplication: JobApplication = {
+      ...application,
+      id,
+      applicationDate: application.applicationDate || now,
+      transparencyReport: null,
+      aiRecommendedImprovements: null,
+      updatedAt: now
+    };
+    this.jobApplications.set(id, newApplication);
+    
+    // Increase activity score for job seeker
+    if (application.profileId) {
+      const profile = await this.getJobProfile(application.profileId);
+      if (profile) {
+        await this.updateJobProfileActivityScore(
+          profile.id, 
+          Math.min(100, (profile.activityScore || 0) + 10) // +10 for each application, max 100
+        );
+      }
+    }
+    
+    return newApplication;
+  }
+
+  async getJobApplicationsByUserId(userId: number): Promise<JobApplication[]> {
+    return Array.from(this.jobApplications.values())
+      .filter(application => application.userId === userId)
+      .sort((a, b) => b.applicationDate.getTime() - a.applicationDate.getTime()); // Most recent first
+  }
+
+  async getJobApplicationsByProfileId(profileId: number): Promise<JobApplication[]> {
+    return Array.from(this.jobApplications.values())
+      .filter(application => application.profileId === profileId)
+      .sort((a, b) => b.applicationDate.getTime() - a.applicationDate.getTime()); // Most recent first
+  }
+
+  async getJobApplication(id: number): Promise<JobApplication | undefined> {
+    return this.jobApplications.get(id);
+  }
+
+  async updateJobApplication(
+    id: number,
+    updates: {
+      status?: string;
+      rejectionReason?: string;
+      userResponse?: string;
+      transparencyReport?: any;
+      aiRecommendedImprovements?: string;
+      activitiesCompleted?: any;
+    }
+  ): Promise<JobApplication | undefined> {
+    const application = this.jobApplications.get(id);
+    if (!application) return undefined;
+    
+    const updatedApplication: JobApplication = {
+      ...application,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.jobApplications.set(id, updatedApplication);
+    
+    // If rejection with transparent explanation, add to activity score
+    if (updates.status === 'REJECTED' && updates.userResponse) {
+      if (application.profileId) {
+        const profile = await this.getJobProfile(application.profileId);
+        if (profile) {
+          await this.updateJobProfileActivityScore(
+            profile.id, 
+            Math.min(100, (profile.activityScore || 0) + 5) // +5 for responding to rejection, max 100
+          );
+        }
+      }
+    }
+    
+    return updatedApplication;
   }
 }
 

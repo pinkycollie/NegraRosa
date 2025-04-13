@@ -270,3 +270,102 @@ export const insertJsonDataUploadSchema = createInsertSchema(jsonDataUploads).pi
 
 export type InsertJsonDataUpload = z.infer<typeof insertJsonDataUploadSchema>;
 export type JsonDataUpload = typeof jsonDataUploads.$inferSelect;
+
+// Job profiles and background verification
+export const jobProfiles = pgTable("job_profiles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  title: text("title"), // Current or desired job title
+  skills: text("skills").array(), // Array of skills
+  experience: jsonb("experience"), // JSON array of work experiences
+  education: jsonb("education"), // JSON array of education history
+  certifications: jsonb("certifications"), // JSON array of certifications
+  probationaryStatus: boolean("probationary_status").default(false),
+  rehabilitationContext: text("rehabilitation_context"), // Context about rehabilitation if applicable
+  accessibilityNeeds: jsonb("accessibility_needs"), // Any accessibility requirements
+  preferredWorkEnvironment: text("preferred_work_environment"), // Remote, hybrid, on-site, etc.
+  activityScore: real("activity_score").default(0), // Score based on job-seeking activity
+  personalStatement: text("personal_statement"), // Personal explanation or context
+  lastUpdated: timestamp("last_updated").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertJobProfileSchema = createInsertSchema(jobProfiles).pick({
+  userId: true,
+  title: true,
+  skills: true,
+  experience: true,
+  education: true,
+  certifications: true,
+  probationaryStatus: true,
+  rehabilitationContext: true,
+  accessibilityNeeds: true,
+  preferredWorkEnvironment: true,
+  personalStatement: true,
+});
+
+export type InsertJobProfile = z.infer<typeof insertJobProfileSchema>;
+export type JobProfile = typeof jobProfiles.$inferSelect;
+
+export const backgroundVerifications = pgTable("background_verifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  profileId: integer("profile_id").references(() => jobProfiles.id),
+  verificationType: text("verification_type").notNull(), // CRIMINAL, EDUCATION, EMPLOYMENT, etc.
+  reportedIssue: text("reported_issue"), // Description of any reported issues
+  userExplanation: text("user_explanation"), // User's explanation of any issues
+  verificationStatus: text("verification_status").notNull(), // PENDING, VERIFIED, FLAGGED
+  documentReferences: jsonb("document_references"), // References to supporting documents
+  aiAnalysis: text("ai_analysis"), // AI assessment of explanation vs. report
+  recommendedAction: text("recommended_action"), // AI/human recommended action for employers
+  probationaryPeriod: integer("probationary_period"), // Recommended probation period in days
+  alternativePositions: jsonb("alternative_positions"), // Suggested alternative positions
+  transparencyNotes: text("transparency_notes"), // Notes for transparency to job seeker
+  verifiedAt: timestamp("verified_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertBackgroundVerificationSchema = createInsertSchema(backgroundVerifications).pick({
+  userId: true,
+  profileId: true,
+  verificationType: true,
+  reportedIssue: true,
+  userExplanation: true,
+  verificationStatus: true,
+  documentReferences: true,
+  transparencyNotes: true,
+});
+
+export type InsertBackgroundVerification = z.infer<typeof insertBackgroundVerificationSchema>;
+export type BackgroundVerification = typeof backgroundVerifications.$inferSelect;
+
+export const jobApplications = pgTable("job_applications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  profileId: integer("profile_id").references(() => jobProfiles.id),
+  companyName: text("company_name").notNull(),
+  positionTitle: text("position_title").notNull(),
+  applicationDate: timestamp("application_date").defaultNow().notNull(),
+  status: text("status").notNull(), // APPLIED, INTERVIEWING, REJECTED, ACCEPTED
+  rejectionReason: text("rejection_reason"),
+  userResponse: text("user_response"), // User's response to rejection/feedback
+  transparencyReport: jsonb("transparency_report"), // Detailed report on decision factors
+  aiRecommendedImprovements: text("ai_recommended_improvements"),
+  activitiesCompleted: jsonb("activities_completed"), // Job search activities completed
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertJobApplicationSchema = createInsertSchema(jobApplications).pick({
+  userId: true,
+  profileId: true,
+  companyName: true,
+  positionTitle: true,
+  applicationDate: true,
+  status: true,
+  rejectionReason: true,
+  userResponse: true,
+  activitiesCompleted: true,
+});
+
+export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
+export type JobApplication = typeof jobApplications.$inferSelect;
