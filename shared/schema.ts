@@ -184,6 +184,14 @@ export interface RiskDecision {
     limitedRecipients?: boolean;
   };
   reason?: string;
+  assistanceRecommendations?: string[];  // New field for providing constructive assistance
+  contextualFactors?: {
+    addressChanges?: string;
+    employmentGaps?: string;
+    financialHardship?: string;
+    identityDocuments?: string;
+    otherFactors?: string;
+  };
 }
 
 export interface CoverageDecision {

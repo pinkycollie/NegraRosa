@@ -28,6 +28,7 @@ export class RiskAssessmentService {
     // Base risk score starts at 50 (neutral)
     let riskScore = 50;
     const reasons: string[] = [];
+    const contextualFactors: any = {};
     
     // Factor 1: Unemployment claims patterns
     if (factors.unemploymentClaimsCount !== undefined) {
@@ -43,6 +44,7 @@ export class RiskAssessmentService {
       if (factors.contextualExplanations?.employmentGaps) {
         riskScore -= 5; // Reduce risk when explanation is provided
         reasons.push('User provided context for employment history');
+        contextualFactors.employmentGaps = factors.contextualExplanations.employmentGaps;
       }
     }
     
@@ -70,6 +72,7 @@ export class RiskAssessmentService {
         if (factors.contextualExplanations?.addressChanges) {
           riskScore -= 8;
           reasons.push('User provided context for address changes');
+          contextualFactors.addressChanges = factors.contextualExplanations.addressChanges;
         }
       }
     }
@@ -82,6 +85,7 @@ export class RiskAssessmentService {
       if (factors.contextualExplanations?.identityDocuments) {
         riskScore -= 5;
         reasons.push('User explained license situation');
+        contextualFactors.identityDocuments = factors.contextualExplanations.identityDocuments;
       }
     }
     
@@ -94,6 +98,7 @@ export class RiskAssessmentService {
         if (factors.contextualExplanations?.financialHardship) {
           riskScore -= 10;
           reasons.push('User provided context for financial situation');
+          contextualFactors.financialHardship = factors.contextualExplanations.financialHardship;
         }
       }
     }
@@ -121,6 +126,13 @@ export class RiskAssessmentService {
       }
     }
     
+    // Consider any other factors provided by the user
+    if (factors.contextualExplanations?.otherFactors) {
+      riskScore -= 5; // Slight reduction for providing additional context
+      reasons.push('User provided additional contextual information');
+      contextualFactors.otherFactors = factors.contextualExplanations.otherFactors;
+    }
+    
     // Normalize risk score (0-100)
     riskScore = Math.max(0, Math.min(100, riskScore));
     
@@ -146,7 +158,8 @@ export class RiskAssessmentService {
       riskScore,
       restrictions,
       reason: reasons.join('; '),
-      assistanceRecommendations // Additional field for providing constructive assistance
+      assistanceRecommendations, // Additional field for providing constructive assistance
+      contextualFactors: Object.keys(contextualFactors).length > 0 ? contextualFactors : undefined
     } as RiskDecision;
   }
   
