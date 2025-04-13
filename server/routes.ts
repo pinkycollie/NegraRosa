@@ -852,6 +852,333 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // WHY Submission Routes
+  apiRouter.post("/users/:userId/why-submissions", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Validate submission data
+      const submissionData = {
+        ...req.body,
+        userId,
+        status: "PENDING", // All submissions start as pending
+      };
+      
+      const validatedData = insertWhySubmissionSchema.parse(submissionData);
+      
+      // Create submission
+      const submission = await storage.createWhySubmission(validatedData);
+      
+      // Create notification for the user
+      const notification = await storage.createWhyNotification({
+        userId,
+        content: "Your WHY submission has been received and is being reviewed",
+        submissionId: submission.id,
+        notificationType: "SUBMISSION_RECEIVED",
+        status: "PENDING"
+      });
+      
+      res.status(201).json({
+        submission,
+        notification,
+        message: "WHY submission received successfully"
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid submission data", errors: error.errors });
+      }
+      console.error("Error creating WHY submission:", error);
+      res.status(500).json({ message: "Server error creating WHY submission" });
+    }
+  });
+  
+  // Get user's WHY submissions
+  apiRouter.get("/users/:userId/why-submissions", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const submissions = await storage.getWhySubmissionsByUserId(userId);
+      
+      res.json(submissions);
+    } catch (error) {
+      console.error("Error fetching WHY submissions:", error);
+      res.status(500).json({ message: "Server error fetching WHY submissions" });
+    }
+  });
+  
+  // Get specific WHY submission
+  apiRouter.get("/why-submissions/:id", async (req, res) => {
+    try {
+      const submissionId = parseInt(req.params.id);
+      if (isNaN(submissionId)) {
+        return res.status(400).json({ message: "Invalid submission ID" });
+      }
+      
+      const submission = await storage.getWhySubmission(submissionId);
+      if (!submission) {
+        return res.status(404).json({ message: "WHY submission not found" });
+      }
+      
+      res.json(submission);
+    } catch (error) {
+      console.error("Error fetching WHY submission:", error);
+      res.status(500).json({ message: "Server error fetching WHY submission" });
+    }
+  });
+  
+  // Update WHY submission (resolve, facilitate, etc.)
+  apiRouter.patch("/why-submissions/:id", async (req, res) => {
+    try {
+      const submissionId = parseInt(req.params.id);
+      if (isNaN(submissionId)) {
+        return res.status(400).json({ message: "Invalid submission ID" });
+      }
+      
+      const { status, reviewerId, resolution, facilitated, facilitatorInfo } = req.body;
+      
+      const updatedSubmission = await storage.updateWhySubmission(
+        submissionId,
+        {
+          status,
+          reviewerId,
+          resolution,
+          facilitated,
+          facilitatorInfo,
+          ...(status === "RESOLVED" ? { resolvedAt: new Date() } : {})
+        }
+      );
+      
+      if (!updatedSubmission) {
+        return res.status(404).json({ message: "WHY submission not found" });
+      }
+      
+      // Create notification for the user about the update
+      if (status) {
+        const notificationContent = status === "RESOLVED" 
+          ? "Your WHY submission has been resolved" 
+          : `Your WHY submission status has been updated to ${status}`;
+          
+        await storage.createWhyNotification({
+          userId: updatedSubmission.userId,
+          content: notificationContent,
+          submissionId: updatedSubmission.id,
+          notificationType: "STATUS_UPDATE",
+          status: "PENDING"
+        });
+      }
+      
+      res.json(updatedSubmission);
+    } catch (error) {
+      console.error("Error updating WHY submission:", error);
+      res.status(500).json({ message: "Server error updating WHY submission" });
+    }
+  });
+  
+  // Quick submission methods
+  
+  // Text submission
+  apiRouter.post("/users/:userId/why-submissions/text", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const { content, triggerType } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ message: "Content is required" });
+      }
+      
+      // Create submission
+      const submission = await storage.createWhySubmission({
+        userId,
+        triggerType: triggerType || "GENERAL",
+        submissionMethod: "TEXT",
+        content,
+        status: "PENDING"
+      });
+      
+      res.status(201).json({
+        submission,
+        message: "Text WHY submission received successfully"
+      });
+    } catch (error) {
+      console.error("Error creating text WHY submission:", error);
+      res.status(500).json({ message: "Server error creating text WHY submission" });
+    }
+  });
+  
+  // SMS submission
+  apiRouter.post("/why-submissions/sms", async (req, res) => {
+    try {
+      const { phoneNumber, content } = req.body;
+      
+      if (!phoneNumber || !content) {
+        return res.status(400).json({ message: "Phone number and content are required" });
+      }
+      
+      // Find user by phone number (this would be implemented in a real system)
+      // For demo purposes, we'll use a placeholder user ID
+      const userId = 1; // In a real system, look up by phone number
+      
+      // Create submission
+      const submission = await storage.createWhySubmission({
+        userId,
+        triggerType: "SMS",
+        submissionMethod: "SMS",
+        content,
+        status: "PENDING"
+      });
+      
+      res.status(201).json({
+        submission,
+        message: "SMS WHY submission received successfully"
+      });
+    } catch (error) {
+      console.error("Error creating SMS WHY submission:", error);
+      res.status(500).json({ message: "Server error creating SMS WHY submission" });
+    }
+  });
+  
+  // Photo/image submission
+  apiRouter.post("/users/:userId/why-submissions/image", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const { imageData, caption, triggerType } = req.body;
+      
+      if (!imageData) {
+        return res.status(400).json({ message: "Image data is required" });
+      }
+      
+      // Create submission with image data
+      const submission = await storage.createWhySubmission({
+        userId,
+        triggerType: triggerType || "GENERAL",
+        submissionMethod: "IMAGE",
+        content: caption || null,
+        mediaData: { type: "image", data: imageData },
+        status: "PENDING"
+      });
+      
+      res.status(201).json({
+        submission,
+        message: "Image WHY submission received successfully"
+      });
+    } catch (error) {
+      console.error("Error creating image WHY submission:", error);
+      res.status(500).json({ message: "Server error creating image WHY submission" });
+    }
+  });
+  
+  // Quick scan/QR code submission
+  apiRouter.post("/why-submissions/scan", async (req, res) => {
+    try {
+      const { scanCode, content } = req.body;
+      
+      if (!scanCode) {
+        return res.status(400).json({ message: "Scan code is required" });
+      }
+      
+      // Decode the scan code to get user ID and submission context
+      // For demo purposes, we'll use a placeholder decoder
+      const scanData = decodeScanCode(scanCode);
+      
+      // Create submission
+      const submission = await storage.createWhySubmission({
+        userId: scanData.userId,
+        triggerType: scanData.triggerType || "SCAN",
+        submissionMethod: "SCAN",
+        content: content || null,
+        status: "PENDING",
+        contextData: scanData.context
+      });
+      
+      res.status(201).json({
+        submission,
+        message: "Scan WHY submission received successfully"
+      });
+    } catch (error) {
+      console.error("Error creating scan WHY submission:", error);
+      res.status(500).json({ message: "Server error creating scan WHY submission" });
+    }
+  });
+  
+  // WHY Notification routes
+  apiRouter.get("/users/:userId/why-notifications", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const notifications = await storage.getWhyNotificationsByUserId(userId);
+      
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching WHY notifications:", error);
+      res.status(500).json({ message: "Server error fetching WHY notifications" });
+    }
+  });
+  
+  // Update notification status (e.g., mark as read)
+  apiRouter.patch("/why-notifications/:id", async (req, res) => {
+    try {
+      const notificationId = parseInt(req.params.id);
+      if (isNaN(notificationId)) {
+        return res.status(400).json({ message: "Invalid notification ID" });
+      }
+      
+      const { status } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+      
+      const now = new Date();
+      const updatedNotification = await storage.updateWhyNotificationStatus(
+        notificationId,
+        status,
+        status === "SENT" ? now : undefined,
+        status === "READ" ? now : undefined
+      );
+      
+      if (!updatedNotification) {
+        return res.status(404).json({ message: "WHY notification not found" });
+      }
+      
+      res.json(updatedNotification);
+    } catch (error) {
+      console.error("Error updating WHY notification:", error);
+      res.status(500).json({ message: "Server error updating WHY notification" });
+    }
+  });
+
+  // Helper function to decode scan codes (placeholder for actual implementation)
+  function decodeScanCode(code: string) {
+    // In a real implementation, this would decode a QR code or other scan format
+    // For demo purposes, we'll return a simple object
+    return {
+      userId: 1,
+      triggerType: "EMPLOYMENT_VERIFICATION",
+      context: {
+        employerId: 123,
+        position: "Software Developer",
+        requestId: "abc123"
+      }
+    };
+  }
+  
   const httpServer = createServer(app);
   
   return httpServer;
