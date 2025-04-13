@@ -10,6 +10,7 @@ import { WebsiteVerificationService } from "./services/WebsiteVerificationServic
 import { riskAssessmentService } from "./services/RiskAssessmentService";
 import { InclusiveVerificationService } from "./services/InclusiveVerificationService";
 import { AuthService } from "./services/AuthService";
+import { webhookService } from "./services/WebhookService";
 import { z } from "zod";
 import { 
   insertUserSchema, 
@@ -20,9 +21,11 @@ import {
   insertJsonDataUploadSchema,
   insertWhySubmissionSchema,
   insertWhyNotificationSchema,
+  insertWebhookSchema,
   verificationTypes
 } from "@shared/schema";
 import { FinancialVerificationService } from "./services/integrations/FinancialVerificationService";
+import { v4 as uuidv4 } from "uuid";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize services

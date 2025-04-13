@@ -128,6 +128,19 @@ export interface IStorage {
     sentAt?: Date,
     readAt?: Date
   ): Promise<WhyNotification | undefined>;
+  
+  // Webhook system
+  createWebhook(webhook: InsertWebhook): Promise<Webhook>;
+  getWebhook(id: string): Promise<Webhook | undefined>;
+  getWebhooksByUserId(userId: number): Promise<Webhook[]>;
+  updateWebhook(id: string, updates: Partial<Webhook>): Promise<Webhook | undefined>;
+  deleteWebhook(id: string): Promise<boolean>;
+  
+  // Webhook payloads
+  createWebhookPayload(payload: InsertWebhookPayload): Promise<WebhookPayload>;
+  getWebhookPayloadsByWebhookId(webhookId: string): Promise<WebhookPayload[]>;
+  updateWebhookPayloadStatus(id: string, status: string, responseCode?: number, responseBody?: string): Promise<WebhookPayload | undefined>;
+  updateWebhookPayloadNotionId(id: string, notionEntryId: string): Promise<WebhookPayload | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -144,6 +157,8 @@ export class MemStorage implements IStorage {
   private jobApplications: Map<number, JobApplication>;
   private whySubmissions: Map<number, WhySubmission>;
   private whyNotifications: Map<number, WhyNotification>;
+  private webhooks: Map<string, Webhook>;
+  private webhookPayloads: Map<string, WebhookPayload>;
   
   private nextUserId: number;
   private nextVerificationId: number;
@@ -173,6 +188,8 @@ export class MemStorage implements IStorage {
     this.jobApplications = new Map();
     this.whySubmissions = new Map();
     this.whyNotifications = new Map();
+    this.webhooks = new Map();
+    this.webhookPayloads = new Map();
     
     this.nextUserId = 1;
     this.nextVerificationId = 1;
@@ -918,6 +935,97 @@ export class MemStorage implements IStorage {
     };
     this.whyNotifications.set(id, updatedNotification);
     return updatedNotification;
+  }
+
+  // Webhook system
+  async createWebhook(webhook: InsertWebhook): Promise<Webhook> {
+    const now = new Date();
+    const newWebhook: Webhook = {
+      ...webhook,
+      active: webhook.active !== undefined ? webhook.active : true,
+      createdAt: now,
+      updatedAt: now,
+      lastTriggeredAt: null,
+      payload: null
+    };
+    this.webhooks.set(webhook.id, newWebhook);
+    return newWebhook;
+  }
+
+  async getWebhook(id: string): Promise<Webhook | undefined> {
+    return this.webhooks.get(id);
+  }
+
+  async getWebhooksByUserId(userId: number): Promise<Webhook[]> {
+    return Array.from(this.webhooks.values())
+      .filter(webhook => webhook.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Most recent first
+  }
+
+  async updateWebhook(id: string, updates: Partial<Webhook>): Promise<Webhook | undefined> {
+    const webhook = this.webhooks.get(id);
+    if (!webhook) return undefined;
+    
+    const updatedWebhook: Webhook = {
+      ...webhook,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.webhooks.set(id, updatedWebhook);
+    return updatedWebhook;
+  }
+
+  async deleteWebhook(id: string): Promise<boolean> {
+    return this.webhooks.delete(id);
+  }
+  
+  // Webhook payloads
+  async createWebhookPayload(payload: InsertWebhookPayload): Promise<WebhookPayload> {
+    const now = new Date();
+    const newPayload: WebhookPayload = {
+      ...payload,
+      timestamp: now,
+      deliveryStatus: payload.deliveryStatus || 'PENDING'
+    };
+    this.webhookPayloads.set(payload.id, newPayload);
+    return newPayload;
+  }
+
+  async getWebhookPayloadsByWebhookId(webhookId: string): Promise<WebhookPayload[]> {
+    return Array.from(this.webhookPayloads.values())
+      .filter(payload => payload.webhookId === webhookId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()); // Most recent first
+  }
+
+  async updateWebhookPayloadStatus(
+    id: string, 
+    status: string, 
+    responseCode?: number, 
+    responseBody?: string
+  ): Promise<WebhookPayload | undefined> {
+    const payload = this.webhookPayloads.get(id);
+    if (!payload) return undefined;
+    
+    const updatedPayload: WebhookPayload = {
+      ...payload,
+      deliveryStatus: status,
+      responseCode: responseCode !== undefined ? responseCode : payload.responseCode,
+      responseBody: responseBody !== undefined ? responseBody : payload.responseBody
+    };
+    this.webhookPayloads.set(id, updatedPayload);
+    return updatedPayload;
+  }
+
+  async updateWebhookPayloadNotionId(id: string, notionEntryId: string): Promise<WebhookPayload | undefined> {
+    const payload = this.webhookPayloads.get(id);
+    if (!payload) return undefined;
+    
+    const updatedPayload: WebhookPayload = {
+      ...payload,
+      notionEntryId
+    };
+    this.webhookPayloads.set(id, updatedPayload);
+    return updatedPayload;
   }
 }
 
