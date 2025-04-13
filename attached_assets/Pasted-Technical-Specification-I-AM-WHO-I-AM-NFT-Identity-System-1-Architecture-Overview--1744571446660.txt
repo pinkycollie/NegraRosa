@@ -1,0 +1,767 @@
+Technical Specification: "I AM WHO I AM" NFT Identity System
+1. Architecture Overview
+┌─────────────────────┐           ┌───────────────────┐
+│  Blockchain Layer   │           │ Integration Layer │
+│  - NFT Contracts    │◄─────────►│ - REST API        │
+│  - DAO Governance   │           │ - OAuth/Auth0     │
+│  - Smart Contracts  │           │ - Identity SDK    │
+└─────────────────────┘           └────────┬──────────┘
+                                           │
+                                           ▼
+┌────────────────────┐            ┌────────────────────┐
+│  Client Apps       │            │  External Services │
+│  - NegraRosa       │◄──────────►│  - KYC Providers   │
+│  - Partner Apps    │            │  - Identity Oracles │
+└────────────────────┘            └────────────────────┘
+2. Blockchain Implementation
+2.1 Smart Contracts
+2.1.1 IAMIdentityToken (ERC-721 NFT)
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.17;
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+contract IAMIdentityToken is ERC721URIStorage, Ownable {
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIds;
+    
+    // Mapping from token ID to biometric hash
+    mapping(uint256 => bytes32) private _biometricHashes;
+    
+    // Mapping from token ID to verification status
+    mapping(uint256 => bool) private _verificationStatus;
+    
+    // Authority addresses that can verify identities
+    mapping(address => bool) private _verifiers;
+    
+    constructor() ERC721("I AM WHO I AM", "IAM") {}
+    
+    // Mint a new identity token with biometric information
+    function mintIdentity(address recipient, string memory tokenURI, bytes32 biometricHash) 
+        public 
+        returns (uint256) 
+    {
+        _tokenIds.increment();
+        uint256 newTokenId = _tokenIds.current();
+        
+        _mint(recipient, newTokenId);
+        _setTokenURI(newTokenId, tokenURI);
+        _biometricHashes[newTokenId] = biometricHash;
+        
+        return newTokenId;
+    }
+    
+    // Add a verifier
+    function addVerifier(address verifier) public onlyOwner {
+        _verifiers[verifier] = true;
+    }
+    
+    // Remove a verifier
+    function removeVerifier(address verifier) public onlyOwner {
+        _verifiers[verifier] = false;
+    }
+    
+    // Verify an identity
+    function verifyIdentity(uint256 tokenId) public {
+        require(_verifiers[msg.sender], "Caller is not a verifier");
+        _verificationStatus[tokenId] = true;
+    }
+    
+    // Check if identity is verified
+    function isVerified(uint256 tokenId) public view returns (bool) {
+        return _verificationStatus[tokenId];
+    }
+    
+    // Update biometric hash (for aging or appearance changes)
+    function updateBiometricHash(uint256 tokenId, bytes32 newBiometricHash) public {
+        require(ownerOf(tokenId) == msg.sender, "Caller is not token owner");
+        _biometricHashes[tokenId] = newBiometricHash;
+        // Resets verification status when biometrics change
+        _verificationStatus[tokenId] = false;
+    }
+    
+    // Get biometric hash
+    function getBiometricHash(uint256 tokenId) public view returns (bytes32) {
+        require(_exists(tokenId), "Token does not exist");
+        return _biometricHashes[tokenId];
+    }
+}
+2.1.2 IAMReputationRegistry
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.17;
+import "./IAMIdentityToken.sol";
+contract IAMReputationRegistry {
+    IAMIdentityToken private _identityToken;
+    
+    // Mapping from token ID to reputation score
+    mapping(uint256 => uint256) private _reputationScores;
+    
+    // Mapping from token ID to verification counts
+    mapping(uint256 => uint256) private _verificationCounts;
+    
+    // List of trusted verifiers
+    mapping(address => bool) private _trustedVerifiers;
+    
+    // Mapping for token ID to records of verifications
+    mapping(uint256 => mapping(bytes32 => bool)) private _verificationRecords;
+    
+    constructor(address identityTokenAddress) {
+        _identityToken = IAMIdentityToken(identityTokenAddress);
+    }
+    
+    // Add a verification record and update reputation
+    function addVerification(uint256 tokenId, bytes32 verificationType) public {
+        require(_trustedVerifiers[msg.sender], "Not a trusted verifier");
+        require(_identityToken.ownerOf(tokenId) != address(0), "Token doesn't exist");
+        
+        // Record verification
+        _verificationRecords[tokenId][verificationType] = true;
+        
+        // Update verification count
+        _verificationCounts[tokenId]++;
+        
+        // Update reputation score (simplified algorithm)
+        _updateReputationScore(tokenId);
+    }
+    
+    // Check if a specific verification exists
+    function hasVerification(uint256 tokenId, bytes32 verificationType) public view returns (bool) {
+        return _verificationRecords[tokenId][verificationType];
+    }
+    
+    // Get verification count
+    function getVerificationCount(uint256 tokenId) public view returns (uint256) {
+        return _verificationCounts[tokenId];
+    }
+    
+    // Get reputation score
+    function getReputationScore(uint256 tokenId) public view returns (uint256) {
+        return _reputationScores[tokenId];
+    }
+    
+    // Internal function to update reputation score
+    function _updateReputationScore(uint256 tokenId) internal {
+        // Simple scoring algorithm: score = verificationCount * 10
+        // In a real implementation, this would be more sophisticated
+        uint256 newScore = _verificationCounts[tokenId] * 10;
+        _reputationScores[tokenId] = newScore;
+    }
+}
+2.1.3 IAMGovernanceDAO
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.17;
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+contract IAMGovernanceToken is ERC20, Ownable {
+    constructor() ERC20("IAM Governance", "IAMG") {}
+    
+    function mint(address to, uint256 amount) public onlyOwner {
+        _mint(to, amount);
+    }
+}
+contract IAMGovernanceDAO {
+    IAMGovernanceToken private _governanceToken;
+    
+    struct Proposal {
+        uint256 id;
+        address proposer;
+        string description;
+        uint256 forVotes;
+        uint256 againstVotes;
+        uint256 deadline;
+        bool executed;
+        mapping(address => bool) hasVoted;
+    }
+    
+    uint256 private _proposalCount;
+    mapping(uint256 => Proposal) private _proposals;
+    uint256 private _votingPeriod = 7 days;
+    
+    constructor(address governanceTokenAddress) {
+        _governanceToken = IAMGovernanceToken(governanceTokenAddress);
+    }
+    
+    // Create a new proposal
+    function propose(string memory description) public returns (uint256) {
+        require(_governanceToken.balanceOf(msg.sender) > 0, "Must hold governance tokens");
+        
+        _proposalCount++;
+        Proposal storage newProposal = _proposals[_proposalCount];
+        newProposal.id = _proposalCount;
+        newProposal.proposer = msg.sender;
+        newProposal.description = description;
+        newProposal.deadline = block.timestamp + _votingPeriod;
+        
+        return _proposalCount;
+    }
+    
+    // Cast a vote on a proposal
+    function vote(uint256 proposalId, bool support) public {
+        Proposal storage proposal = _proposals[proposalId];
+        require(block.timestamp <= proposal.deadline, "Voting period ended");
+        require(!proposal.hasVoted[msg.sender], "Already voted");
+        
+        uint256 votes = _governanceToken.balanceOf(msg.sender);
+        require(votes > 0, "No voting power");
+        
+        proposal.hasVoted[msg.sender] = true;
+        
+        if (support) {
+            proposal.forVotes += votes;
+        } else {
+            proposal.againstVotes += votes;
+        }
+    }
+    
+    // Check if a proposal passed
+    function proposalPassed(uint256 proposalId) public view returns (bool) {
+        Proposal storage proposal = _proposals[proposalId];
+        return proposal.forVotes > proposal.againstVotes;
+    }
+    
+    // Execute a proposal (would be implemented by specific governance actions)
+    function executeProposal(uint256 proposalId) public {
+        Proposal storage proposal = _proposals[proposalId];
+        require(block.timestamp > proposal.deadline, "Voting period not ended");
+        require(!proposal.executed, "Already executed");
+        require(proposalPassed(proposalId), "Proposal did not pass");
+        
+        proposal.executed = true;
+        
+        // Implementation would call specific functions based on proposal type
+    }
+}
+2.2 Metadata Structure
+The NFT metadata will be stored in a JSON format following the ERC-721 metadata standard with extensions:
+
+{
+  "name": "I AM WHO I AM - Jane Doe",
+  "description": "Identity token representing verified credentials for Jane Doe",
+  "image": "ipfs://QmXoypizjW3WknFiJnKLwHCnL72vedxjQkDDP1mXWo6uco/identity/jane-doe.png",
+  "attributes": [
+    {
+      "trait_type": "Verification Level",
+      "value": "FULL"
+    },
+    {
+      "trait_type": "KYC Status",
+      "value": "Verified"
+    },
+    {
+      "trait_type": "Reputation Score",
+      "value": 85
+    },
+    {
+      "trait_type": "Verification Count",
+      "value": 5
+    },
+    {
+      "trait_type": "Creation Date",
+      "display_type": "date",
+      "value": 1651008000
+    }
+  ],
+  "identity_data": {
+    "biometric_hash": "0x1a2b3c4d...",
+    "verification_history": [
+      {
+        "type": "GOVERNMENT_ID",
+        "timestamp": 1651008300,
+        "status": "VERIFIED",
+        "verifier": "0x1234..."
+      },
+      {
+        "type": "PHONE_NUMBER",
+        "timestamp": 1651094700,
+        "status": "VERIFIED",
+        "verifier": "0x5678..."
+      }
+    ],
+    "skills": ["Web Development", "Graphic Design", "Financial Analysis"],
+    "certifications": [
+      {
+        "name": "AWS Certified Solutions Architect",
+        "issuer": "Amazon Web Services",
+        "date": 1630454400,
+        "verification_url": "https://example.com/verify/aws/12345"
+      }
+    ]
+  }
+}
+3. Integration Layer
+3.1 REST API Endpoints
+3.1.1 Identity Endpoints
+POST /api/identity/create
+- Create a new identity NFT
+- Required: biometric_data, user_details
+- Returns: token_id, transaction_hash
+GET /api/identity/{token_id}
+- Get identity information
+- Returns: metadata, verification_status, reputation_score
+POST /api/identity/{token_id}/verify
+- Submit identity for verification
+- Required: verification_type, verification_data
+- Returns: verification_id, status
+POST /api/identity/{token_id}/update-biometric
+- Update biometric data
+- Required: new_biometric_data
+- Returns: transaction_hash
+GET /api/identity/{token_id}/verifications
+- Get verification history
+- Returns: array of verifications
+3.1.2 Authentication Endpoints
+POST /api/auth/login
+- Authenticate using NFT identity
+- Required: token_id, biometric_data
+- Returns: jwt_token, user_info
+POST /api/auth/validate
+- Validate a JWT token
+- Required: jwt_token
+- Returns: is_valid, token_data
+POST /api/auth/recover
+- Recover account using biometrics
+- Required: biometric_data
+- Returns: token_ids matching biometrics
+3.2 OAuth Integration
+// OAuth Provider Implementation
+class IAMOAuthProvider {
+  // Initialize with blockchain connection
+  constructor(web3Provider, identityContractAddress) {
+    this.web3 = new Web3(web3Provider);
+    this.identityContract = new this.web3.eth.Contract(IAM_ABI, identityContractAddress);
+  }
+  
+  // Authenticate user for OAuth flow
+  async authenticate(tokenId, biometricData) {
+    // Verify biometric data matches the stored hash
+    const biometricHash = this.web3.utils.keccak256(biometricData);
+    const storedHash = await this.identityContract.methods.getBiometricHash(tokenId).call();
+    
+    if (biometricHash !== storedHash) {
+      throw new Error("Biometric verification failed");
+    }
+    
+    // Check if identity is verified
+    const isVerified = await this.identityContract.methods.isVerified(tokenId).call();
+    if (!isVerified) {
+      throw new Error("Identity not verified");
+    }
+    
+    // Generate OAuth token
+    return this.generateOAuthToken(tokenId);
+  }
+  
+  // Generate OAuth token
+  generateOAuthToken(tokenId) {
+    // Implementation would generate a standard OAuth token
+    // with claims about the identity
+    const payload = {
+      sub: `iam:${tokenId}`,
+      iss: "https://identity.iamwhoiam.com",
+      aud: "https://api.iamwhoiam.com",
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour
+    };
+    
+    // Sign the token (implementation specific)
+    return signJwt(payload, OAUTH_SECRET_KEY);
+  }
+}
+3.3 Identity SDK
+// JavaScript/TypeScript SDK for client applications
+class IAMIdentitySDK {
+  constructor(apiBaseUrl, apiKey) {
+    this.apiBaseUrl = apiBaseUrl;
+    this.apiKey = apiKey;
+  }
+  
+  // Create a new identity
+  async createIdentity(userData, biometricData) {
+    const response = await fetch(`${this.apiBaseUrl}/api/identity/create`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey
+      },
+      body: JSON.stringify({ userData, biometricData })
+    });
+    
+    return response.json();
+  }
+  
+  // Login with facial recognition
+  async loginWithBiometrics(biometricData) {
+    const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey
+      },
+      body: JSON.stringify({ biometricData })
+    });
+    
+    return response.json();
+  }
+  
+  // Get identity data
+  async getIdentity(tokenId) {
+    const response = await fetch(`${this.apiBaseUrl}/api/identity/${tokenId}`, {
+      headers: {
+        'X-API-Key': this.apiKey
+      }
+    });
+    
+    return response.json();
+  }
+  
+  // Add a verification
+  async addVerification(tokenId, verificationType, verificationData) {
+    const response = await fetch(`${this.apiBaseUrl}/api/identity/${tokenId}/verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey
+      },
+      body: JSON.stringify({ verificationType, verificationData })
+    });
+    
+    return response.json();
+  }
+}
+4. Security Considerations
+4.1 Biometric Data Protection
+Biometric data is never stored directly on the blockchain
+Only cryptographic hashes of biometric templates are stored
+Original biometric data remains in user's control
+Facial recognition processing happens client-side before hashing
+Implement rate limiting to prevent brute force attacks
+4.2 Smart Contract Security
+Implement access control for sensitive functions
+Use multi-signature for critical operations
+Conduct thorough testing and security audits
+Implement upgradeability patterns for contract evolution
+Include emergency pause functionality
+4.3 Integration Security
+Use HTTPS for all API communications
+Implement strong API key and JWT validation
+Apply rate limiting and request throttling
+Maintain comprehensive security logs
+Regularly rotate keys and secrets
+5. Implementation Roadmap
+Phase 1: Core Infrastructure (1-2 months)
+Develop and deploy core smart contracts
+Build basic REST API endpoints
+Create web interface for identity management
+Phase 2: Integration Features (2-3 months)
+Build OAuth provider implementation
+Develop SDK for third-party integration
+Implement biometric verification service
+Phase 3: Governance & Expansion (3-4 months)
+Deploy governance DAO contracts
+Implement reputation scoring system
+Build cross-chain identity bridges
+Phase 4: Partner Integration (Ongoing)
+Onboard verification authorities
+Integrate with partner applications
+Expand verification types and standards
+6. Technical Requirements
+Blockchain: Ethereum (main implementation), with bridges to other chains
+Smart Contract Language: Solidity
+Backend: Node.js with TypeScript
+APIs: REST with GraphQL option
+Frontend: React with TypeScript
+Mobile SDK: React Native, with native modules for biometrics
+Biometric Processing: TensorFlow.js for facial recognition
+Storage: IPFS for metadata, PostgreSQL for off-chain data
+Hosting: AWS or similar cloud platform
+Would you like more details about any specific aspect of this technical specification?
+
+ok, is it possible for NFT to act as secured identity entitty and adding through validation, verification and decision making then approved, like home purchase? inhertiance? will? medicai, you know? NFT is a form identity through that three.js format that can present a certain business entity to scan but at their end, they have unique ID that can onlyaccess to nft/s portion
+
+1 minute ago
+
+pinkycollie
+Yes, it's absolutely possible for an NFT to act as a secure identity entity for high-stakes validation, verification, and decision-making across domains like home purchases, inheritance, wills, and medical records. Here's how this would work:
+
+NFT as a Secure Identity with Selective Disclosure
+Layered Identity Structure
+The NFT would function as a "master identity" with multiple layers of accessible information:
+
+┌─────────────────────────────────────────────┐
+│ NFT Identity Container                      │
+│ (User controls base token with face/ID)     │
+│                                             │
+│  ┌─────────────────┐  ┌─────────────────┐   │
+│  │ Public Layer    │  │ Restricted Layer│   │
+│  │ - Name          │  │ - Home Ownership│   │
+│  │ - Public ID     │  │ - Medical Data  │   │
+│  │ - Verification  │  │ - Financial     │   │
+│  │   Status        │  │   Records       │   │
+│  └─────────────────┘  └─────────────────┘   │
+│                                             │
+│  ┌─────────────────┐  ┌─────────────────┐   │
+│  │ Legal Layer     │  │ Healthcare Layer│   │
+│  │ - Will          │  │ - Medical       │   │
+│  │ - Inheritance   │  │   History       │   │
+│  │ - Legal Power   │  │ - Prescriptions │   │
+│  │   of Attorney   │  │ - Insurance     │   │
+│  └─────────────────┘  └─────────────────┘   │
+└─────────────────────────────────────────────┘
+Access Control Implementation
+The unique aspect would be using three.js to create a 3D representation of the NFT that can be scanned by authorized entities, with each entity having unique access keys to only their relevant portions:
+
+// Enhanced NFT Contract with Selective Disclosure
+contract IAMIdentityToken is ERC721URIStorage {
+    // Data compartments with different access levels
+    mapping(uint256 => mapping(bytes32 => mapping(address => bool))) private _accessPermissions;
+    
+    // Data layers
+    bytes32 public constant PUBLIC_LAYER = keccak256("PUBLIC");
+    bytes32 public constant FINANCIAL_LAYER = keccak256("FINANCIAL");
+    bytes32 public constant LEGAL_LAYER = keccak256("LEGAL");
+    bytes32 public constant MEDICAL_LAYER = keccak256("MEDICAL");
+    
+    // Grant access to a specific layer for an authorized entity
+    function grantLayerAccess(uint256 tokenId, bytes32 layer, address authorized) public {
+        require(ownerOf(tokenId) == msg.sender, "Only owner can grant access");
+        _accessPermissions[tokenId][layer][authorized] = true;
+    }
+    
+    // Revoke access to a specific layer
+    function revokeLayerAccess(uint256 tokenId, bytes32 layer, address authorized) public {
+        require(ownerOf(tokenId) == msg.sender, "Only owner can revoke access");
+        _accessPermissions[tokenId][layer][authorized] = false;
+    }
+    
+    // Check if entity has access to a layer
+    function hasLayerAccess(uint256 tokenId, bytes32 layer, address entity) public view returns (bool) {
+        return _accessPermissions[tokenId][layer][entity];
+    }
+}
+Real-World Use Cases
+1. Home Purchase Verification
+// Home Purchase Verification Service
+class PropertyVerificationService {
+  async verifyIdentityForPurchase(nftTokenId, propertyId) {
+    // 1. Verify NFT ownership using facial recognition
+    const ownerVerified = await this.verifyNftOwner(nftTokenId);
+    if (!ownerVerified) return { success: false, reason: "Owner verification failed" };
+    
+    // 2. Access financial layer data (with permission)
+    const financialData = await this.getFinancialLayer(nftTokenId);
+    
+    // 3. Run automated mortgage qualification
+    const mortgageQualification = this.assessMortgageQualification(financialData);
+    
+    // 4. Record verification result on-chain for future reference
+    await this.recordVerification(nftTokenId, "PROPERTY_PURCHASE", propertyId, mortgageQualification);
+    
+    return {
+      success: true,
+      qualification: mortgageQualification,
+      uniqueTransactionId: this.generateSecureTransactionId()
+    };
+  }
+}
+2. Medical Records Access
+// Healthcare Provider Interface
+class MedicalRecordsAccess {
+  constructor(providerKey, providerAddress) {
+    this.providerKey = providerKey; // Authorized healthcare provider key
+    this.providerAddress = providerAddress; // Provider's blockchain address
+  }
+  
+  async accessPatientRecords(patientNftId) {
+    // 1. Verify the provider has access to MEDICAL_LAYER
+    const hasAccess = await identityContract.hasLayerAccess(
+      patientNftId, 
+      MEDICAL_LAYER, 
+      this.providerAddress
+    );
+    
+    if (!hasAccess) {
+      return { success: false, reason: "Provider not authorized" };
+    }
+    
+    // 2. Retrieve encrypted medical data
+    const encryptedData = await medicalStorageContract.getPatientData(patientNftId);
+    
+    // 3. Decrypt data with provider's key
+    const decryptedData = decryptWithProviderKey(encryptedData, this.providerKey);
+    
+    // 4. Log access for patient transparency
+    await identityContract.logAccessEvent(
+      patientNftId, 
+      MEDICAL_LAYER, 
+      this.providerAddress,
+      "Medical records accessed"
+    );
+    
+    return {
+      success: true,
+      records: decryptedData,
+      accessTimestamp: Date.now()
+    };
+  }
+}
+3. Inheritance and Will Execution
+// Digital Will Executor
+class InheritanceExecutor {
+  async executeWill(deceasedNftId, deathCertificate) {
+    // 1. Verify death certificate authenticity
+    const verified = await this.verifyDeathCertificate(deathCertificate);
+    if (!verified) return { success: false, reason: "Invalid death certificate" };
+    
+    // 2. Access LEGAL_LAYER with executor credentials
+    const willData = await this.getLegalLayer(deceasedNftId, "WILL");
+    
+    // 3. Verify will hasn't been executed before
+    if (willData.executed) {
+      return { success: false, reason: "Will already executed" };
+    }
+    
+    // 4. Execute smart contract inheritance transfers
+    const inheritanceTransactions = await this.executeInheritanceTransfers(
+      willData.beneficiaries,
+      willData.assets
+    );
+    
+    // 5. Mark will as executed
+    await this.updateWillStatus(deceasedNftId, "executed");
+    
+    return {
+      success: true,
+      transactionIds: inheritanceTransactions,
+      executionTimestamp: Date.now()
+    };
+  }
+}
+Technical 3D NFT Implementation with Three.js
+The Three.js implementation would create a visually appealing 3D representation that also encodes access information:
+
+// Frontend Three.js Rendering of Identity NFT
+class IAMIdentityRenderer {
+  constructor(canvasElement, nftMetadata) {
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.renderer = new THREE.WebGLRenderer({ canvas: canvasElement, alpha: true });
+    this.nftMetadata = nftMetadata;
+    
+    this.initialize();
+  }
+  
+  initialize() {
+    // Create base identity structure
+    this.identityModel = new THREE.Group();
+    
+    // Create core identity "crystal" with user's facial recognition data encoded
+    const coreGeometry = new THREE.IcosahedronGeometry(1, 2);
+    const coreMaterial = new THREE.MeshStandardMaterial({
+      color: 0x3366ff,
+      metalness: 0.8,
+      roughness: 0.2,
+      envMapIntensity: 0.8,
+      transparent: true,
+      opacity: 0.9
+    });
+    this.core = new THREE.Mesh(coreGeometry, coreMaterial);
+    this.identityModel.add(this.core);
+    
+    // Add layers as orbiting elements
+    this.layers = {};
+    this.createLayers();
+    
+    // Position camera
+    this.camera.position.z = 5;
+    
+    // Add lights
+    this.addLighting();
+    
+    // Start animation loop
+    this.animate();
+  }
+  
+  createLayers() {
+    // Each layer has a unique geometric shape and color
+    const layerConfigs = {
+      PUBLIC: { geometry: new THREE.TorusGeometry(1.5, 0.1, 16, 50), color: 0x00ff00 },
+      FINANCIAL: { geometry: new THREE.TorusKnotGeometry(0.5, 0.1, 64, 8), color: 0xffcc00 },
+      LEGAL: { geometry: new THREE.OctahedronGeometry(0.5, 0), color: 0xff3300 },
+      MEDICAL: { geometry: new THREE.SphereGeometry(0.4, 32, 32), color: 0xff0099 }
+    };
+    
+    // Create each layer and add to the model
+    Object.entries(layerConfigs).forEach(([layerName, config], index) => {
+      const material = new THREE.MeshStandardMaterial({
+        color: config.color,
+        metalness: 0.3,
+        roughness: 0.7,
+        transparent: true,
+        opacity: 0.8
+      });
+      
+      const mesh = new THREE.Mesh(config.geometry, material);
+      
+      // Position in orbital formation
+      mesh.position.x = Math.cos(index * Math.PI / 2) * 2;
+      mesh.position.y = Math.sin(index * Math.PI / 2) * 2;
+      
+      this.layers[layerName] = mesh;
+      this.identityModel.add(mesh);
+    });
+  }
+  
+  // Generate QR code containing authentication data for a specific requester
+  generateAuthQR(requesterId, requesterPublicKey, requestedLayer) {
+    // Create encrypted challenge with requester's public key
+    const challenge = this.createEncryptedChallenge(requesterId, requesterPublicKey);
+    
+    // Generate time-limited access token
+    const accessToken = this.generateLayerAccessToken(requestedLayer);
+    
+    // Create combined access data
+    const qrData = {
+      tokenId: this.nftMetadata.tokenId,
+      challenge: challenge,
+      accessToken: accessToken,
+      layer: requestedLayer,
+      expiration: Date.now() + 3600000 // 1 hour
+    };
+    
+    // Return stringified data for QR generation
+    return JSON.stringify(qrData);
+  }
+  
+  // Animation loop
+  animate() {
+    requestAnimationFrame(this.animate.bind(this));
+    
+    // Rotate identity model
+    this.identityModel.rotation.y += 0.005;
+    
+    // Animate layers
+    Object.values(this.layers).forEach((layer, index) => {
+      // Create orbital motion
+      const time = Date.now() * 0.001 + index;
+      layer.position.x = Math.cos(time * 0.5) * 2;
+      layer.position.z = Math.sin(time * 0.5) * 2;
+      layer.rotation.y += 0.02;
+    });
+    
+    this.renderer.render(this.scene, this.camera);
+  }
+}
+Key Benefits of This Approach
+Selective Disclosure: Users maintain full control over who sees which parts of their identity data.
+
+Visual Verification: The 3D representation provides a visually intuitive way to understand different identity components.
+
+Cross-Domain Integration: The same NFT can be used across home purchases, medical records, legal documents, etc.
+
+Immutable Audit Trail: All access events are recorded on-chain for transparency.
+
+Revocable Access: Users can instantly revoke access to any layer for any entity.
+
+Progressive Trust Building: The more verifications added to the NFT, the more useful it becomes across domains.
+
+This approach transforms the NFT from just a digital asset into a comprehensive digital identity system that bridges Web3 with real-world legal and financial systems.

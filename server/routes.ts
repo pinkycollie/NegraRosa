@@ -9,6 +9,7 @@ import { ErrorsAndOmissionsManager } from "./services/ErrorsAndOmissionsManager"
 import { WebsiteVerificationService } from "./services/WebsiteVerificationService";
 import { riskAssessmentService } from "./services/RiskAssessmentService";
 import { InclusiveVerificationService } from "./services/InclusiveVerificationService";
+import { AuthService } from "./services/AuthService";
 import { z } from "zod";
 import { 
   insertUserSchema, 
@@ -31,6 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const inclusiveVerificationService = new InclusiveVerificationService(
     process.env.N8N_VERIFICATION_WEBHOOK
   );
+  const authService = new AuthService();
   
   // Create API router
   const apiRouter = Router();
