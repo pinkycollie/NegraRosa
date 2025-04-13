@@ -12,6 +12,8 @@ import {
   JobApplication, InsertJobApplication,
   WhySubmission, InsertWhySubmission,
   WhyNotification, InsertWhyNotification,
+  Webhook, InsertWebhook,
+  WebhookPayload, InsertWebhookPayload,
   VerificationType
 } from "@shared/schema";
 

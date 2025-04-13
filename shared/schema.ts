@@ -441,3 +441,55 @@ export const insertWhyNotificationSchema = createInsertSchema(whyNotifications).
 
 export type InsertWhyNotification = z.infer<typeof insertWhyNotificationSchema>;
 export type WhyNotification = typeof whyNotifications.$inferSelect;
+
+// Webhook system
+export const webhooks = pgTable("webhooks", {
+  id: text("id").primaryKey(), // UUID
+  userId: integer("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  url: text("url").notNull(),
+  event: text("event").notNull(), // verification.created, transaction.processed, why.submitted, etc.
+  active: boolean("active").notNull().default(true),
+  lastTriggeredAt: timestamp("last_triggered_at"),
+  payload: jsonb("payload"), // Last payload sent
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertWebhookSchema = createInsertSchema(webhooks).pick({
+  id: true,
+  userId: true,
+  name: true,
+  url: true,
+  event: true,
+  active: true,
+});
+
+export const webhookPayloads = pgTable("webhook_payloads", {
+  id: text("id").primaryKey(), // UUID
+  webhookId: text("webhook_id").notNull().references(() => webhooks.id),
+  event: text("event").notNull(),
+  data: jsonb("data").notNull(),
+  deliveryStatus: text("delivery_status").notNull().default("PENDING"), // PENDING, DELIVERED, FAILED
+  responseCode: integer("response_code"),
+  responseBody: text("response_body"),
+  notionEntryId: text("notion_entry_id"), // ID of the corresponding Notion database entry
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const insertWebhookPayloadSchema = createInsertSchema(webhookPayloads).pick({
+  id: true,
+  webhookId: true,
+  event: true,
+  data: true,
+  deliveryStatus: true,
+  responseCode: true,
+  responseBody: true,
+  notionEntryId: true,
+});
+
+export type InsertWebhook = z.infer<typeof insertWebhookSchema>;
+export type Webhook = typeof webhooks.$inferSelect;
+
+export type InsertWebhookPayload = z.infer<typeof insertWebhookPayloadSchema>;
+export type WebhookPayload = typeof webhookPayloads.$inferSelect;
