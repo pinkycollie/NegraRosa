@@ -12,6 +12,8 @@ import {
   insertVerificationSchema, 
   insertTransactionSchema, 
   insertClaimSchema,
+  insertEntrepreneurProfileSchema,
+  insertJsonDataUploadSchema,
   verificationTypes
 } from "@shared/schema";
 
@@ -346,6 +348,192 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching claims:", error);
       res.status(500).json({ message: "Server error fetching claims" });
+    }
+  });
+
+  // Entrepreneur profile endpoints
+  apiRouter.post("/users/:userId/entrepreneur-profile", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Check if profile already exists
+      const existingProfile = await storage.getEntrepreneurProfileByUserId(userId);
+      if (existingProfile) {
+        return res.status(409).json({ message: "Entrepreneur profile already exists for this user" });
+      }
+      
+      // Validate profile data
+      const profileData = {
+        ...req.body,
+        userId
+      };
+      
+      const validatedData = insertEntrepreneurProfileSchema.parse(profileData);
+      
+      // Create profile
+      const profile = await storage.createEntrepreneurProfile(validatedData);
+      
+      res.status(201).json(profile);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid profile data", errors: error.errors });
+      }
+      console.error("Error creating entrepreneur profile:", error);
+      res.status(500).json({ message: "Server error creating entrepreneur profile" });
+    }
+  });
+  
+  apiRouter.get("/users/:userId/entrepreneur-profile", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const profile = await storage.getEntrepreneurProfileByUserId(userId);
+      if (!profile) {
+        return res.status(404).json({ message: "Entrepreneur profile not found" });
+      }
+      
+      res.json(profile);
+    } catch (error) {
+      console.error("Error fetching entrepreneur profile:", error);
+      res.status(500).json({ message: "Server error fetching entrepreneur profile" });
+    }
+  });
+  
+  apiRouter.patch("/users/:userId/entrepreneur-profile", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Get existing profile
+      const profile = await storage.getEntrepreneurProfileByUserId(userId);
+      if (!profile) {
+        return res.status(404).json({ message: "Entrepreneur profile not found" });
+      }
+      
+      // Update profile
+      const updatedProfile = await storage.updateEntrepreneurProfile(profile.id, req.body);
+      
+      res.json(updatedProfile);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid profile data", errors: error.errors });
+      }
+      console.error("Error updating entrepreneur profile:", error);
+      res.status(500).json({ message: "Server error updating entrepreneur profile" });
+    }
+  });
+  
+  // JSON data upload endpoints
+  apiRouter.post("/users/:userId/json-data-uploads", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Validate upload data
+      const uploadData = {
+        ...req.body,
+        userId,
+        status: "UPLOADED" // Initial status
+      };
+      
+      // Check if JSON data is valid
+      try {
+        // If it's a string, parse it to ensure it's valid JSON
+        if (typeof uploadData.data === 'string') {
+          JSON.parse(uploadData.data);
+          // Convert the string to an object
+          uploadData.data = JSON.parse(uploadData.data);
+        } else if (typeof uploadData.data !== 'object') {
+          return res.status(400).json({ message: "Data must be a valid JSON object" });
+        }
+      } catch (jsonError) {
+        return res.status(400).json({ message: "Invalid JSON data format" });
+      }
+      
+      const validatedData = insertJsonDataUploadSchema.parse(uploadData);
+      
+      // Create upload
+      const upload = await storage.createJsonDataUpload(validatedData);
+      
+      res.status(201).json(upload);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid JSON data upload", errors: error.errors });
+      }
+      console.error("Error creating JSON data upload:", error);
+      res.status(500).json({ message: "Server error creating JSON data upload" });
+    }
+  });
+  
+  apiRouter.get("/users/:userId/json-data-uploads", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const uploads = await storage.getJsonDataUploadsByUserId(userId);
+      
+      res.json(uploads);
+    } catch (error) {
+      console.error("Error fetching JSON data uploads:", error);
+      res.status(500).json({ message: "Server error fetching JSON data uploads" });
+    }
+  });
+  
+  apiRouter.get("/json-data-uploads/:id", async (req, res) => {
+    try {
+      const uploadId = parseInt(req.params.id);
+      if (isNaN(uploadId)) {
+        return res.status(400).json({ message: "Invalid upload ID" });
+      }
+      
+      const upload = await storage.getJsonDataUpload(uploadId);
+      if (!upload) {
+        return res.status(404).json({ message: "JSON data upload not found" });
+      }
+      
+      res.json(upload);
+    } catch (error) {
+      console.error("Error fetching JSON data upload:", error);
+      res.status(500).json({ message: "Server error fetching JSON data upload" });
+    }
+  });
+  
+  apiRouter.patch("/json-data-uploads/:id", async (req, res) => {
+    try {
+      const uploadId = parseInt(req.params.id);
+      if (isNaN(uploadId)) {
+        return res.status(400).json({ message: "Invalid upload ID" });
+      }
+      
+      const upload = await storage.getJsonDataUpload(uploadId);
+      if (!upload) {
+        return res.status(404).json({ message: "JSON data upload not found" });
+      }
+      
+      const { status, aiInsights } = req.body;
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+      
+      // Update upload
+      const updatedUpload = await storage.updateJsonDataUpload(uploadId, status, aiInsights);
+      
+      res.json(updatedUpload);
+    } catch (error) {
+      console.error("Error updating JSON data upload:", error);
+      res.status(500).json({ message: "Server error updating JSON data upload" });
     }
   });
   
