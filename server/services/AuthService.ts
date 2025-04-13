@@ -198,4 +198,75 @@ export class AuthService {
     (req as any).userId = result.userId;
     next();
   }
+
+  /**
+   * Generate a recovery code for account recovery
+   */
+  generateRecoveryCode(userId: number): string {
+    const code = randomBytes(16).toString('hex');
+    
+    // In a production environment, this would be stored in a database
+    // with an expiration time and associated with the user's account
+    // For demo purposes, we'll just log it
+    console.log(`Generated recovery code for user ${userId}: ${code}`);
+    
+    return code;
+  }
+
+  /**
+   * Recover account with recovery code and new biometric data
+   */
+  async recoverAccount(recoveryCode: string, newBiometricData: string): Promise<{ success: boolean; token?: string; userId?: number; message?: string }> {
+    try {
+      // In a real implementation, this would validate the recovery code against a database
+      // For demo purposes, we'll accept a test code
+      if (recoveryCode !== "test-recovery-code") {
+        return { 
+          success: false, 
+          message: "Invalid recovery code. Please check the code and try again." 
+        };
+      }
+      
+      // For demo purposes, we'll use a fixed userId
+      const userId = 1;
+      
+      // Update biometric data
+      const updated = await this.updateBiometricData(userId, newBiometricData);
+      
+      if (!updated) {
+        return { 
+          success: false, 
+          message: "Failed to update biometric data. User not found." 
+        };
+      }
+      
+      // Generate JWT for authenticated user
+      const jwtToken = this.generateJwt(userId);
+      
+      return {
+        success: true,
+        token: jwtToken,
+        userId
+      };
+    } catch (error) {
+      console.error("Account recovery error:", error);
+      return { 
+        success: false, 
+        message: "Recovery failed due to system error." 
+      };
+    }
+  }
+
+  /**
+   * Get available verification methods
+   */
+  async getAvailableVerificationMethods(): Promise<string[]> {
+    // These would be dynamically determined based on system capabilities
+    // and user context in a production environment
+    return [
+      "biometric", 
+      "nft", 
+      "recovery_code"
+    ];
+  }
 }

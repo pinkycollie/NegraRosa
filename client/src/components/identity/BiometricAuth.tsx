@@ -1,172 +1,102 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Camera, Check, FingerprintIcon, RefreshCw, ShieldCheck } from "lucide-react";
+import { AlertCircle, Camera, Key, RefreshCw, Shield } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { NftAuth } from './NftAuth';
 
-interface BiometricAuthProps {
-  onAuthSuccess?: (data: { token: string; userId: number }) => void;
-  mode: 'register' | 'login' | 'recover';
+export interface BiometricAuthProps {
+  onAuthSuccess: (data: { token: string; userId: number }) => void;
+  onSwitchToRecovery: () => void;
 }
 
-export function BiometricAuth({ onAuthSuccess, mode }: BiometricAuthProps) {
+export function BiometricAuth({ onAuthSuccess, onSwitchToRecovery }: BiometricAuthProps) {
   const { toast } = useToast();
-  const [capturing, setCapturing] = useState(false);
-  const [faceData, setFaceData] = useState<string | null>(null);
-  const [processingAuth, setProcessingAuth] = useState(false);
+  const [biometricData, setBiometricData] = useState<string>('');
+  const [isCapturing, setIsCapturing] = useState<boolean>(false);
+  const [showCamera, setShowCamera] = useState<boolean>(true);
+  const [isAuthenticating, setIsAuthenticating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  // Start camera
-  const startCamera = async () => {
-    try {
-      setError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: "user",
-          width: { ideal: 640 },
-          height: { ideal: 480 } 
-        } 
+  const [showNftAuth, setShowNftAuth] = useState<boolean>(false);
+  
+  const handleCapture = () => {
+    // In a real implementation, this would access the device camera
+    // and capture biometric data (face scan)
+    setIsCapturing(true);
+    
+    // Simulate capture delay
+    setTimeout(() => {
+      // This would be actual biometric data in production
+      setBiometricData(`biometric_data_${Date.now()}`);
+      setIsCapturing(false);
+      setShowCamera(false);
+      
+      toast({
+        title: 'Face Captured',
+        description: 'Your face has been captured for authentication.',
+        variant: 'default',
       });
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-      }
-      
-      setCapturing(true);
-    } catch (err) {
-      setError("Unable to access camera. Please ensure you've granted camera permissions.");
-      console.error("Camera access error:", err);
-    }
+    }, 2000);
   };
 
-  // Stop camera
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    setCapturing(false);
-  };
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, []);
-
-  // Capture face data
-  const captureFace = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    
-    if (!context) return;
-    
-    // Set canvas dimensions to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    
-    // Draw video frame to canvas
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // Get base64 representation of the image
-    const imageData = canvas.toDataURL('image/jpeg');
-    setFaceData(imageData);
-    
-    // Stop camera after capture
-    stopCamera();
-  };
-
-  // Process authentication
-  const processAuth = async () => {
-    if (!faceData) {
-      setError("Face data is required for authentication.");
+  const handleAuthenticate = async () => {
+    if (!biometricData) {
+      setError('Please capture your face first');
       return;
     }
     
-    setProcessingAuth(true);
     setError(null);
+    setIsAuthenticating(true);
     
     try {
-      let endpoint = '/api/auth/biometric';
-      let payload = { faceData };
+      const response = await apiRequest('POST', '/api/auth/biometric', {
+        faceData: biometricData
+      });
       
-      if (mode === 'register') {
-        endpoint = '/api/auth/register/biometric';
-        // For registration we'd need additional user data
-        // This is simplified - in a real app you'd collect more info
-        payload = { 
-          ...payload, 
-          username: 'user_' + Date.now(), // Generate a unique username 
-          email: `user_${Date.now()}@example.com`, // This should be collected from the user
-          password: Math.random().toString(36).slice(2) // Generate a random password
-        };
-      } else if (mode === 'recover') {
-        endpoint = '/api/auth/recover/biometric';
-      }
-      
-      const response = await apiRequest('POST', endpoint, payload);
       const result = await response.json();
       
       if (result.success) {
         toast({
-          title: "Authentication Successful",
-          description: "Your face has been verified.",
-          variant: "default",
+          title: 'Authentication Successful',
+          description: 'Your identity has been verified.',
+          variant: 'default',
         });
         
-        if (onAuthSuccess) {
-          onAuthSuccess({
-            token: result.token,
-            userId: result.userId
-          });
-        }
+        onAuthSuccess({
+          token: result.token,
+          userId: result.userId
+        });
       } else {
-        setError(result.message || "Authentication failed.");
+        setError(result.message || 'Authentication failed. Please try again or use a different method.');
       }
     } catch (err) {
-      console.error("Authentication error:", err);
-      setError("An error occurred during authentication. Please try again.");
+      console.error('Authentication error:', err);
+      setError('An error occurred during authentication. Please try again.');
     } finally {
-      setProcessingAuth(false);
+      setIsAuthenticating(false);
     }
   };
 
-  // Reset the process
-  const resetProcess = () => {
-    setFaceData(null);
-    setError(null);
-    setCapturing(false);
+  const switchToNftAuth = () => {
+    setShowNftAuth(true);
   };
   
-  let title = "Facial Recognition Login";
-  let description = "Look directly at the camera for authentication";
-  
-  if (mode === 'register') {
-    title = "Register Your Face";
-    description = "We'll use your face for secure authentication";
-  } else if (mode === 'recover') {
-    title = "Account Recovery";
-    description = "Verify your identity with facial recognition";
+  if (showNftAuth) {
+    return <NftAuth onAuthSuccess={onAuthSuccess} />;
   }
 
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FingerprintIcon className="h-6 w-6" />
-          {title}
+          <Shield className="h-6 w-6" />
+          Face Authentication
         </CardTitle>
-        <CardDescription>{description}</CardDescription>
+        <CardDescription>
+          Authenticate with your face using secure biometric verification
+        </CardDescription>
       </CardHeader>
       
       <CardContent>
@@ -178,81 +108,83 @@ export function BiometricAuth({ onAuthSuccess, mode }: BiometricAuthProps) {
           </Alert>
         )}
         
-        <div className="relative aspect-video bg-muted rounded-md overflow-hidden mb-4">
-          {capturing ? (
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              muted 
-              playsInline 
-              className="w-full h-full object-cover"
-            />
-          ) : faceData ? (
-            <div className="relative w-full h-full">
-              <img 
-                src={faceData} 
-                alt="Captured face" 
-                className="w-full h-full object-cover" 
-              />
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                <Check className="h-16 w-16 text-green-500" />
+        <div className="grid gap-6">
+          {showCamera ? (
+            <div className="bg-muted p-4 rounded-md relative">
+              <div className="aspect-video bg-black/10 rounded-md flex items-center justify-center mb-2 border-2 border-dashed border-muted-foreground/50">
+                <Camera className="h-16 w-16 text-muted-foreground" />
               </div>
+              <div className="text-center text-sm text-muted-foreground mb-4">
+                <p>Position your face in the center of the frame</p>
+                <p>Make sure your face is well-lit and clearly visible</p>
+              </div>
+              <Button 
+                type="button" 
+                onClick={handleCapture}
+                disabled={isCapturing}
+                className="w-full"
+              >
+                {isCapturing ? 'Capturing...' : 'Capture Face'}
+              </Button>
             </div>
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <Camera className="h-12 w-12 mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Camera will appear here</p>
+            <div className="text-center">
+              <div className="bg-muted inline-flex items-center justify-center rounded-full p-3 mb-4">
+                <Shield className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="font-medium text-lg mb-1">Face Captured</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Your face has been successfully captured and is ready for authentication
+              </p>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowCamera(true)}
+                  disabled={isAuthenticating}
+                  className="flex-1"
+                >
+                  Recapture
+                </Button>
+                <Button 
+                  onClick={handleAuthenticate}
+                  disabled={isAuthenticating}
+                  className="flex-1"
+                >
+                  {isAuthenticating ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                      Authenticating...
+                    </>
+                  ) : 'Authenticate'}
+                </Button>
+              </div>
             </div>
-          )}
-        </div>
-        
-        <canvas ref={canvasRef} className="hidden" />
-        
-        <div className="flex flex-col gap-2">
-          {!capturing && !faceData && (
-            <Button onClick={startCamera} className="gap-2">
-              <Camera className="h-4 w-4" />
-              Start Camera
-            </Button>
-          )}
-          
-          {capturing && (
-            <Button onClick={captureFace} className="gap-2">
-              <Camera className="h-4 w-4" />
-              Capture
-            </Button>
-          )}
-          
-          {faceData && (
-            <Button 
-              onClick={processAuth} 
-              disabled={processingAuth}
-              variant="default"
-              className="gap-2"
-            >
-              {processingAuth ? (
-                <>
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  Verifying...
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="h-4 w-4" />
-                  {mode === 'register' ? 'Complete Registration' : 'Authenticate'}
-                </>
-              )}
-            </Button>
           )}
         </div>
       </CardContent>
       
-      <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={resetProcess}>
-          Reset
+      <CardFooter className="flex flex-col gap-4 border-t px-6 py-4">
+        <Button 
+          variant="outline" 
+          onClick={switchToNftAuth}
+          disabled={isAuthenticating}
+          className="w-full gap-2"
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 5C4 4.44772 4.44772 4 5 4H19C19.5523 4 20 4.44772 20 5V19C20 19.5523 19.5523 20 19 20H5C4.44772 20 4 19.5523 4 19V5Z" stroke="currentColor" strokeWidth="2" />
+            <path d="M9 8.5L11.5 6L14 8.5L16.5 6V18L14 15.5L11.5 18L9 15.5L6.5 18V6L9 8.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Use NFT Authentication
         </Button>
         
-        <div className="text-xs text-muted-foreground">
-          I AM WHO I AM | Biometric Authentication
+        <div className="w-full flex justify-center">
+          <button 
+            onClick={onSwitchToRecovery}
+            className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
+          >
+            <Key className="h-3 w-3" />
+            Can't access your account? Recover here
+          </button>
         </div>
       </CardFooter>
     </Card>

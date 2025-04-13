@@ -727,6 +727,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Authentication endpoints
+  apiRouter.post("/auth/biometric", async (req, res) => {
+    try {
+      const { faceData } = req.body;
+      
+      if (!faceData) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing required biometric data" 
+        });
+      }
+      
+      const authResult = await authService.authenticateWithBiometrics(faceData);
+      
+      if (!authResult.success) {
+        return res.status(401).json({
+          success: false,
+          message: authResult.message
+        });
+      }
+      
+      res.json({
+        success: true,
+        token: authResult.token,
+        userId: authResult.userId,
+        message: "Biometric authentication successful"
+      });
+    } catch (error) {
+      console.error("Error with biometric authentication:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Server error during biometric authentication" 
+      });
+    }
+  });
+  
+  apiRouter.post("/auth/nft", async (req, res) => {
+    try {
+      const { nftToken } = req.body;
+      
+      if (!nftToken) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing NFT token" 
+        });
+      }
+      
+      const authResult = await authService.authenticateWithNft(nftToken);
+      
+      if (!authResult.success) {
+        return res.status(401).json({
+          success: false,
+          message: authResult.message
+        });
+      }
+      
+      res.json({
+        success: true,
+        token: authResult.token,
+        userId: authResult.userId,
+        message: "NFT authentication successful"
+      });
+    } catch (error) {
+      console.error("Error with NFT authentication:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Server error during NFT authentication" 
+      });
+    }
+  });
+  
+  apiRouter.post("/auth/recover", async (req, res) => {
+    try {
+      const { recoveryCode, newBiometricData } = req.body;
+      
+      if (!recoveryCode || !newBiometricData) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing recovery code or new biometric data" 
+        });
+      }
+      
+      const recoveryResult = await authService.recoverAccount(recoveryCode, newBiometricData);
+      
+      if (!recoveryResult.success) {
+        return res.status(401).json({
+          success: false,
+          message: recoveryResult.message
+        });
+      }
+      
+      res.json({
+        success: true,
+        token: recoveryResult.token,
+        userId: recoveryResult.userId,
+        message: "Account recovery successful"
+      });
+    } catch (error) {
+      console.error("Error with account recovery:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Server error during account recovery" 
+      });
+    }
+  });
+  
+  apiRouter.get("/auth/verification-methods", async (req, res) => {
+    try {      
+      const methods = await authService.getAvailableVerificationMethods();
+      
+      res.json({
+        success: true,
+        methods
+      });
+    } catch (error) {
+      console.error("Error fetching verification methods:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Server error fetching verification methods" 
+      });
+    }
+  });
+  
   const httpServer = createServer(app);
   
   return httpServer;
