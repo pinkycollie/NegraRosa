@@ -18,6 +18,8 @@ import {
   insertClaimSchema,
   insertEntrepreneurProfileSchema,
   insertJsonDataUploadSchema,
+  insertWhySubmissionSchema,
+  insertWhyNotificationSchema,
   verificationTypes
 } from "@shared/schema";
 

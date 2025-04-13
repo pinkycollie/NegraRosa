@@ -377,3 +377,61 @@ export const insertJobApplicationSchema = createInsertSchema(jobApplications).pi
 
 export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
 export type JobApplication = typeof jobApplications.$inferSelect;
+
+// WHY System - Quick Submission Methods
+export const whySubmissions = pgTable("why_submissions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  triggerType: text("trigger_type").notNull(), // VERIFICATION_FAILED, RISK_ASSESSMENT, MANUAL_REQUEST
+  submissionMethod: text("submission_method").notNull(), // SMS, TEXT, SCAN, PHOTO
+  content: text("content"), // Text content for TEXT and SMS submissions
+  mediaUrl: text("media_url"), // URL to uploaded media (SCAN, PHOTO)
+  status: text("status").notNull().default("PENDING"), // PENDING, REVIEWING, RESOLVED, REJECTED
+  reviewerId: integer("reviewer_id").references(() => users.id),
+  resolution: text("resolution"), // Resolution notes
+  facilitated: boolean("facilitated").default(false), // Whether facilitation was involved
+  facilitatorInfo: jsonb("facilitator_info"), // Information about the facilitator
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+});
+
+export const insertWhySubmissionSchema = createInsertSchema(whySubmissions).pick({
+  userId: true,
+  triggerType: true,
+  submissionMethod: true,
+  content: true,
+  mediaUrl: true,
+  status: true,
+  reviewerId: true,
+  resolution: true,
+  facilitated: true,
+  facilitatorInfo: true,
+});
+
+export type InsertWhySubmission = z.infer<typeof insertWhySubmissionSchema>;
+export type WhySubmission = typeof whySubmissions.$inferSelect;
+
+// WHY System - Notifications
+export const whyNotifications = pgTable("why_notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  submissionId: integer("submission_id").references(() => whySubmissions.id),
+  notificationType: text("notification_type").notNull(), // SMS, EMAIL, IN_APP
+  content: text("content").notNull(),
+  status: text("status").notNull().default("PENDING"), // PENDING, SENT, FAILED, READ
+  sentAt: timestamp("sent_at"),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertWhyNotificationSchema = createInsertSchema(whyNotifications).pick({
+  userId: true,
+  submissionId: true,
+  notificationType: true,
+  content: true,
+  status: true,
+});
+
+export type InsertWhyNotification = z.infer<typeof insertWhyNotificationSchema>;
+export type WhyNotification = typeof whyNotifications.$inferSelect;

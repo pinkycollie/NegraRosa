@@ -10,6 +10,8 @@ import {
   JobProfile, InsertJobProfile,
   BackgroundVerification, InsertBackgroundVerification,
   JobApplication, InsertJobApplication,
+  WhySubmission, InsertWhySubmission,
+  WhyNotification, InsertWhyNotification,
   VerificationType
 } from "@shared/schema";
 
@@ -98,6 +100,32 @@ export interface IStorage {
       activitiesCompleted?: any;
     }
   ): Promise<JobApplication | undefined>;
+  
+  // WHY Submissions
+  createWhySubmission(submission: InsertWhySubmission): Promise<WhySubmission>;
+  getWhySubmissionsByUserId(userId: number): Promise<WhySubmission[]>;
+  getWhySubmission(id: number): Promise<WhySubmission | undefined>;
+  updateWhySubmission(
+    id: number,
+    updates: {
+      status?: string;
+      reviewerId?: number;
+      resolution?: string;
+      facilitated?: boolean;
+      facilitatorInfo?: any;
+      resolvedAt?: Date;
+    }
+  ): Promise<WhySubmission | undefined>;
+  
+  // WHY Notifications
+  createWhyNotification(notification: InsertWhyNotification): Promise<WhyNotification>;
+  getWhyNotificationsByUserId(userId: number): Promise<WhyNotification[]>;
+  updateWhyNotificationStatus(
+    id: number,
+    status: string,
+    sentAt?: Date,
+    readAt?: Date
+  ): Promise<WhyNotification | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -112,6 +140,8 @@ export class MemStorage implements IStorage {
   private jobProfiles: Map<number, JobProfile>;
   private backgroundVerifications: Map<number, BackgroundVerification>;
   private jobApplications: Map<number, JobApplication>;
+  private whySubmissions: Map<number, WhySubmission>;
+  private whyNotifications: Map<number, WhyNotification>;
   
   private nextUserId: number;
   private nextVerificationId: number;
@@ -124,6 +154,8 @@ export class MemStorage implements IStorage {
   private nextJobProfileId: number;
   private nextBackgroundVerificationId: number;
   private nextJobApplicationId: number;
+  private nextWhySubmissionId: number;
+  private nextWhyNotificationId: number;
 
   constructor() {
     this.users = new Map();
@@ -137,6 +169,8 @@ export class MemStorage implements IStorage {
     this.jobProfiles = new Map();
     this.backgroundVerifications = new Map();
     this.jobApplications = new Map();
+    this.whySubmissions = new Map();
+    this.whyNotifications = new Map();
     
     this.nextUserId = 1;
     this.nextVerificationId = 1;
@@ -149,6 +183,8 @@ export class MemStorage implements IStorage {
     this.nextJobProfileId = 1;
     this.nextBackgroundVerificationId = 1;
     this.nextJobApplicationId = 1;
+    this.nextWhySubmissionId = 1;
+    this.nextWhyNotificationId = 1;
     
     // Add a test user for development
     this.createUser({
@@ -768,6 +804,118 @@ export class MemStorage implements IStorage {
     }
     
     return updatedApplication;
+  }
+  
+  // WHY Submissions
+  async createWhySubmission(submission: InsertWhySubmission): Promise<WhySubmission> {
+    const id = this.nextWhySubmissionId++;
+    const now = new Date();
+    const newSubmission: WhySubmission = {
+      ...submission,
+      id,
+      createdAt: now,
+      updatedAt: now,
+      resolvedAt: null
+    };
+    this.whySubmissions.set(id, newSubmission);
+    
+    // When a WHY submission is created, we note this in reputation
+    const reputation = await this.getReputation(submission.userId);
+    if (reputation) {
+      // Note: We don't necessarily increase the score yet - that happens after resolution
+      await this.updateReputation(submission.userId, {
+        score: Math.min(100, (reputation.score || 0) + 1) // +1 point for explaining, max 100
+      });
+    }
+    
+    return newSubmission;
+  }
+
+  async getWhySubmissionsByUserId(userId: number): Promise<WhySubmission[]> {
+    return Array.from(this.whySubmissions.values())
+      .filter(submission => submission.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Most recent first
+  }
+
+  async getWhySubmission(id: number): Promise<WhySubmission | undefined> {
+    return this.whySubmissions.get(id);
+  }
+
+  async updateWhySubmission(
+    id: number,
+    updates: {
+      status?: string;
+      reviewerId?: number;
+      resolution?: string;
+      facilitated?: boolean;
+      facilitatorInfo?: any;
+      resolvedAt?: Date;
+    }
+  ): Promise<WhySubmission | undefined> {
+    const submission = this.whySubmissions.get(id);
+    if (!submission) return undefined;
+    
+    const wasResolved = submission.status === 'RESOLVED';
+    const nowResolved = updates.status === 'RESOLVED';
+    
+    const updatedSubmission: WhySubmission = {
+      ...submission,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.whySubmissions.set(id, updatedSubmission);
+    
+    // If submission is resolved, update the user's reputation
+    if (!wasResolved && nowResolved) {
+      const reputation = await this.getReputation(submission.userId);
+      if (reputation) {
+        await this.updateReputation(submission.userId, {
+          score: Math.min(100, (reputation.score || 0) + 5) // +5 points for resolved WHY, max 100
+        });
+      }
+    }
+    
+    return updatedSubmission;
+  }
+
+  // WHY Notifications
+  async createWhyNotification(notification: InsertWhyNotification): Promise<WhyNotification> {
+    const id = this.nextWhyNotificationId++;
+    const now = new Date();
+    const newNotification: WhyNotification = {
+      ...notification,
+      id,
+      createdAt: now,
+      sentAt: null,
+      readAt: null
+    };
+    this.whyNotifications.set(id, newNotification);
+    return newNotification;
+  }
+
+  async getWhyNotificationsByUserId(userId: number): Promise<WhyNotification[]> {
+    return Array.from(this.whyNotifications.values())
+      .filter(notification => notification.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Most recent first
+  }
+
+  async updateWhyNotificationStatus(
+    id: number,
+    status: string,
+    sentAt?: Date,
+    readAt?: Date
+  ): Promise<WhyNotification | undefined> {
+    const notification = this.whyNotifications.get(id);
+    if (!notification) return undefined;
+    
+    const updatedNotification: WhyNotification = {
+      ...notification,
+      status,
+      sentAt: sentAt || notification.sentAt,
+      readAt: readAt || notification.readAt
+    };
+    this.whyNotifications.set(id, updatedNotification);
+    return updatedNotification;
   }
 }
 
