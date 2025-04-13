@@ -7,6 +7,7 @@ import { RiskManager } from "./services/RiskManager";
 import { FraudDetectionEngine } from "./services/FraudDetectionEngine";
 import { ErrorsAndOmissionsManager } from "./services/ErrorsAndOmissionsManager";
 import { WebsiteVerificationService } from "./services/WebsiteVerificationService";
+import { riskAssessmentService } from "./services/RiskAssessmentService";
 import { z } from "zod";
 import { 
   insertUserSchema, 
@@ -596,6 +597,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error verifying entrepreneur website:", error);
       res.status(500).json({ message: "Server error verifying entrepreneur website" });
+    }
+  });
+  
+  // Contextual risk assessment endpoints
+  apiRouter.post("/users/:userId/risk-assessment-with-context", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Get user
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Validate contextual factors
+      const contextualFactors = req.body;
+      
+      // Perform risk assessment with contextual factors
+      const riskDecision = await riskAssessmentService.assessRiskWithContext(userId, contextualFactors);
+      
+      res.json({
+        riskDecision,
+        contextualFactors,
+        message: "Risk assessment completed with contextual factors considered."
+      });
+    } catch (error) {
+      console.error("Error performing contextual risk assessment:", error);
+      res.status(500).json({ message: "Server error during risk assessment" });
+    }
+  });
+  
+  apiRouter.post("/users/:userId/job-application-patterns", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Get user
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Analyze job application patterns
+      const analysis = await riskAssessmentService.analyzeJobApplicationPatterns(userId);
+      
+      res.json({
+        analysis,
+        message: "Job application pattern analysis completed."
+      });
+    } catch (error) {
+      console.error("Error analyzing job application patterns:", error);
+      res.status(500).json({ message: "Server error during job application analysis" });
     }
   });
   
