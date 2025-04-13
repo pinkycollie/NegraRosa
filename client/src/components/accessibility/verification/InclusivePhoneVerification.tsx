@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { LanguageSelector } from "@/components/accessibility/LanguageSelector";
 import { 
   AlertCircle, 
   CheckCircle, 
@@ -45,6 +47,7 @@ interface InclusivePhoneVerificationProps {
 
 export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhoneVerificationProps) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -153,12 +156,15 @@ export function InclusivePhoneVerification({ onVerified, userId }: InclusivePhon
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Phone className="h-5 w-5 text-primary" />
-          Inclusive Phone Verification
-        </CardTitle>
+        <div className="flex justify-between items-start">
+          <CardTitle className="flex items-center gap-2">
+            <Phone className="h-5 w-5 text-primary" />
+            {t.phoneVerification.title}
+          </CardTitle>
+          <LanguageSelector variant="minimal" className="ml-auto" />
+        </div>
         <CardDescription>
-          Verify your phone through multiple methods, designed for all accessibility needs
+          {t.phoneVerification.description}
         </CardDescription>
       </CardHeader>
       
