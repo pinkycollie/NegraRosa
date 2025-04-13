@@ -22,12 +22,14 @@ import {
   insertWhyNotificationSchema,
   verificationTypes
 } from "@shared/schema";
+import { FinancialVerificationService } from "./services/integrations/FinancialVerificationService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize services
   const authManager = new InclusiveAuthManager();
   const reputationManager = new ReputationManager();
   const riskManager = new RiskManager();
+  const financialVerificationService = new FinancialVerificationService();
   const fraudDetectionEngine = new FraudDetectionEngine();
   const errorAndOmissionsManager = new ErrorsAndOmissionsManager();
   const websiteVerificationService = new WebsiteVerificationService();

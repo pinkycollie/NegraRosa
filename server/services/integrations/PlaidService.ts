@@ -1,5 +1,13 @@
-import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode, BankTransferType } from 'plaid';
-import { getConfig, getPlaidEnvironment } from './IntegrationConfig';
+import { 
+  Configuration, 
+  PlaidApi, 
+  PlaidEnvironments,
+  CountryCode,
+  Products,
+  AccountBase,
+  AccountsGetResponse
+} from 'plaid';
+import { getConfig } from './IntegrationConfig';
 
 /**
  * Service for interacting with the Plaid API
@@ -11,16 +19,22 @@ export class PlaidService {
   constructor() {
     // Get configuration
     const config = getConfig('plaid');
-    const environment = getPlaidEnvironment();
+    
+    // Determine environment URL
+    const environment = (config.additionalConfig?.environment || 'sandbox').toLowerCase();
+    const envUrl = environment === 'production' 
+      ? PlaidEnvironments.production 
+      : environment === 'development' 
+        ? PlaidEnvironments.development 
+        : PlaidEnvironments.sandbox;
     
     // Initialize Plaid client
     const configuration = new Configuration({
-      basePath: PlaidEnvironments[environment],
+      basePath: envUrl,
       baseOptions: {
         headers: {
-          'PLAID-CLIENT-ID': config.clientId,
+          'PLAID-CLIENT-ID': config.clientId || '',
           'PLAID-SECRET': config.clientSecret,
-          'Plaid-Version': config.apiVersion || '2020-09-14',
         },
       },
     });
@@ -43,11 +57,10 @@ export class PlaidService {
           legal_name: fullName,
           email_address: email
         },
-        client_name: 'NegraRosa Inclusive Security',
-        products: ['auth', 'transactions', 'identity', 'assets'] as Products[],
-        country_codes: ['US'] as CountryCode[],
+        client_name: 'NegraRosa Inclusive Security Framework',
+        products: [Products.Auth, Products.Transactions, Products.Identity],
+        country_codes: [CountryCode.Us],
         language: 'en',
-        webhook: `${process.env.API_BASE_URL}/api/webhooks/plaid`,
       });
       
       return response.data;
@@ -65,15 +78,15 @@ export class PlaidService {
   async exchangePublicToken(publicToken: string) {
     try {
       const response = await this.client.itemPublicTokenExchange({
-        public_token: publicToken
+        public_token: publicToken,
       });
       
       return {
         accessToken: response.data.access_token,
-        itemId: response.data.item_id
+        itemId: response.data.item_id,
       };
     } catch (error) {
-      console.error('Error exchanging public token:', error);
+      console.error('Error exchanging Plaid public token:', error);
       throw new Error(`Failed to exchange Plaid public token: ${error.message}`);
     }
   }
@@ -86,13 +99,13 @@ export class PlaidService {
   async getAccounts(accessToken: string) {
     try {
       const response = await this.client.accountsGet({
-        access_token: accessToken
+        access_token: accessToken,
       });
       
       return response.data;
     } catch (error) {
-      console.error('Error fetching Plaid accounts:', error);
-      throw new Error(`Failed to fetch Plaid accounts: ${error.message}`);
+      console.error('Error getting Plaid accounts:', error);
+      throw new Error(`Failed to get Plaid accounts: ${error.message}`);
     }
   }
   
@@ -105,7 +118,7 @@ export class PlaidService {
    */
   async getTransactions(accessToken: string, startDate: string, endDate: string) {
     try {
-      // Initialize fetch
+      // Initialize transactions with first batch
       const response = await this.client.transactionsGet({
         access_token: accessToken,
         start_date: startDate,
@@ -113,14 +126,14 @@ export class PlaidService {
         options: {
           count: 100,
           offset: 0,
-        }
+        },
       });
       
       let transactions = response.data.transactions;
-      const total = response.data.total_transactions;
+      const totalTransactions = response.data.total_transactions;
       
       // Fetch all transactions if there are more
-      while (transactions.length < total) {
+      while (transactions.length < totalTransactions) {
         const paginatedResponse = await this.client.transactionsGet({
           access_token: accessToken,
           start_date: startDate,
@@ -128,7 +141,7 @@ export class PlaidService {
           options: {
             count: 100,
             offset: transactions.length,
-          }
+          },
         });
         
         transactions = transactions.concat(paginatedResponse.data.transactions);
@@ -136,11 +149,13 @@ export class PlaidService {
       
       return {
         accounts: response.data.accounts,
-        transactions
+        transactions,
+        totalTransactions,
+        item: response.data.item,
       };
     } catch (error) {
-      console.error('Error fetching Plaid transactions:', error);
-      throw new Error(`Failed to fetch Plaid transactions: ${error.message}`);
+      console.error('Error getting Plaid transactions:', error);
+      throw new Error(`Failed to get Plaid transactions: ${error.message}`);
     }
   }
   
@@ -152,13 +167,13 @@ export class PlaidService {
   async getIdentity(accessToken: string) {
     try {
       const response = await this.client.identityGet({
-        access_token: accessToken
+        access_token: accessToken,
       });
       
       return response.data;
     } catch (error) {
-      console.error('Error fetching Plaid identity:', error);
-      throw new Error(`Failed to fetch Plaid identity: ${error.message}`);
+      console.error('Error getting Plaid identity data:', error);
+      throw new Error(`Failed to get Plaid identity data: ${error.message}`);
     }
   }
   
@@ -170,13 +185,13 @@ export class PlaidService {
   async getBalance(accessToken: string) {
     try {
       const response = await this.client.accountsBalanceGet({
-        access_token: accessToken
+        access_token: accessToken,
       });
       
       return response.data;
     } catch (error) {
-      console.error('Error fetching Plaid balance:', error);
-      throw new Error(`Failed to fetch Plaid balance: ${error.message}`);
+      console.error('Error getting Plaid balance data:', error);
+      throw new Error(`Failed to get Plaid balance data: ${error.message}`);
     }
   }
   
@@ -187,31 +202,34 @@ export class PlaidService {
    */
   async verifyBankAccountOwner(accessToken: string) {
     try {
+      // Get accounts
+      const accountsResponse = await this.getAccounts(accessToken);
+      
       // Get identity information
-      const identityResponse = await this.client.identityGet({
-        access_token: accessToken
-      });
+      const identityResponse = await this.getIdentity(accessToken);
       
-      // Get account information
-      const accountsResponse = await this.client.accountsGet({
-        access_token: accessToken
-      });
+      // Determine if verification is successful based on account and identity data
+      const accountsCount = accountsResponse.accounts.length;
+      const ownersCount = identityResponse.accounts.reduce((total, account) => total + account.owners.length, 0);
       
-      // Extract the account owner information
-      const owners = identityResponse.data.accounts
-        .flatMap(account => account.owners)
-        .filter((owner, index, self) => 
-          index === self.findIndex(o => o.names[0] === owner.names[0])
-        );
+      // Check if each account has at least the available balance
+      const accountsWithBalance = accountsResponse.accounts.filter(account => 
+        account.balances.available !== null && account.balances.available > 0
+      );
+      
+      // Simple verification criteria: has accounts with balance and identity information
+      const isVerified = accountsCount > 0 && ownersCount > 0 && accountsWithBalance.length > 0;
       
       return {
-        accounts: accountsResponse.data.accounts,
-        owners,
         verification: {
-          isVerified: owners.length > 0,
-          ownersCount: owners.length,
-          accountsCount: accountsResponse.data.accounts.length
-        }
+          isVerified,
+          accountsCount,
+          ownersCount,
+          accountsWithBalanceCount: accountsWithBalance.length,
+          timestamp: new Date().toISOString(),
+        },
+        accounts: accountsResponse.accounts,
+        owners: identityResponse.accounts.flatMap(account => account.owners),
       };
     } catch (error) {
       console.error('Error verifying bank account owner:', error);
@@ -226,85 +244,97 @@ export class PlaidService {
    */
   async calculateFinancialRiskScore(accessToken: string) {
     try {
-      // Get multiple data points for risk assessment
-      const [
-        balance,
-        transactions,
-        identity
-      ] = await Promise.all([
-        this.getBalance(accessToken),
-        this.getTransactions(accessToken, 
-          // Last 90 days
-          new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], 
-          new Date().toISOString().split('T')[0]
-        ),
-        this.getIdentity(accessToken)
-      ]);
+      // Get transaction history for the last 90 days
+      const now = new Date();
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      const endDate = now.toISOString().split('T')[0];
+      const startDate = ninetyDaysAgo.toISOString().split('T')[0];
       
-      // Calculate risk factors
-      const totalBalance = balance.accounts.reduce((sum, account) => sum + account.balances.available, 0);
-      const accountAge = this.estimateAccountAge(transactions.transactions);
-      const transactionFrequency = transactions.transactions.length / 90; // Transactions per day
-      const hasRecurringDeposits = this.detectRecurringDeposits(transactions.transactions);
-      const identityVerified = identity.accounts.length > 0 && identity.accounts[0].owners.length > 0;
+      const txData = await this.getTransactions(accessToken, startDate, endDate);
+      const balanceData = await this.getBalance(accessToken);
       
-      // Calculate a simple risk score (0-100, lower is less risky)
-      let riskScore = 0;
+      // Risk factors to consider
+      let riskScore = 50; // Start at neutral
       
-      // Factor 1: Account balance
-      if (totalBalance < 100) {
-        riskScore += 20;
-      } else if (totalBalance < 1000) {
-        riskScore += 10;
-      } else if (totalBalance > 10000) {
-        riskScore -= 10;
+      // Factor 1: Account age (estimated from transaction history)
+      const accountAgeDays = this.estimateAccountAge(txData.transactions);
+      if (accountAgeDays < 30) {
+        riskScore += 20; // Very new account
+      } else if (accountAgeDays < 90) {
+        riskScore += 10; // Relatively new account
+      } else if (accountAgeDays > 365) {
+        riskScore -= 15; // Well-established account
       }
       
-      // Factor 2: Account age
-      if (accountAge < 30) {
-        riskScore += 20;
-      } else if (accountAge < 90) {
-        riskScore += 10;
-      } else if (accountAge > 365) {
-        riskScore -= 10;
+      // Factor 2: Transaction volume and frequency
+      const txCount = txData.transactions.length;
+      if (txCount < 5) {
+        riskScore += 15; // Very low activity
+      } else if (txCount > 50) {
+        riskScore -= 10; // High activity
       }
       
-      // Factor 3: Transaction frequency
-      if (transactionFrequency < 0.1) { // Less than one transaction per 10 days
-        riskScore += 15;
-      } else if (transactionFrequency > 5) { // More than 5 transactions per day
-        riskScore += 5;
-      } else if (transactionFrequency > 1 && transactionFrequency < 3) {
-        riskScore -= 5; // Healthy transaction rate
+      // Factor 3: Balance-to-spending ratio
+      const totalBalance = balanceData.accounts.reduce((sum, account) => {
+        return sum + (account.balances.current || 0);
+      }, 0);
+      
+      const totalSpent = txData.transactions
+        .filter(tx => tx.amount > 0) // Only consider outflows
+        .reduce((sum, tx) => sum + tx.amount, 0);
+      
+      if (totalBalance === 0) {
+        riskScore += 15; // Zero balance
+      } else if (totalSpent > 0) {
+        const balanceToSpendingRatio = totalBalance / totalSpent;
+        if (balanceToSpendingRatio < 0.2) {
+          riskScore += 20; // Very low balance compared to spending
+        } else if (balanceToSpendingRatio < 0.5) {
+          riskScore += 10; // Low balance compared to spending
+        } else if (balanceToSpendingRatio > 3) {
+          riskScore -= 15; // High balance compared to spending
+        }
       }
       
-      // Factor 4: Recurring deposits
+      // Factor 4: Recurring income
+      const hasRecurringDeposits = this.detectRecurringDeposits(txData.transactions);
       if (hasRecurringDeposits) {
-        riskScore -= 15;
+        riskScore -= 15; // Stable income
       } else {
-        riskScore += 15;
+        riskScore += 10; // No stable income detected
       }
       
-      // Factor 5: Identity verification
-      if (!identityVerified) {
-        riskScore += 20;
-      } else {
-        riskScore -= 10;
+      // Group transactions by month to see if there's a pattern
+      const txByMonth = new Map();
+      txData.transactions.forEach(tx => {
+        const month = tx.date.substring(0, 7); // YYYY-MM
+        if (!txByMonth.has(month)) {
+          txByMonth.set(month, []);
+        }
+        txByMonth.get(month).push(tx);
+      });
+      
+      // Check if there are transactions in at least 2 months
+      const hasContinuousActivity = txByMonth.size >= 2;
+      if (!hasContinuousActivity) {
+        riskScore += 10; // Limited activity history
       }
       
-      // Normalize and constrain
-      riskScore = Math.max(0, Math.min(100, riskScore + 50));
+      // Normalize to 0-100 range
+      riskScore = Math.max(0, Math.min(100, riskScore));
       
       return {
         riskScore,
-        factors: {
-          totalBalance,
-          accountAge,
-          transactionFrequency,
-          hasRecurringDeposits,
-          identityVerified
-        },
         riskLevel: this.getRiskLevelFromScore(riskScore),
+        factors: {
+          estimatedAccountAgeDays: accountAgeDays,
+          transactionCount: txCount,
+          totalBalance,
+          totalSpent,
+          hasRecurringDeposits,
+          monthsWithActivity: txByMonth.size,
+          accountCount: balanceData.accounts.length
+        },
         recommendations: this.getRecommendationsFromScore(riskScore)
       };
     } catch (error) {
@@ -319,49 +349,49 @@ export class PlaidService {
    * @returns Whether recurring deposits are detected
    */
   private detectRecurringDeposits(transactions: any[]): boolean {
-    // Filter for deposits (positive amounts)
-    const deposits = transactions.filter(t => t.amount > 0);
+    // Extract deposit transactions (negative amounts in Plaid are deposits)
+    const deposits = transactions
+      .filter(tx => tx.amount < 0)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
-    // Group by similar amounts (within 10%)
-    const amountGroups = new Map<number, any[]>();
+    if (deposits.length < 2) {
+      return false; // Not enough deposits to detect patterns
+    }
     
-    deposits.forEach(deposit => {
-      let foundGroup = false;
-      
-      for (const [amount, group] of amountGroups.entries()) {
-        // Check if amount is within 10% of group key
-        const difference = Math.abs(deposit.amount - amount) / amount;
-        if (difference <= 0.1) {
-          group.push(deposit);
-          foundGroup = true;
-          break;
-        }
+    // Group by similar amounts
+    const amountGroups = new Map();
+    deposits.forEach(tx => {
+      // Round to handle slight variations in payment amounts
+      const roundedAmount = Math.round(tx.amount * 100) / 100;
+      if (!amountGroups.has(roundedAmount)) {
+        amountGroups.set(roundedAmount, []);
       }
-      
-      if (!foundGroup) {
-        amountGroups.set(deposit.amount, [deposit]);
-      }
+      amountGroups.get(roundedAmount).push(tx);
     });
     
-    // Check if any group has at least 2 transactions and occurs at regular intervals
-    for (const group of amountGroups.values()) {
-      if (group.length >= 2) {
-        const dates = group.map(t => new Date(t.date).getTime())
-          .sort((a, b) => a - b);
-        
-        // Calculate intervals between dates
-        const intervals = [];
-        for (let i = 1; i < dates.length; i++) {
-          intervals.push(dates[i] - dates[i - 1]);
+    // Check if any amount has recurred at least twice
+    for (const txs of amountGroups.values()) {
+      if (txs.length >= 2) {
+        // Check if deposits are roughly the same time apart
+        if (txs.length >= 3) {
+          const intervals = [];
+          for (let i = 1; i < txs.length; i++) {
+            const days = (new Date(txs[i].date).getTime() - new Date(txs[i-1].date).getTime()) / (1000 * 60 * 60 * 24);
+            intervals.push(Math.round(days));
+          }
+          
+          // Check if intervals are consistent (allowing for slight variations)
+          const avgInterval = intervals.reduce((sum, days) => sum + days, 0) / intervals.length;
+          const isConsistent = intervals.every(days => Math.abs(days - avgInterval) <= 3);
+          
+          if (isConsistent && (avgInterval >= 14 && avgInterval <= 33)) {
+            return true; // Biweekly or monthly pattern detected
+          }
         }
         
-        // Check if intervals are regular (within 3 days)
-        const avgInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
-        const intervalConsistency = intervals.every(interval => 
-          Math.abs(interval - avgInterval) <= 3 * 24 * 60 * 60 * 1000
-        );
-        
-        if (intervalConsistency) {
+        // Even if we don't have enough data for interval analysis,
+        // multiple deposits of exactly the same amount suggest recurring income
+        if (txs.length >= 2) {
           return true;
         }
       }
@@ -380,15 +410,15 @@ export class PlaidService {
       return 0;
     }
     
-    // Find oldest transaction date
-    const dates = transactions.map(t => new Date(t.date).getTime());
-    const oldestDate = new Date(Math.min(...dates));
+    // Sort transactions by date
+    const sortedTx = [...transactions].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
     
-    // Calculate days between oldest transaction and now
+    const oldestDate = new Date(sortedTx[0].date);
     const now = new Date();
-    const ageInDays = Math.floor((now.getTime() - oldestDate.getTime()) / (24 * 60 * 60 * 1000));
     
-    return ageInDays;
+    return Math.round((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
   }
   
   /**
@@ -413,17 +443,17 @@ export class PlaidService {
     const recommendations: string[] = [];
     
     if (score > 60) {
-      recommendations.push('Consider additional identity verification');
+      recommendations.push('Consider additional verification steps');
     }
     
     if (score > 70) {
-      recommendations.push('Verify phone number and address');
-      recommendations.push('Request government ID verification');
+      recommendations.push('Request identity verification documents');
+      recommendations.push('Verify phone number and email');
     }
     
     if (score > 80) {
-      recommendations.push('Limit transaction amounts until further history is established');
-      recommendations.push('Implement a probationary period for new accounts');
+      recommendations.push('Require additional WHY response');
+      recommendations.push('Establish transaction limits initially');
     }
     
     return recommendations;

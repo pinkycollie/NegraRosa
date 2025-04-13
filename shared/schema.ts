@@ -29,7 +29,13 @@ export const verificationTypes = z.enum([
   "PHONE_NUMBER",
   "BUSINESS_EXPLANATION",
   "FINANCIAL_CONTEXT",
-  "PERSONAL_REFERENCE"
+  "PERSONAL_REFERENCE",
+  // New financial service verification types
+  "BANK_ACCOUNT",
+  "PAYMENT_METHOD",
+  "TRANSACTION_HISTORY",
+  "IDENTITY_VERIFICATION",
+  "FINANCIAL_RISK_ASSESSMENT"
 ]);
 
 export type VerificationType = z.infer<typeof verificationTypes>;

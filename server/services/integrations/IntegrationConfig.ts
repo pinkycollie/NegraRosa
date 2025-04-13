@@ -1,109 +1,101 @@
 /**
- * Configuration for financial service integrations
- * Handles environment variables and API keys for various financial services
+ * Configuration utility for service integrations
+ * Provides methods to get and validate service configurations from environment variables
  */
 
-// Configuration interface
-export interface FinancialServiceConfig {
-  clientId: string;
-  clientSecret: string;
-  environment: 'sandbox' | 'development' | 'production';
-  apiVersion?: string;
-  additionalConfig?: Record<string, any>;
-}
+type ServiceConfigResult = {
+  isValid: boolean;
+  missingVars: string[];
+  config?: Record<string, string>;
+};
 
-// Central configuration object
-export interface IntegrationConfigMap {
-  plaid: FinancialServiceConfig;
-  stripe: FinancialServiceConfig;
-  experian?: FinancialServiceConfig;
-  equifax?: FinancialServiceConfig;
-  transunion?: FinancialServiceConfig;
-  finicity?: FinancialServiceConfig;
-  mx?: FinancialServiceConfig;
+interface ServiceConfig {
+  clientId?: string;
+  clientSecret: string;
+  additionalConfig?: Record<string, string>;
 }
 
 /**
- * Get configuration for a specific integration
- * @param serviceName The name of the financial service
- * @returns Configuration object for the specified service
+ * Get configuration for a specific integration service
+ * @param serviceName The name of the service (e.g., 'plaid', 'stripe')
+ * @returns The service configuration
  */
-export function getConfig(serviceName: keyof IntegrationConfigMap): FinancialServiceConfig {
-  // Default environment is sandbox for safety
-  const environment = (process.env.NODE_ENV === 'production') ? 'production' : 'sandbox';
+export function getConfig(serviceName: string): ServiceConfig {
+  // All service configs require at least a client secret
+  const clientSecretVar = `${serviceName.toUpperCase()}_SECRET_KEY`;
+  const clientSecret = process.env[clientSecretVar] || '';
   
-  // Define base configurations
-  const configs: Partial<IntegrationConfigMap> = {
-    plaid: {
-      clientId: process.env.PLAID_CLIENT_ID || '',
-      clientSecret: process.env.PLAID_SECRET || '',
-      environment,
-      apiVersion: '2020-09-14',
-    },
-    stripe: {
-      clientId: process.env.STRIPE_CLIENT_ID || '',
-      clientSecret: process.env.STRIPE_SECRET_KEY || '',
-      environment,
-      additionalConfig: {
-        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || ''
-      }
-    }
+  // Create basic config
+  const config: ServiceConfig = {
+    clientSecret
   };
   
-  const config = configs[serviceName];
-  
-  if (!config) {
-    throw new Error(`No configuration found for service: ${serviceName}`);
-  }
-  
-  // Validate required configuration values
-  if (!config.clientId || !config.clientSecret) {
-    throw new Error(`Missing required credentials for ${serviceName}. Please check environment variables.`);
-  }
-  
-  return config as FinancialServiceConfig;
-}
-
-/**
- * Get Plaid environment string based on NODE_ENV
- */
-export function getPlaidEnvironment(): string {
-  switch (process.env.NODE_ENV) {
-    case 'production':
-      return 'production';
-    case 'development':
-      return 'development';
-    default:
-      return 'sandbox';
-  }
-}
-
-/**
- * Validates that all required environment variables are set for a given service
- * @param serviceName The name of the financial service
- * @returns Object containing validation status and any missing variables
- */
-export function validateServiceConfig(serviceName: keyof IntegrationConfigMap): { 
-  isValid: boolean; 
-  missingVars: string[];
-} {
-  const missingVars: string[] = [];
-  
-  switch (serviceName) {
+  // Add service-specific configurations
+  switch (serviceName.toLowerCase()) {
     case 'plaid':
-      if (!process.env.PLAID_CLIENT_ID) missingVars.push('PLAID_CLIENT_ID');
-      if (!process.env.PLAID_SECRET) missingVars.push('PLAID_SECRET');
+      config.clientId = process.env.PLAID_CLIENT_ID || '';
+      config.additionalConfig = {
+        environment: process.env.PLAID_ENVIRONMENT || 'sandbox'
+      };
       break;
     case 'stripe':
-      if (!process.env.STRIPE_SECRET_KEY) missingVars.push('STRIPE_SECRET_KEY');
-      if (!process.env.STRIPE_PUBLISHABLE_KEY) missingVars.push('STRIPE_PUBLISHABLE_KEY');
-      if (!process.env.STRIPE_CLIENT_ID) missingVars.push('STRIPE_CLIENT_ID');
+      config.additionalConfig = {
+        publishableKey: process.env.VITE_STRIPE_PUBLIC_KEY || ''
+      };
       break;
-    // Add other services as needed
   }
+  
+  return config;
+}
+
+/**
+ * Validate if a service configuration is valid and complete
+ * @param serviceName The name of the service (e.g., 'plaid', 'stripe')
+ * @returns Object indicating if config is valid and listing any missing variables
+ */
+export function validateServiceConfig(serviceName: string): ServiceConfigResult {
+  const missingVars: string[] = [];
+  
+  // Common required variables
+  const clientSecretVar = `${serviceName.toUpperCase()}_SECRET_KEY`;
+  if (!process.env[clientSecretVar]) {
+    missingVars.push(clientSecretVar);
+  }
+  
+  // Service-specific required variables
+  switch (serviceName.toLowerCase()) {
+    case 'plaid':
+      if (!process.env.PLAID_CLIENT_ID) {
+        missingVars.push('PLAID_CLIENT_ID');
+      }
+      break;
+    case 'stripe':
+      if (!process.env.VITE_STRIPE_PUBLIC_KEY) {
+        missingVars.push('VITE_STRIPE_PUBLIC_KEY');
+      }
+      break;
+  }
+  
+  // Get configuration
+  const config = getConfig(serviceName);
   
   return {
     isValid: missingVars.length === 0,
-    missingVars
+    missingVars,
+    config: missingVars.length === 0 ? config : undefined
   };
+}
+
+/**
+ * Check if a configuration is valid or throw an error
+ * @param serviceName The name of the service (e.g., 'plaid', 'stripe')
+ * @returns The service configuration, if valid
+ * @throws Error if configuration is invalid
+ */
+export function requireValidConfig(serviceName: string): ServiceConfig {
+  const validation = validateServiceConfig(serviceName);
+  if (!validation.isValid) {
+    throw new Error(`${serviceName} integration is not properly configured. Missing: ${validation.missingVars.join(', ')}`);
+  }
+  return getConfig(serviceName);
 }
