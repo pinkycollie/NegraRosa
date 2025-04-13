@@ -3,16 +3,54 @@
  * Provides methods to get and validate service configurations from environment variables
  */
 
+/**
+ * Result of validating a service configuration
+ */
 type ServiceConfigResult = {
   isValid: boolean;
   missingVars: string[];
   config?: Record<string, string>;
 };
 
+/**
+ * Service configuration interface
+ */
 interface ServiceConfig {
   clientId?: string;
   clientSecret: string;
   additionalConfig?: Record<string, string>;
+}
+
+/**
+ * Get required environment variables for a specific service
+ * @param serviceName The name of the service (e.g., 'plaid', 'stripe')
+ * @returns Array of required environment variable names
+ */
+function getRequiredEnvVars(serviceName: string): string[] {
+  switch (serviceName.toLowerCase()) {
+    case 'plaid':
+      return ['PLAID_CLIENT_ID', 'PLAID_SECRET_KEY'];
+    case 'stripe':
+      return ['STRIPE_SECRET_KEY'];
+    default:
+      return [];
+  }
+}
+
+/**
+ * Get optional environment variables for a specific service
+ * @param serviceName The name of the service (e.g., 'plaid', 'stripe')
+ * @returns Array of optional environment variable names
+ */
+function getOptionalEnvVars(serviceName: string): string[] {
+  switch (serviceName.toLowerCase()) {
+    case 'plaid':
+      return ['PLAID_ENV'];
+    case 'stripe':
+      return ['STRIPE_WEBHOOK_SECRET'];
+    default:
+      return [];
+  }
 }
 
 /**
@@ -21,27 +59,24 @@ interface ServiceConfig {
  * @returns The service configuration
  */
 export function getConfig(serviceName: string): ServiceConfig {
-  // All service configs require at least a client secret
-  const clientSecretVar = `${serviceName.toUpperCase()}_SECRET_KEY`;
-  const clientSecret = process.env[clientSecretVar] || '';
-  
-  // Create basic config
   const config: ServiceConfig = {
-    clientSecret
+    clientSecret: '',
+    additionalConfig: {}
   };
   
-  // Add service-specific configurations
   switch (serviceName.toLowerCase()) {
     case 'plaid':
-      config.clientId = process.env.PLAID_CLIENT_ID || '';
+      config.clientId = process.env.PLAID_CLIENT_ID;
+      config.clientSecret = process.env.PLAID_SECRET_KEY || '';
       config.additionalConfig = {
-        environment: process.env.PLAID_ENVIRONMENT || 'sandbox'
+        env: process.env.PLAID_ENV || 'sandbox'
       };
       break;
     case 'stripe':
-      config.additionalConfig = {
-        publishableKey: process.env.VITE_STRIPE_PUBLIC_KEY || ''
-      };
+      config.clientSecret = process.env.STRIPE_SECRET_KEY || '';
+      if (process.env.STRIPE_WEBHOOK_SECRET) {
+        config.additionalConfig.webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      }
       break;
   }
   
@@ -54,36 +89,23 @@ export function getConfig(serviceName: string): ServiceConfig {
  * @returns Object indicating if config is valid and listing any missing variables
  */
 export function validateServiceConfig(serviceName: string): ServiceConfigResult {
-  const missingVars: string[] = [];
+  const requiredVars = getRequiredEnvVars(serviceName);
+  const missingVars = requiredVars.filter(varName => !process.env[varName]);
   
-  // Common required variables
-  const clientSecretVar = `${serviceName.toUpperCase()}_SECRET_KEY`;
-  if (!process.env[clientSecretVar]) {
-    missingVars.push(clientSecretVar);
+  const isValid = missingVars.length === 0;
+  
+  if (isValid) {
+    return {
+      isValid,
+      missingVars,
+      config: getConfig(serviceName)
+    };
+  } else {
+    return {
+      isValid,
+      missingVars
+    };
   }
-  
-  // Service-specific required variables
-  switch (serviceName.toLowerCase()) {
-    case 'plaid':
-      if (!process.env.PLAID_CLIENT_ID) {
-        missingVars.push('PLAID_CLIENT_ID');
-      }
-      break;
-    case 'stripe':
-      if (!process.env.VITE_STRIPE_PUBLIC_KEY) {
-        missingVars.push('VITE_STRIPE_PUBLIC_KEY');
-      }
-      break;
-  }
-  
-  // Get configuration
-  const config = getConfig(serviceName);
-  
-  return {
-    isValid: missingVars.length === 0,
-    missingVars,
-    config: missingVars.length === 0 ? config : undefined
-  };
 }
 
 /**
@@ -93,9 +115,11 @@ export function validateServiceConfig(serviceName: string): ServiceConfigResult 
  * @throws Error if configuration is invalid
  */
 export function requireValidConfig(serviceName: string): ServiceConfig {
-  const validation = validateServiceConfig(serviceName);
-  if (!validation.isValid) {
-    throw new Error(`${serviceName} integration is not properly configured. Missing: ${validation.missingVars.join(', ')}`);
+  const result = validateServiceConfig(serviceName);
+  
+  if (!result.isValid) {
+    throw new Error(`${serviceName} service not properly configured. Missing environment variables: ${result.missingVars.join(', ')}`);
   }
+  
   return getConfig(serviceName);
 }

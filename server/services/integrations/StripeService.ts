@@ -3,11 +3,10 @@ import { getConfig } from './IntegrationConfig';
 
 /**
  * Service for interacting with the Stripe API
- * Handles payment method verification, card verification, and bank account verification
+ * Handles payment method verification, transaction processing, and identity verification
  */
 export class StripeService {
   private client: Stripe;
-  private publishableKey: string;
   
   constructor() {
     // Get configuration
@@ -17,295 +16,306 @@ export class StripeService {
     this.client = new Stripe(config.clientSecret, {
       apiVersion: '2023-10-16',
     });
-    
-    this.publishableKey = config.additionalConfig?.publishableKey || '';
   }
   
   /**
-   * Get the Stripe publishable key (safe for frontend)
-   * @returns The publishable key
-   */
-  getPublishableKey(): string {
-    return this.publishableKey;
-  }
-  
-  /**
-   * Create a new customer in Stripe
-   * @param userId The user's ID in our system
-   * @param email The user's email
-   * @param name The user's full name
-   * @param metadata Any additional metadata
-   * @returns The created customer
-   */
-  async createCustomer(userId: number, email: string, name: string, metadata: Record<string, string> = {}) {
-    try {
-      const customer = await this.client.customers.create({
-        email,
-        name,
-        metadata: {
-          userId: userId.toString(),
-          ...metadata
-        }
-      });
-      
-      return customer;
-    } catch (error) {
-      console.error('Error creating Stripe customer:', error);
-      throw new Error(`Failed to create Stripe customer: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Create a setup intent for adding a payment method
-   * @param customerId The Stripe customer ID
-   * @param metadata Any additional metadata
-   * @returns The setup intent
-   */
-  async createSetupIntent(customerId: string, metadata: Record<string, string> = {}) {
-    try {
-      const setupIntent = await this.client.setupIntents.create({
-        customer: customerId,
-        payment_method_types: ['card'],
-        metadata
-      });
-      
-      return setupIntent;
-    } catch (error) {
-      console.error('Error creating Stripe setup intent:', error);
-      throw new Error(`Failed to create Stripe setup intent: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Retrieve a setup intent
-   * @param setupIntentId The setup intent ID
-   * @returns The setup intent
-   */
-  async getSetupIntent(setupIntentId: string) {
-    try {
-      const setupIntent = await this.client.setupIntents.retrieve(setupIntentId);
-      return setupIntent;
-    } catch (error) {
-      console.error('Error retrieving Stripe setup intent:', error);
-      throw new Error(`Failed to retrieve Stripe setup intent: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Retrieve a customer's payment methods
-   * @param customerId The Stripe customer ID
-   * @param type The payment method type (card, bank_account, etc.)
-   * @returns List of payment methods
-   */
-  async getPaymentMethods(customerId: string, type: string = 'card') {
-    try {
-      const paymentMethods = await this.client.paymentMethods.list({
-        customer: customerId,
-        type
-      });
-      
-      return paymentMethods.data;
-    } catch (error) {
-      console.error('Error retrieving Stripe payment methods:', error);
-      throw new Error(`Failed to retrieve Stripe payment methods: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Create a payment intent for payment method verification
-   * @param customerId The Stripe customer ID
-   * @param amount The amount to charge (usually a small amount)
-   * @param currency The currency code
-   * @param paymentMethodId The payment method ID
-   * @param metadata Any additional metadata
+   * Create a payment intent
+   * @param amount The amount to charge in cents
+   * @param currency The currency code (default: 'usd')
+   * @param customerId The Stripe customer ID (optional)
    * @returns The payment intent
    */
-  async createVerificationPaymentIntent(
-    customerId: string, 
-    amount: number, 
-    currency: string = 'usd',
-    paymentMethodId?: string,
-    metadata: Record<string, string> = {}
-  ) {
+  async createPaymentIntent(amount: number, currency: string = 'usd', customerId?: string) {
     try {
       const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
         amount,
         currency,
-        customer: customerId,
-        confirm: !!paymentMethodId,
-        metadata: {
-          purpose: 'verification',
-          ...metadata
+        automatic_payment_methods: {
+          enabled: true,
         },
-        capture_method: 'manual' // Don't actually capture the payment
       };
       
-      if (paymentMethodId) {
-        paymentIntentParams.payment_method = paymentMethodId;
+      if (customerId) {
+        paymentIntentParams.customer = customerId;
       }
       
       const paymentIntent = await this.client.paymentIntents.create(paymentIntentParams);
-      return paymentIntent;
+      
+      return {
+        paymentIntentId: paymentIntent.id,
+        clientSecret: paymentIntent.client_secret,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        status: paymentIntent.status
+      };
     } catch (error) {
-      console.error('Error creating Stripe verification payment intent:', error);
-      throw new Error(`Failed to create Stripe verification payment intent: ${error.message}`);
+      console.error('Error creating payment intent:', error);
+      throw new Error(`Failed to create payment intent: ${error.message}`);
     }
   }
   
   /**
-   * Cancel a payment intent (e.g., after verification)
-   * @param paymentIntentId The payment intent ID
-   * @returns The canceled payment intent
+   * Create a customer
+   * @param email Customer email
+   * @param name Customer name
+   * @param metadata Additional metadata (optional)
+   * @returns The customer object
    */
-  async cancelPaymentIntent(paymentIntentId: string) {
+  async createCustomer(email: string, name: string, metadata?: Record<string, string>) {
     try {
-      const paymentIntent = await this.client.paymentIntents.cancel(paymentIntentId);
-      return paymentIntent;
+      const customer = await this.client.customers.create({
+        email,
+        name,
+        metadata
+      });
+      
+      return {
+        customerId: customer.id,
+        email: customer.email,
+        name: customer.name,
+        created: customer.created
+      };
     } catch (error) {
-      console.error('Error canceling Stripe payment intent:', error);
-      throw new Error(`Failed to cancel Stripe payment intent: ${error.message}`);
+      console.error('Error creating customer:', error);
+      throw new Error(`Failed to create customer: ${error.message}`);
     }
   }
   
   /**
-   * Verify a card through a small authorization
-   * @param customerId The Stripe customer ID
+   * Attach a payment method to a customer
+   * @param customerId The customer ID
    * @param paymentMethodId The payment method ID
-   * @returns The verification result
+   * @returns Success status
    */
-  async verifyCardWithSmallAuth(customerId: string, paymentMethodId: string) {
+  async attachPaymentMethod(customerId: string, paymentMethodId: string) {
     try {
-      // Attach payment method to customer if not already attached
       await this.client.paymentMethods.attach(paymentMethodId, {
         customer: customerId,
       });
       
-      // Create a small authorization payment intent
-      const paymentIntent = await this.createVerificationPaymentIntent(
-        customerId,
-        50, // $0.50
-        'usd',
-        paymentMethodId,
-        { verification_type: 'small_auth' }
-      );
-      
-      // Check if authorization succeeded
-      const isVerified = ['succeeded', 'requires_capture'].includes(paymentIntent.status);
-      
-      // Cancel the payment intent regardless of outcome
-      if (isVerified) {
-        await this.client.paymentIntents.cancel(paymentIntent.id);
-      }
-      
-      return {
-        isVerified,
-        paymentMethodId,
-        customerId,
-        details: {
-          cardType: paymentIntent.payment_method_details?.card?.brand,
-          last4: paymentIntent.payment_method_details?.card?.last4,
-          expiryMonth: paymentIntent.payment_method_details?.card?.exp_month,
-          expiryYear: paymentIntent.payment_method_details?.card?.exp_year
-        },
-        message: isVerified ? 'Card verified successfully' : 'Card verification failed'
-      };
+      return { success: true };
     } catch (error) {
-      console.error('Error verifying card:', error);
-      return {
-        isVerified: false,
-        paymentMethodId,
-        customerId,
-        details: null,
-        message: `Card verification failed: ${error.message}`
-      };
+      console.error('Error attaching payment method:', error);
+      throw new Error(`Failed to attach payment method: ${error.message}`);
     }
   }
   
   /**
-   * Calculate a payment method risk score
-   * @param customerId The Stripe customer ID
-   * @param paymentMethodId The payment method ID
-   * @returns The risk assessment result
+   * List payment methods for a customer
+   * @param customerId The customer ID
+   * @returns List of payment methods
    */
-  async calculatePaymentMethodRiskScore(customerId: string, paymentMethodId: string) {
+  async listPaymentMethods(customerId: string) {
     try {
-      // Get customer details
-      const customer = await this.client.customers.retrieve(customerId);
-      
-      // Get payment method details
-      const paymentMethod = await this.client.paymentMethods.retrieve(paymentMethodId);
-      
-      // Get payment method history (if any)
-      const paymentIntents = await this.client.paymentIntents.list({
+      const paymentMethods = await this.client.paymentMethods.list({
         customer: customerId,
-        limit: 100
+        type: 'card',
       });
       
-      // Calculate various risk factors
-      let riskScore = 50; // Start at neutral
+      return paymentMethods.data;
+    } catch (error) {
+      console.error('Error listing payment methods:', error);
+      throw new Error(`Failed to list payment methods: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Create a setup intent for safely collecting payment details
+   * @param customerId The Stripe customer ID
+   * @returns The setup intent
+   */
+  async createSetupIntent(customerId: string) {
+    try {
+      const setupIntent = await this.client.setupIntents.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+      });
       
-      // Factor 1: Customer history
-      if (customer.created) {
-        const accountAgeDays = (Date.now() - customer.created * 1000) / (24 * 60 * 60 * 1000);
-        if (accountAgeDays < 1) {
-          riskScore += 20; // Very new account
-        } else if (accountAgeDays < 7) {
-          riskScore += 10; // New account
-        } else if (accountAgeDays > 90) {
-          riskScore -= 10; // Established account
-        }
+      return {
+        setupIntentId: setupIntent.id,
+        clientSecret: setupIntent.client_secret,
+        status: setupIntent.status
+      };
+    } catch (error) {
+      console.error('Error creating setup intent:', error);
+      throw new Error(`Failed to create setup intent: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Create a subscription
+   * @param customerId The customer ID
+   * @param priceId The price ID
+   * @returns The subscription
+   */
+  async createSubscription(customerId: string, priceId: string) {
+    try {
+      const subscription = await this.client.subscriptions.create({
+        customer: customerId,
+        items: [{ price: priceId }],
+        payment_behavior: 'default_incomplete',
+        expand: ['latest_invoice.payment_intent'],
+      });
+      
+      return {
+        subscriptionId: subscription.id,
+        status: subscription.status,
+        clientSecret: subscription.latest_invoice?.payment_intent?.client_secret,
+      };
+    } catch (error) {
+      console.error('Error creating subscription:', error);
+      throw new Error(`Failed to create subscription: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Analyze payment method risk
+   * @param paymentMethodId The payment method ID
+   * @returns Risk assessment data
+   */
+  async analyzePaymentMethodRisk(paymentMethodId: string) {
+    try {
+      const paymentMethod = await this.client.paymentMethods.retrieve(paymentMethodId);
+      
+      // Get card details for risk analysis
+      const cardDetails = paymentMethod.card;
+      if (!cardDetails) {
+        throw new Error('No card details available for risk analysis');
       }
       
-      // Factor 2: Payment method type
-      if (paymentMethod.type === 'card') {
-        const card = paymentMethod.card;
-        if (card) {
-          // Higher risk for certain card types
-          if (['prepaid', 'unknown'].includes(card.funding)) {
-            riskScore += 15;
-          }
-          
-          // Lower risk for higher security cards
-          if (card.checks?.cvc_check === 'pass' && card.checks?.address_line1_check === 'pass') {
-            riskScore -= 10;
-          }
-        }
+      // Create a simple risk assessment based on card attributes
+      // In production, this would integrate with more sophisticated fraud detection
+      const riskFactors = [];
+      let riskScore = 50; // Neutral starting point
+      
+      // Card type risk adjustment
+      if (cardDetails.funding === 'credit') {
+        riskScore -= 5; // Credit cards slightly lower risk
+      } else if (cardDetails.funding === 'prepaid') {
+        riskScore += 10; // Prepaid cards slightly higher risk
       }
       
-      // Factor 3: Payment history
-      const successfulPayments = paymentIntents.data.filter(pi => pi.status === 'succeeded').length;
-      if (successfulPayments > 10) {
-        riskScore -= 15; // Many successful payments
-      } else if (successfulPayments > 5) {
-        riskScore -= 10; // Several successful payments
-      } else if (successfulPayments > 0) {
-        riskScore -= 5; // At least one successful payment
+      // Card brand risk adjustment
+      const premiumBrands = ['amex', 'visa', 'mastercard'];
+      if (premiumBrands.includes(cardDetails.brand)) {
+        riskScore -= 5;
+      } else {
+        riskScore += 5;
+        riskFactors.push('Non-premium card brand');
       }
       
-      const failedPayments = paymentIntents.data.filter(pi => ['failed', 'canceled'].includes(pi.status)).length;
-      if (failedPayments > 3) {
-        riskScore += 20; // Multiple failed payments
-      } else if (failedPayments > 0) {
-        riskScore += 5; // Some failed payments
+      // Check for CVC and postal code
+      if (cardDetails.checks?.cvc_check !== 'pass') {
+        riskScore += 15;
+        riskFactors.push('CVC verification failed or not provided');
       }
       
-      // Normalize to 0-100 range
+      if (cardDetails.checks?.address_line1_check !== 'pass') {
+        riskScore += 10;
+        riskFactors.push('Address verification failed or not provided');
+      }
+      
+      if (cardDetails.checks?.address_postal_code_check !== 'pass') {
+        riskScore += 10;
+        riskFactors.push('Postal code verification failed or not provided');
+      }
+      
+      // Country risk assessment
+      const highRiskCountries = ['AA', 'ZZ']; // Placeholder for actual high-risk countries
+      if (highRiskCountries.includes(cardDetails.country || '')) {
+        riskScore += 20;
+        riskFactors.push('Card issued in high-risk country');
+      }
+      
+      // Normalize risk score to 0-100 range
       riskScore = Math.max(0, Math.min(100, riskScore));
       
       return {
+        paymentMethodId,
         riskScore,
         riskLevel: this.getRiskLevelFromScore(riskScore),
-        factors: {
-          paymentMethodType: paymentMethod.type,
-          customerAge: customer.created ? new Date(customer.created * 1000).toISOString() : null,
-          successfulPayments,
-          failedPayments
-        },
-        recommendations: this.getRecommendationsFromScore(riskScore)
+        cardType: cardDetails.funding,
+        cardBrand: cardDetails.brand,
+        expiryMonth: cardDetails.exp_month,
+        expiryYear: cardDetails.exp_year,
+        last4: cardDetails.last4,
+        country: cardDetails.country,
+        riskFactors,
       };
     } catch (error) {
-      console.error('Error calculating payment method risk score:', error);
-      throw new Error(`Failed to calculate payment method risk score: ${error.message}`);
+      console.error('Error analyzing payment method risk:', error);
+      throw new Error(`Failed to analyze payment method risk: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Check customer transaction history
+   * @param customerId The customer ID
+   * @returns Transaction history analysis
+   */
+  async analyzeCustomerHistory(customerId: string) {
+    try {
+      // Fetch customer data
+      const customer = await this.client.customers.retrieve(customerId);
+      
+      // Get payment intents for this customer
+      const paymentIntents = await this.client.paymentIntents.list({
+        customer: customerId,
+        limit: 100,
+      });
+      
+      // Calculate successful vs. failed transactions
+      const totalTransactions = paymentIntents.data.length;
+      const successfulTransactions = paymentIntents.data.filter(
+        pi => pi.status === 'succeeded'
+      ).length;
+      
+      // Calculate success rate
+      const successRate = totalTransactions > 0 
+        ? successfulTransactions / totalTransactions
+        : 0;
+      
+      // Determine customer age in days
+      const customerCreatedDate = new Date(customer.created * 1000);
+      const now = new Date();
+      const customerAgeInDays = Math.floor(
+        (now.getTime() - customerCreatedDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      
+      // Analyze transaction amounts
+      const transactionAmounts = paymentIntents.data
+        .filter(pi => pi.status === 'succeeded')
+        .map(pi => pi.amount);
+      
+      const averageTransactionAmount = transactionAmounts.length > 0
+        ? transactionAmounts.reduce((sum, amount) => sum + amount, 0) / transactionAmounts.length
+        : 0;
+      
+      const maxTransactionAmount = transactionAmounts.length > 0
+        ? Math.max(...transactionAmounts)
+        : 0;
+      
+      return {
+        customerId,
+        customerCreated: customer.created,
+        customerAgeInDays,
+        totalTransactions,
+        successfulTransactions,
+        successRate,
+        averageTransactionAmount,
+        maxTransactionAmount,
+        hasBillingAddress: !!customer.address,
+        recentActivity: paymentIntents.data.slice(0, 5).map(pi => ({
+          id: pi.id,
+          amount: pi.amount,
+          status: pi.status,
+          created: pi.created,
+          paymentMethod: pi.payment_method,
+        })),
+      };
+    } catch (error) {
+      console.error('Error analyzing customer history:', error);
+      throw new Error(`Failed to analyze customer history: ${error.message}`);
     }
   }
   
@@ -320,30 +330,5 @@ export class StripeService {
     if (score < 60) return 'Medium';
     if (score < 80) return 'High';
     return 'Very High';
-  }
-  
-  /**
-   * Get recommendations based on risk score
-   * @param score The risk score (0-100)
-   * @returns List of recommendations
-   */
-  private getRecommendationsFromScore(score: number): string[] {
-    const recommendations: string[] = [];
-    
-    if (score > 60) {
-      recommendations.push('Consider additional verification steps');
-    }
-    
-    if (score > 70) {
-      recommendations.push('Limit initial transaction amounts');
-      recommendations.push('Verify billing address matches shipping address');
-    }
-    
-    if (score > 80) {
-      recommendations.push('Require full identity verification before proceeding');
-      recommendations.push('Monitor account closely for unusual activity');
-    }
-    
-    return recommendations;
   }
 }

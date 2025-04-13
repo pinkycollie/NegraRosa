@@ -1180,6 +1180,212 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
   }
   
+  // Financial verification endpoints
+  apiRouter.get("/financial-services/status", async (req, res) => {
+    try {
+      const status = financialVerificationService.checkConfiguration();
+      res.json(status);
+    } catch (error) {
+      console.error("Error checking financial service status:", error);
+      res.status(500).json({ message: "Server error checking financial service status" });
+    }
+  });
+
+  // Plaid endpoints
+  apiRouter.post("/financial/plaid/create-link-token", async (req, res) => {
+    try {
+      const { userId, fullName, email } = req.body;
+      
+      if (!userId || !fullName || !email) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      const result = await financialVerificationService.createPlaidLinkToken(
+        parseInt(userId),
+        fullName,
+        email
+      );
+      
+      if (result.error) {
+        return res.status(400).json({ message: result.error });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error creating Plaid link token:", error);
+      res.status(500).json({ message: "Server error creating Plaid link token" });
+    }
+  });
+
+  apiRouter.post("/financial/plaid/exchange-token", async (req, res) => {
+    try {
+      const { publicToken } = req.body;
+      
+      if (!publicToken) {
+        return res.status(400).json({ message: "Missing public token" });
+      }
+      
+      const result = await financialVerificationService.exchangePlaidPublicToken(publicToken);
+      
+      if (result.error) {
+        return res.status(400).json({ message: result.error });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error exchanging Plaid token:", error);
+      res.status(500).json({ message: "Server error exchanging Plaid token" });
+    }
+  });
+
+  apiRouter.post("/financial/plaid/get-accounts", async (req, res) => {
+    try {
+      const { accessToken } = req.body;
+      
+      if (!accessToken) {
+        return res.status(400).json({ message: "Missing access token" });
+      }
+      
+      const result = await financialVerificationService.getBankAccounts(accessToken);
+      
+      if (result.error) {
+        return res.status(400).json({ message: result.error });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error getting bank accounts:", error);
+      res.status(500).json({ message: "Server error getting bank accounts" });
+    }
+  });
+
+  apiRouter.post("/financial/plaid/verify-bank-account", async (req, res) => {
+    try {
+      const { accessToken } = req.body;
+      
+      if (!accessToken) {
+        return res.status(400).json({ message: "Missing access token" });
+      }
+      
+      const result = await financialVerificationService.verifyBankAccountOwner(accessToken);
+      
+      if (result.error) {
+        return res.status(400).json({ message: result.error });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error verifying bank account:", error);
+      res.status(500).json({ message: "Server error verifying bank account" });
+    }
+  });
+
+  // Stripe endpoints
+  apiRouter.post("/financial/stripe/create-payment-intent", async (req, res) => {
+    try {
+      const { amount, currency, customerId } = req.body;
+      
+      if (!amount) {
+        return res.status(400).json({ message: "Missing amount" });
+      }
+      
+      const result = await financialVerificationService.createPaymentIntent(
+        amount,
+        currency,
+        customerId
+      );
+      
+      if (result.error) {
+        return res.status(400).json({ message: result.error });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error creating payment intent:", error);
+      res.status(500).json({ message: "Server error creating payment intent" });
+    }
+  });
+
+  apiRouter.post("/financial/stripe/create-customer", async (req, res) => {
+    try {
+      const { email, name, metadata } = req.body;
+      
+      if (!email || !name) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      const result = await financialVerificationService.createStripeCustomer(
+        email,
+        name,
+        metadata
+      );
+      
+      if (result.error) {
+        return res.status(400).json({ message: result.error });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error creating Stripe customer:", error);
+      res.status(500).json({ message: "Server error creating Stripe customer" });
+    }
+  });
+
+  apiRouter.post("/financial/stripe/analyze-payment-method", async (req, res) => {
+    try {
+      const { paymentMethodId } = req.body;
+      
+      if (!paymentMethodId) {
+        return res.status(400).json({ message: "Missing payment method ID" });
+      }
+      
+      const result = await financialVerificationService.analyzePaymentMethodRisk(paymentMethodId);
+      
+      if (result.error) {
+        return res.status(400).json({ message: result.error });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error analyzing payment method:", error);
+      res.status(500).json({ message: "Server error analyzing payment method" });
+    }
+  });
+
+  // Comprehensive financial risk assessment
+  apiRouter.post("/financial/risk-assessment", async (req, res) => {
+    try {
+      const { userId, plaidAccessToken, stripeCustomerId, paymentMethodId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "Missing user ID" });
+      }
+      
+      // Need at least one verification method
+      if (!plaidAccessToken && !stripeCustomerId && !paymentMethodId) {
+        return res.status(400).json({ 
+          message: "At least one verification method is required (plaidAccessToken, stripeCustomerId, or paymentMethodId)" 
+        });
+      }
+      
+      const result = await financialVerificationService.performFinancialRiskAssessment(
+        parseInt(userId),
+        plaidAccessToken,
+        stripeCustomerId,
+        paymentMethodId
+      );
+      
+      if (result.error) {
+        return res.status(400).json({ message: result.error });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error performing financial risk assessment:", error);
+      res.status(500).json({ message: "Server error performing financial risk assessment" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   return httpServer;
