@@ -539,6 +539,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Website verification endpoints
+  apiRouter.post("/verify-website", async (req, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url) {
+        return res.status(400).json({ message: "URL is required" });
+      }
+      
+      // Verify the website
+      const result = await websiteVerificationService.verifyWebsite(url);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error verifying website:", error);
+      res.status(500).json({ message: "Server error verifying website" });
+    }
+  });
+  
+  apiRouter.get("/website-metrics", async (req, res) => {
+    try {
+      const { url } = req.query;
+      
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ message: "URL query parameter is required" });
+      }
+      
+      // Get website metrics
+      const metrics = await websiteVerificationService.getWebsiteMetrics(url);
+      
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error getting website metrics:", error);
+      res.status(500).json({ message: "Server error getting website metrics" });
+    }
+  });
+  
+  apiRouter.post("/entrepreneur-profiles/:profileId/verify-website", async (req, res) => {
+    try {
+      const profileId = parseInt(req.params.profileId);
+      if (isNaN(profileId)) {
+        return res.status(400).json({ message: "Invalid profile ID" });
+      }
+      
+      // Get the profile
+      const profile = await storage.getEntrepreneurProfile(profileId);
+      if (!profile) {
+        return res.status(404).json({ message: "Entrepreneur profile not found" });
+      }
+      
+      // Verify the website from the profile's websiteUrl
+      const result = await websiteVerificationService.verifyEntrepreneurWebsite(profileId);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error verifying entrepreneur website:", error);
+      res.status(500).json({ message: "Server error verifying entrepreneur website" });
+    }
+  });
+  
   const httpServer = createServer(app);
   
   return httpServer;
