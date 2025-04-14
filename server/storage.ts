@@ -1461,6 +1461,362 @@ export class MemStorage implements IStorage {
     this.complianceReports.set(id, updatedReport);
     return updatedReport;
   }
+
+  // Finance/Tax/Insurance Module Methods
+  async createFinancialTransaction(transaction: InsertFinancialTransaction): Promise<FinancialTransaction> {
+    const id = this.nextFinancialTransactionId++;
+    const now = new Date();
+    const newTransaction: FinancialTransaction = {
+      ...transaction,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.financialTransactions.set(id, newTransaction);
+    return newTransaction;
+  }
+
+  async getFinancialTransactionsByUserId(userId: number): Promise<FinancialTransaction[]> {
+    return Array.from(this.financialTransactions.values())
+      .filter(transaction => transaction.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getFinancialTransaction(id: number): Promise<FinancialTransaction | undefined> {
+    return this.financialTransactions.get(id);
+  }
+
+  async updateFinancialTransaction(id: number, updates: Partial<FinancialTransaction>): Promise<FinancialTransaction | undefined> {
+    const transaction = this.financialTransactions.get(id);
+    if (!transaction) return undefined;
+    
+    const updatedTransaction: FinancialTransaction = {
+      ...transaction,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.financialTransactions.set(id, updatedTransaction);
+    return updatedTransaction;
+  }
+
+  async getFinancialTransactionsByMerkleRoot(merkleRoot: string): Promise<FinancialTransaction[]> {
+    return Array.from(this.financialTransactions.values())
+      .filter(transaction => transaction.merkleRoot === merkleRoot)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async logApiFirewallEvent(log: InsertApiFirewallLog): Promise<ApiFirewallLog> {
+    const id = this.nextApiFirewallLogId++;
+    const now = new Date();
+    const newLog: ApiFirewallLog = {
+      ...log,
+      id,
+      timestamp: now
+    };
+    this.apiFirewallLogs.set(id, newLog);
+    return newLog;
+  }
+
+  async getApiFirewallLogsByUserId(userId: number): Promise<ApiFirewallLog[]> {
+    return Array.from(this.apiFirewallLogs.values())
+      .filter(log => log.userId === userId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+
+  async getApiFirewallLogsByPath(path: string): Promise<ApiFirewallLog[]> {
+    return Array.from(this.apiFirewallLogs.values())
+      .filter(log => log.path === path)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+
+  async createInsurancePolicy(policy: InsertInsurancePolicy): Promise<InsurancePolicy> {
+    const id = this.nextInsurancePolicyId++;
+    const now = new Date();
+    const newPolicy: InsurancePolicy = {
+      ...policy,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.insurancePolicies.set(id, newPolicy);
+    return newPolicy;
+  }
+
+  async getInsurancePoliciesByUserId(userId: number): Promise<InsurancePolicy[]> {
+    return Array.from(this.insurancePolicies.values())
+      .filter(policy => policy.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getInsurancePolicy(id: number): Promise<InsurancePolicy | undefined> {
+    return this.insurancePolicies.get(id);
+  }
+
+  async updateInsurancePolicy(id: number, updates: Partial<InsurancePolicy>): Promise<InsurancePolicy | undefined> {
+    const policy = this.insurancePolicies.get(id);
+    if (!policy) return undefined;
+    
+    const updatedPolicy: InsurancePolicy = {
+      ...policy,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.insurancePolicies.set(id, updatedPolicy);
+    return updatedPolicy;
+  }
+
+  // Real Estate Module Methods
+  async createPropertyDocument(document: InsertPropertyDocument): Promise<PropertyDocument> {
+    const id = this.nextPropertyDocumentId++;
+    const now = new Date();
+    const newDocument: PropertyDocument = {
+      ...document,
+      id,
+      createdAt: now,
+      updatedAt: now,
+      lastAccessedAt: now,
+      accessCount: 0
+    };
+    this.propertyDocuments.set(id, newDocument);
+    return newDocument;
+  }
+
+  async getPropertyDocumentsByUserId(userId: number): Promise<PropertyDocument[]> {
+    return Array.from(this.propertyDocuments.values())
+      .filter(doc => doc.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getPropertyDocumentsByPropertyId(propertyId: string): Promise<PropertyDocument[]> {
+    return Array.from(this.propertyDocuments.values())
+      .filter(doc => doc.propertyId === propertyId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getPropertyDocument(id: number): Promise<PropertyDocument | undefined> {
+    return this.propertyDocuments.get(id);
+  }
+
+  async updatePropertyDocument(id: number, updates: Partial<PropertyDocument>): Promise<PropertyDocument | undefined> {
+    const document = this.propertyDocuments.get(id);
+    if (!document) return undefined;
+    
+    const updatedDocument: PropertyDocument = {
+      ...document,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.propertyDocuments.set(id, updatedDocument);
+    return updatedDocument;
+  }
+
+  async logDocumentAccess(id: number, userId: number, actionType: string): Promise<PropertyDocument | undefined> {
+    const document = this.propertyDocuments.get(id);
+    if (!document) return undefined;
+    
+    const updatedDocument: PropertyDocument = {
+      ...document,
+      accessCount: document.accessCount + 1,
+      lastAccessedAt: new Date(),
+      accessLog: [...(document.accessLog || []), { userId, timestamp: new Date(), actionType }]
+    };
+    this.propertyDocuments.set(id, updatedDocument);
+    return updatedDocument;
+  }
+
+  async createPropertyTag(tag: InsertPropertyTag): Promise<PropertyTag> {
+    const id = this.nextPropertyTagId++;
+    const now = new Date();
+    const newTag: PropertyTag = {
+      ...tag,
+      id,
+      createdAt: now,
+      lastScannedAt: null,
+      scanCount: 0
+    };
+    this.propertyTags.set(id, newTag);
+    return newTag;
+  }
+
+  async getPropertyTagsByPropertyId(propertyId: string): Promise<PropertyTag[]> {
+    return Array.from(this.propertyTags.values())
+      .filter(tag => tag.propertyId === propertyId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getPropertyTag(id: number): Promise<PropertyTag | undefined> {
+    return this.propertyTags.get(id);
+  }
+
+  async getPropertyTagByUid(tagUid: string): Promise<PropertyTag | undefined> {
+    return Array.from(this.propertyTags.values())
+      .find(tag => tag.tagUid === tagUid);
+  }
+
+  async updatePropertyTag(id: number, updates: Partial<PropertyTag>): Promise<PropertyTag | undefined> {
+    const tag = this.propertyTags.get(id);
+    if (!tag) return undefined;
+    
+    const updatedTag: PropertyTag = {
+      ...tag,
+      ...updates
+    };
+    this.propertyTags.set(id, updatedTag);
+    return updatedTag;
+  }
+
+  async logTagScan(id: number): Promise<PropertyTag | undefined> {
+    const tag = this.propertyTags.get(id);
+    if (!tag) return undefined;
+    
+    const updatedTag: PropertyTag = {
+      ...tag,
+      scanCount: tag.scanCount + 1,
+      lastScannedAt: new Date()
+    };
+    this.propertyTags.set(id, updatedTag);
+    return updatedTag;
+  }
+
+  async createPropertyVerification(verification: InsertPropertyVerification): Promise<PropertyVerification> {
+    const id = this.nextPropertyVerificationId++;
+    const now = new Date();
+    const newVerification: PropertyVerification = {
+      ...verification,
+      id,
+      createdAt: now,
+      completedAt: null
+    };
+    this.propertyVerifications.set(id, newVerification);
+    return newVerification;
+  }
+
+  async getPropertyVerificationsByPropertyId(propertyId: string): Promise<PropertyVerification[]> {
+    return Array.from(this.propertyVerifications.values())
+      .filter(verification => verification.propertyId === propertyId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getPropertyVerification(id: number): Promise<PropertyVerification | undefined> {
+    return this.propertyVerifications.get(id);
+  }
+
+  async updatePropertyVerification(id: number, updates: Partial<PropertyVerification>): Promise<PropertyVerification | undefined> {
+    const verification = this.propertyVerifications.get(id);
+    if (!verification) return undefined;
+    
+    const updatedVerification: PropertyVerification = {
+      ...verification,
+      ...updates
+    };
+    this.propertyVerifications.set(id, updatedVerification);
+    return updatedVerification;
+  }
+
+  // Business Credit Module Methods
+  async createBusinessCreditProfile(profile: InsertBusinessCreditProfile): Promise<BusinessCreditProfile> {
+    const id = this.nextBusinessCreditProfileId++;
+    const now = new Date();
+    const newProfile: BusinessCreditProfile = {
+      ...profile,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.businessCreditProfiles.set(id, newProfile);
+    return newProfile;
+  }
+
+  async getBusinessCreditProfileByUserId(userId: number): Promise<BusinessCreditProfile | undefined> {
+    return Array.from(this.businessCreditProfiles.values())
+      .find(profile => profile.userId === userId);
+  }
+
+  async getBusinessCreditProfile(id: number): Promise<BusinessCreditProfile | undefined> {
+    return this.businessCreditProfiles.get(id);
+  }
+
+  async updateBusinessCreditProfile(id: number, updates: Partial<BusinessCreditProfile>): Promise<BusinessCreditProfile | undefined> {
+    const profile = this.businessCreditProfiles.get(id);
+    if (!profile) return undefined;
+    
+    const updatedProfile: BusinessCreditProfile = {
+      ...profile,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.businessCreditProfiles.set(id, updatedProfile);
+    return updatedProfile;
+  }
+
+  async getBusinessCreditProfileByBusinessName(businessName: string): Promise<BusinessCreditProfile | undefined> {
+    return Array.from(this.businessCreditProfiles.values())
+      .find(profile => profile.businessName === businessName);
+  }
+
+  async createCreditEnrichmentLog(log: InsertCreditEnrichmentLog): Promise<CreditEnrichmentLog> {
+    const id = this.nextCreditEnrichmentLogId++;
+    const now = new Date();
+    const newLog: CreditEnrichmentLog = {
+      ...log,
+      id,
+      timestamp: now
+    };
+    this.creditEnrichmentLogs.set(id, newLog);
+    return newLog;
+  }
+
+  async getCreditEnrichmentLogsByProfileId(profileId: number): Promise<CreditEnrichmentLog[]> {
+    return Array.from(this.creditEnrichmentLogs.values())
+      .filter(log => log.profileId === profileId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+
+  async getCreditEnrichmentLog(id: number): Promise<CreditEnrichmentLog | undefined> {
+    return this.creditEnrichmentLogs.get(id);
+  }
+
+  async createZkpCreditProof(proof: InsertZkpCreditProof): Promise<ZkpCreditProof> {
+    const id = this.nextZkpCreditProofId++;
+    const now = new Date();
+    const newProof: ZkpCreditProof = {
+      ...proof,
+      id,
+      createdAt: now,
+      verifiedAt: null,
+      verified: false
+    };
+    this.zkpCreditProofs.set(id, newProof);
+    return newProof;
+  }
+
+  async getZkpCreditProofsByProfileId(profileId: number): Promise<ZkpCreditProof[]> {
+    return Array.from(this.zkpCreditProofs.values())
+      .filter(proof => proof.profileId === profileId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getZkpCreditProof(id: number): Promise<ZkpCreditProof | undefined> {
+    return this.zkpCreditProofs.get(id);
+  }
+
+  async getZkpCreditProofByPublicIdentifier(publicIdentifier: string): Promise<ZkpCreditProof | undefined> {
+    return Array.from(this.zkpCreditProofs.values())
+      .find(proof => proof.publicIdentifier === publicIdentifier);
+  }
+
+  async verifyZkpCreditProof(id: number): Promise<ZkpCreditProof | undefined> {
+    const proof = this.zkpCreditProofs.get(id);
+    if (!proof) return undefined;
+    
+    const updatedProof: ZkpCreditProof = {
+      ...proof,
+      verified: true,
+      verifiedAt: new Date()
+    };
+    this.zkpCreditProofs.set(id, updatedProof);
+    return updatedProof;
+  }
 }
 
 export const storage = new MemStorage();
