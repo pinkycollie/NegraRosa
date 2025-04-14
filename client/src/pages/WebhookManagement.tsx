@@ -496,6 +496,66 @@ export default function WebhookManagement() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <Card>
           <CardHeader>
+            <CardTitle>Xano Integration</CardTitle>
+            <CardDescription>
+              Connect webhooks to Xano databases
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <span>Status: {
+                notionStatus === "unchecked" 
+                  ? "Not checked"
+                  : notionStatus === "connected"
+                    ? "Connected"
+                    : "Error connecting"
+              }</span>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  // Test Xano connection
+                  const testXanoMutation = useMutation({
+                    mutationFn: async () => {
+                      const response = await apiRequest("POST", "/api/xano/test-connection");
+                      return response.json();
+                    },
+                    onSuccess: (data) => {
+                      setNotionStatus(data.success ? "connected" : "error");
+                      toast({
+                        title: data.success ? "Xano Connected" : "Xano Connection Failed",
+                        description: data.message,
+                        variant: data.success ? "default" : "destructive",
+                      });
+                    },
+                    onError: () => {
+                      setNotionStatus("error");
+                      toast({
+                        title: "Xano Connection Failed",
+                        description: "Could not connect to Xano API.",
+                        variant: "destructive",
+                      });
+                    },
+                  });
+                  
+                  testXanoMutation.mutate();
+                }}
+                disabled={testNotionMutation.isPending}
+              >
+                {testNotionMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : null}
+                Test Xano Connection
+              </Button>
+            </div>
+          </CardContent>
+          <CardFooter className="text-sm text-muted-foreground">
+            Requires XANO_API_KEY and XANO_API_BASE_URL
+          </CardFooter>
+        </Card>
+        
+        <Card>
+          <CardHeader>
             <CardTitle>Notion Integration</CardTitle>
             <CardDescription>
               Connect webhooks to Notion databases

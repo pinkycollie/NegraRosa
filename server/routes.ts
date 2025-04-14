@@ -1562,6 +1562,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Xano integration endpoints
+  apiRouter.post("/xano/test-connection", async (req, res) => {
+    try {
+      const result = await xanoService.testConnection();
+      res.json(result);
+    } catch (error) {
+      console.error("Error testing Xano connection:", error);
+      res.status(500).json({ message: "Server error testing Xano connection" });
+    }
+  });
+
+  apiRouter.post("/xano/webhooks/register", async (req, res) => {
+    try {
+      const { endpoint, description } = req.body;
+      
+      if (!endpoint) {
+        return res.status(400).json({ message: "Missing required endpoint field" });
+      }
+      
+      const result = await xanoService.registerWebhookEndpoint(endpoint, description || "NegraRosa webhook endpoint");
+      res.json(result);
+    } catch (error) {
+      console.error("Error registering webhook in Xano:", error);
+      res.status(500).json({ message: "Server error registering webhook in Xano" });
+    }
+  });
+  
+  apiRouter.post("/webhooks/:id/xano", async (req, res) => {
+    try {
+      const webhookId = req.params.id;
+      
+      // Get webhook
+      const webhook = await storage.getWebhook(webhookId);
+      if (!webhook) {
+        return res.status(404).json({ message: "Webhook not found" });
+      }
+      
+      // Send to Xano
+      const payload = req.body.payload || { 
+        timestamp: new Date().toISOString(),
+        event: webhook.event,
+        source: "negrarosa-security"
+      };
+      
+      const result = await xanoService.sendWebhookToXano(webhook, payload);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error sending webhook to Xano:", error);
+      res.status(500).json({ message: "Server error sending webhook to Xano" });
+    }
+  });
+  
+  // PinkSync via Xano integration
+  apiRouter.post("/pinksync/events", async (req, res) => {
+    try {
+      const { event, data, userId } = req.body;
+      
+      if (!event || !data) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Create a PinkSync event webhook if it doesn't exist
+      let pinkSyncWebhook = (await storage.getWebhooksByUserId(userId || 1))
+        .find(webhook => webhook.name === "PinkSync Integration");
+      
+      if (!pinkSyncWebhook) {
+        pinkSyncWebhook = await storage.createWebhook({
+          id: uuidv4(),
+          name: "PinkSync Integration",
+          url: "internal://pinksync",
+          event: "pinksync.*",
+          userId: userId || 1,
+          active: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastTriggeredAt: null,
+          payload: null
+        });
+      }
+      
+      // Send to Xano
+      const pinkSyncPayload = {
+        timestamp: new Date().toISOString(),
+        event: `pinksync.${event}`,
+        source: "negrarosa-security",
+        userId: userId || 1,
+        ...data
+      };
+      
+      const result = await xanoService.sendWebhookToXano(pinkSyncWebhook, pinkSyncPayload);
+      
+      // Create webhook payload record
+      const payloadId = uuidv4();
+      await storage.createWebhookPayload({
+        id: payloadId,
+        webhookId: pinkSyncWebhook.id,
+        event: `pinksync.${event}`,
+        data: data,
+        deliveryStatus: result.success ? 'SUCCESS' : 'FAILED',
+        timestamp: new Date(),
+        responseCode: result.success ? 200 : 500,
+        responseBody: JSON.stringify(result),
+        notionEntryId: null,
+        retryCount: 0
+      });
+      
+      res.json({
+        success: result.success,
+        payloadId,
+        message: result.success ? "Event sent to PinkSync" : result.error
+      });
+    } catch (error) {
+      console.error("Error sending event to PinkSync:", error);
+      res.status(500).json({ message: "Server error sending event to PinkSync" });
+    }
+  });
+
   // Notion connection endpoints
   apiRouter.post("/notion/test-connection", async (req, res) => {
     try {
