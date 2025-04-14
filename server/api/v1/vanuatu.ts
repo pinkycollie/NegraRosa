@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { auth0Service } from '../../services/Auth0Service';
 import { storage } from '../../storage';
+import { webhookService } from '../../services/WebhookService';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
@@ -401,6 +403,237 @@ router.get('/reports/:credentialId', auth0Service.checkJwt, async (req: Request,
   } catch (error: any) {
     console.error('Error fetching compliance reports:', error);
     return res.status(500).json({ message: 'Error fetching compliance reports', error: error.message });
+  }
+});
+
+/**
+ * @route POST /api/v1/vanuatu/callback
+ * @desc Callback endpoint for Vanuatu Compliance Service
+ * @access Public
+ */
+router.post('/callback', async (req: Request, res: Response) => {
+  try {
+    console.log('Received Vanuatu callback:', JSON.stringify(req.body));
+    
+    const { 
+      event, 
+      eventId, 
+      entityId, 
+      credentialId, 
+      licenseId, 
+      timestamp, 
+      status, 
+      data 
+    } = req.body;
+    
+    if (!event || !eventId || !timestamp) {
+      return res.status(400).json({ 
+        message: 'Missing required fields', 
+        required: ['event', 'eventId', 'timestamp'] 
+      });
+    }
+    
+    // Process the callback based on the event type
+    let result;
+    switch (event) {
+      case 'credential_updated':
+        if (!credentialId) {
+          return res.status(400).json({ message: 'Missing credentialId for credential_updated event' });
+        }
+        
+        const parsedCredentialId = parseInt(credentialId);
+        if (isNaN(parsedCredentialId)) {
+          return res.status(400).json({ message: 'Invalid credential ID format' });
+        }
+        
+        const credential = await storage.getComplianceCredential(parsedCredentialId);
+        if (!credential) {
+          return res.status(404).json({ message: 'Credential not found' });
+        }
+        
+        // Update the credential with the new data
+        result = await storage.updateComplianceCredential(parsedCredentialId, {
+          status: status || credential.status,
+          ...data,
+          updatedAt: new Date()
+        });
+        
+        // Trigger any necessary webhook notifications
+        await webhookService.processEvent('vanuatu.credential_updated', {
+          credential: result,
+          eventId,
+          timestamp
+        });
+        
+        break;
+        
+      case 'entity_updated':
+        if (!entityId) {
+          return res.status(400).json({ message: 'Missing entityId for entity_updated event' });
+        }
+        
+        const parsedEntityId = parseInt(entityId);
+        if (isNaN(parsedEntityId)) {
+          return res.status(400).json({ message: 'Invalid entity ID format' });
+        }
+        
+        const entity = await storage.getVanuatuEntity(parsedEntityId);
+        if (!entity) {
+          return res.status(404).json({ message: 'Entity not found' });
+        }
+        
+        // Update the entity with the new data
+        result = await storage.updateVanuatuEntity(parsedEntityId, {
+          ...data,
+          updatedAt: new Date()
+        });
+        
+        // Trigger any necessary webhook notifications
+        await webhookService.processEvent('vanuatu.entity_updated', {
+          entity: result,
+          eventId,
+          timestamp
+        });
+        
+        break;
+        
+      case 'license_updated':
+        if (!licenseId) {
+          return res.status(400).json({ message: 'Missing licenseId for license_updated event' });
+        }
+        
+        const parsedLicenseId = parseInt(licenseId);
+        if (isNaN(parsedLicenseId)) {
+          return res.status(400).json({ message: 'Invalid license ID format' });
+        }
+        
+        const license = await storage.getVanuatuLicense(parsedLicenseId);
+        if (!license) {
+          return res.status(404).json({ message: 'License not found' });
+        }
+        
+        // Update the license with the new data
+        result = await storage.updateVanuatuLicense(parsedLicenseId, {
+          ...data,
+          updatedAt: new Date()
+        });
+        
+        // Trigger any necessary webhook notifications
+        await webhookService.processEvent('vanuatu.license_updated', {
+          license: result,
+          eventId,
+          timestamp
+        });
+        
+        break;
+        
+      default:
+        // For unsupported events, log and store for future processing
+        console.log(`Received unsupported Vanuatu event type: ${event}`);
+        
+        // Store the event for later processing or auditing
+        await storage.createWebhookPayload({
+          id: uuidv4(),
+          webhookId: 'vanuatu-callback',
+          event: event,
+          payload: req.body,
+          status: 'RECEIVED',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          processedAt: null,
+          retryCount: 0,
+          responseCode: null,
+          responseBody: null,
+          notionEntryId: null
+        });
+        
+        result = { processed: true, event };
+    }
+    
+    return res.status(200).json({
+      success: true,
+      message: `Processed Vanuatu callback for event: ${event}`,
+      result
+    });
+  } catch (error: any) {
+    console.error('Error processing Vanuatu callback:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Error processing Vanuatu callback', 
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * @route POST /api/v1/vanuatu/webhook
+ * @desc Webhook endpoint for Vanuatu Compliance Service
+ * @access Public
+ */
+router.post('/webhook', async (req: Request, res: Response) => {
+  try {
+    console.log('Received Vanuatu webhook:', JSON.stringify(req.body));
+    
+    // Store the webhook payload
+    const webhookPayload = await storage.createWebhookPayload({
+      id: uuidv4(),
+      webhookId: 'vanuatu-webhook',
+      event: req.body.event || 'vanuatu.webhook',
+      payload: req.body,
+      status: 'RECEIVED',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      processedAt: null,
+      retryCount: 0,
+      responseCode: null,
+      responseBody: null,
+      notionEntryId: null
+    });
+    
+    // Process the webhook asynchronously
+    setImmediate(async () => {
+      try {
+        // Process the webhook based on the event type
+        const { event, data } = req.body;
+        
+        if (event) {
+          // Notify any subscribers to this event
+          await webhookService.processEvent(`vanuatu.${event}`, data);
+          
+          // Update the webhook payload status
+          await storage.updateWebhookPayloadStatus(
+            webhookPayload.id, 
+            'PROCESSED', 
+            200, 
+            'Successfully processed webhook'
+          );
+        }
+      } catch (error) {
+        console.error('Error processing Vanuatu webhook asynchronously:', error);
+        
+        // Update the webhook payload status
+        await storage.updateWebhookPayloadStatus(
+          webhookPayload.id, 
+          'FAILED', 
+          500, 
+          error instanceof Error ? error.message : 'Unknown error'
+        );
+      }
+    });
+    
+    // Immediately acknowledge receipt of the webhook
+    return res.status(200).json({
+      success: true,
+      message: 'Webhook received and queued for processing',
+      payloadId: webhookPayload.id
+    });
+  } catch (error: any) {
+    console.error('Error handling Vanuatu webhook:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Error handling Vanuatu webhook', 
+      error: error.message 
+    });
   }
 });
 

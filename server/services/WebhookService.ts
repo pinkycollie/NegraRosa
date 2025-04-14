@@ -19,9 +19,22 @@ export interface Webhook {
 
 export interface WebhookPayload {
   id: string;
+  webhookId: string;
   event: string;
   data: any;
-  timestamp: Date;
+  timestamp?: Date;
+  deliveryStatus?: string;
+  responseCode?: number | null;
+  responseBody?: string | null;
+  notionEntryId?: string | null;
+  retryCount?: number | null;
+}
+
+export interface WebhookResult {
+  success: boolean;
+  status?: number;
+  message?: string;
+  data?: any;
 }
 
 export class WebhookService {

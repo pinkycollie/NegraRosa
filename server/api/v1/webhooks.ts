@@ -370,4 +370,92 @@ router.get('/export', auth0Service.checkJwt, async (req: Request, res: Response)
   }
 });
 
+/**
+ * @route POST /api/v1/webhooks/receive
+ * @desc General webhook receiver endpoint for external services
+ * @access Public
+ */
+router.post('/receive', async (req: Request, res: Response) => {
+  try {
+    console.log('Received external webhook:', JSON.stringify(req.body));
+    
+    // Get webhook source from headers or query parameters
+    const source = req.headers['x-webhook-source'] || 
+                  req.query.source || 
+                  'unknown';
+    
+    // Get event type from headers, query, or body
+    const eventType = req.headers['x-webhook-event'] || 
+                     req.query.event || 
+                     req.body.event || 
+                     'webhook.received';
+    
+    // Generate a unique ID for this webhook payload
+    const payloadId = uuidv4();
+    
+    // Store the webhook payload
+    const webhookPayload = await storage.createWebhookPayload({
+      id: payloadId,
+      webhookId: `external-${source}`,
+      event: eventType.toString(),
+      payload: {
+        headers: req.headers,
+        query: req.query,
+        body: req.body,
+        receivedAt: new Date().toISOString()
+      },
+      status: 'RECEIVED',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      processedAt: null,
+      retryCount: 0,
+      responseCode: null,
+      responseBody: null,
+      notionEntryId: null
+    });
+    
+    // Process the webhook asynchronously
+    setImmediate(async () => {
+      try {
+        // Call webhook service to process this event
+        const result = await webhookService.processWebhook(source.toString(), 
+                                                         eventType.toString(), 
+                                                         req.body);
+        
+        // Update webhook payload status
+        await storage.updateWebhookPayloadStatus(
+          payloadId,
+          result.success ? 'PROCESSED' : 'FAILED',
+          result.status || 200,
+          result.message || 'Webhook processed'
+        );
+      } catch (error) {
+        console.error('Error processing external webhook asynchronously:', error);
+        
+        // Update webhook payload with error
+        await storage.updateWebhookPayloadStatus(
+          payloadId,
+          'FAILED',
+          500,
+          error instanceof Error ? error.message : 'Unknown error'
+        );
+      }
+    });
+    
+    // Acknowledge receipt of the webhook
+    return res.status(200).json({
+      success: true,
+      message: 'Webhook received and queued for processing',
+      payloadId: webhookPayload.id
+    });
+  } catch (error: any) {
+    console.error('Error handling external webhook:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error handling webhook',
+      error: error.message
+    });
+  }
+});
+
 export default router;

@@ -286,4 +286,46 @@ router.post('/recovery-code', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @route GET /api/v1/auth/callback
+ * @desc OAuth callback handler
+ * @access Public
+ */
+router.get('/callback', async (req: Request, res: Response) => {
+  try {
+    console.log('Received OAuth callback:', JSON.stringify(req.query));
+    
+    const { code, state } = req.query;
+    
+    if (!code || !state) {
+      return res.status(400).json({ 
+        message: 'Invalid OAuth callback', 
+        error: 'Missing code or state parameter'
+      });
+    }
+    
+    // Process the OAuth callback with Auth0
+    const authResult = await auth0Service.handleOAuthCallback(code.toString(), state.toString());
+    
+    if (!authResult.success) {
+      console.error('OAuth callback failed:', authResult.message);
+      
+      // Redirect to error page with error message
+      return res.redirect(`/auth-error?message=${encodeURIComponent(authResult.message || 'Authentication failed')}`);
+    }
+    
+    // If the auth was successful, redirect to the appropriate page with the token
+    // Usually, we would set a cookie or store the token in session before redirecting
+    const redirectUrl = authResult.data.redirectUrl || '/dashboard';
+    const token = authResult.data.accessToken;
+    
+    // For security, tokens should not be passed in URL parameters in production
+    // This is just for demonstration - in a real app, use secure cookies or session
+    return res.redirect(`${redirectUrl}?token=${token}`);
+  } catch (error) {
+    console.error('OAuth callback error:', error);
+    return res.redirect('/auth-error?message=Server+error+during+authentication');
+  }
+});
+
 export default router;
