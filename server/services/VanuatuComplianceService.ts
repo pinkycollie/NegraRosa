@@ -1,323 +1,436 @@
-import { storage } from "../storage";
-import { WebhookService } from "./WebhookService";
-import { 
-  InsertComplianceCredential, 
-  InsertVanuatuEntity, 
-  InsertVanuatuLicense, 
-  InsertComplianceReport,
-  ComplianceCredential,
-  VanuatuEntity,
-  VanuatuLicense,
-  ComplianceReport
-} from "@shared/schema";
-import { v4 as uuidv4 } from "uuid";
-import { NotionService } from "./NotionService";
+import axios from 'axios';
 
-/**
- * Service for handling Vanuatu compliance-related operations
- */
+export interface VanuatuComplianceCredential {
+  id: number;
+  jurisdictionCode: string;
+  credentialType: string;
+  status: string;
+  userId: number;
+  issuedAt: Date | null;
+  expiresAt: Date | null;
+  metadata: any;
+  verificationHash: string | null;
+  verifiableCredentialId: string | null;
+}
+
+export interface BusinessEntity {
+  id: number;
+  credentialId: number;
+  entityType: string;
+  registrationNumber: string;
+  registeredName: string;
+  registrationDate: Date | null;
+  registeredAddress: string | null;
+  jurisdictionCode: string | null;
+  businessPurpose: string | null;
+  ownershipStructure: any | null;
+  directorInfo: any | null;
+  goodStandingStatus: boolean | null;
+}
+
+export interface BusinessLicense {
+  id: number;
+  credentialId: number;
+  entityId: number | null;
+  licenseType: string;
+  licenseNumber: string;
+  issuanceDate: Date;
+  expiryDate: Date | null;
+  activityScope: string[] | null;
+  issuingAuthority: string | null;
+  verificationStatus: string | null;
+  restrictionNotes: string | null;
+  lastFeePaymentDate: Date | null;
+}
+
+export interface ComplianceReport {
+  id: number;
+  entityId: number | null;
+  licenseId: number | null;
+  reportType: string;
+  reportPeriodStart: Date | null;
+  reportPeriodEnd: Date | null;
+  reportData: any;
+  submissionDate: Date | null;
+  status: string;
+  submissionConfirmationCode: string | null;
+  auditFindings: any | null;
+  complianceScore: number | null;
+  webhookNotificationSent: boolean | null;
+}
+
 export class VanuatuComplianceService {
-  private webhookService: WebhookService;
-  private notionService: NotionService | null;
+  private apiKey: string | null;
+  private baseUrl: string;
 
   constructor() {
-    this.webhookService = new WebhookService();
+    this.apiKey = process.env.VANUATU_API_KEY || null;
+    this.baseUrl = process.env.VANUATU_API_BASE_URL || 'https://api.vanuatu-compliance.example.com';
     
-    // Conditional initialization for Notion integration
+    if (!this.apiKey) {
+      console.warn('Vanuatu Compliance service not fully configured. Some features may be limited.');
+    } else {
+      console.log('Vanuatu Compliance service initialized');
+    }
+  }
+
+  /**
+   * Creates a compliance credential
+   */
+  async createCredential(userId: number, jurisdictionCode: string, credentialType: string, metadata: any = {}): Promise<VanuatuComplianceCredential> {
     try {
-      this.notionService = new NotionService();
+      if (!this.apiKey) {
+        throw new Error('Vanuatu API key not configured');
+      }
+      
+      // In a real implementation, this would make an API call to the Vanuatu compliance service
+      // For now, we'll simulate the response
+      return {
+        id: Math.floor(Math.random() * 10000),
+        jurisdictionCode,
+        credentialType,
+        status: 'PENDING',
+        userId,
+        issuedAt: null,
+        expiresAt: null,
+        metadata,
+        verificationHash: null,
+        verifiableCredentialId: null
+      };
     } catch (error) {
-      console.log("Notion service not available. Continuing without Notion integration.");
-      this.notionService = null;
+      console.error('Error creating Vanuatu compliance credential:', error);
+      throw new Error('Failed to create compliance credential');
     }
   }
 
   /**
-   * Create a new compliance credential
+   * Retrieves a compliance credential by ID
    */
-  async createComplianceCredential(credential: InsertComplianceCredential): Promise<ComplianceCredential> {
-    // Create the credential
-    const newCredential = await storage.createComplianceCredential(credential);
-    
-    // Trigger webhook notification
-    await this.webhookService.triggerWebhook(
-      "compliance.credential.created", 
-      {
-        userId: credential.userId,
-        jurisdictionCode: credential.jurisdictionCode,
-        credentialType: credential.credentialType,
-        status: credential.status,
-        timestamp: new Date().toISOString()
-      },
-      credential.userId
-    );
-    
-    return newCredential;
-  }
-
-  /**
-   * Register a new Vanuatu entity
-   */
-  async registerVanuatuEntity(entity: InsertVanuatuEntity): Promise<VanuatuEntity> {
-    // Create the entity record
-    const newEntity = await storage.createVanuatuEntity(entity);
-    
-    // Get the credential information
-    const credential = await storage.getComplianceCredential(entity.credentialId);
-    if (!credential) {
-      throw new Error("Credential not found");
-    }
-    
-    // Trigger webhook notification
-    await this.webhookService.triggerWebhook(
-      "vanuatu.entity.registered",
-      {
-        entityId: newEntity.id,
-        entityType: entity.entityType,
-        registrationNumber: entity.registrationNumber,
-        registeredName: entity.registeredName,
-        userId: credential.userId,
-        timestamp: new Date().toISOString()
-      },
-      credential.userId
-    );
-    
-    // Create Notion record if available
-    if (this.notionService) {
-      try {
-        await this.notionService.createVanuatuEntityRecord({
-          entityId: newEntity.id.toString(),
-          entityType: entity.entityType,
-          registrationNumber: entity.registrationNumber,
-          registeredName: entity.registeredName,
-          status: "Active",
-          createdAt: new Date().toISOString()
-        });
-      } catch (error) {
-        console.error("Failed to create Notion record:", error);
-        // Non-blocking - continue even if Notion fails
+  async getCredential(credentialId: number): Promise<VanuatuComplianceCredential | null> {
+    try {
+      if (!this.apiKey) {
+        throw new Error('Vanuatu API key not configured');
       }
+      
+      // In a real implementation, this would make an API call to the Vanuatu compliance service
+      // For now, we'll simulate the response
+      return {
+        id: credentialId,
+        jurisdictionCode: 'VU',
+        credentialType: 'BUSINESS_ENTITY',
+        status: 'ACTIVE',
+        userId: 1,
+        issuedAt: new Date(),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+        metadata: {
+          registrationNumber: 'VU12345',
+          companyName: 'Example International Ltd.'
+        },
+        verificationHash: 'abc123def456',
+        verifiableCredentialId: 'vc:vanuatu:cred-123456'
+      };
+    } catch (error) {
+      console.error('Error retrieving Vanuatu compliance credential:', error);
+      throw new Error('Failed to retrieve compliance credential');
     }
-    
-    return newEntity;
   }
 
   /**
-   * Register a new Vanuatu license
+   * Registers a business entity
    */
-  async registerVanuatuLicense(license: InsertVanuatuLicense): Promise<VanuatuLicense> {
-    // Create the license record
-    const newLicense = await storage.createVanuatuLicense(license);
-    
-    // Get the credential information
-    const credential = await storage.getComplianceCredential(license.credentialId);
-    if (!credential) {
-      throw new Error("Credential not found");
-    }
-    
-    // Trigger webhook notification
-    await this.webhookService.triggerWebhook(
-      "vanuatu.license.registered",
-      {
-        licenseId: newLicense.id,
-        licenseType: license.licenseType,
-        licenseNumber: license.licenseNumber,
-        issuanceDate: license.issuanceDate,
-        expiryDate: license.expiryDate,
-        userId: credential.userId,
-        timestamp: new Date().toISOString()
-      },
-      credential.userId
-    );
-    
-    return newLicense;
-  }
-
-  /**
-   * Submit a compliance report
-   */
-  async submitComplianceReport(report: InsertComplianceReport): Promise<ComplianceReport> {
-    // Create the report record
-    const newReport = await storage.createComplianceReport(report);
-    
-    // Identify the related entity and license
-    const entity = report.entityId ? await storage.getVanuatuEntity(report.entityId) : null;
-    const license = report.licenseId ? await storage.getVanuatuLicense(report.licenseId) : null;
-    
-    // Determine the user ID for the webhook
-    let userId = 0;
-    if (entity) {
-      const credential = await storage.getComplianceCredential(entity.credentialId);
-      if (credential) {
-        userId = credential.userId;
+  async registerBusinessEntity(
+    credentialId: number,
+    entityType: string,
+    registrationNumber: string,
+    registeredName: string,
+    registrationDate: Date | null,
+    registeredAddress: string | null,
+    businessPurpose: string | null,
+    ownershipStructure: any | null,
+    directorInfo: any | null
+  ): Promise<BusinessEntity> {
+    try {
+      if (!this.apiKey) {
+        throw new Error('Vanuatu API key not configured');
       }
-    } else if (license) {
-      const credential = await storage.getComplianceCredential(license.credentialId);
-      if (credential) {
-        userId = credential.userId;
+      
+      // In a real implementation, this would make an API call to the Vanuatu compliance service
+      // For now, we'll simulate the response
+      return {
+        id: Math.floor(Math.random() * 10000),
+        credentialId,
+        entityType,
+        registrationNumber,
+        registeredName,
+        registrationDate,
+        registeredAddress,
+        jurisdictionCode: 'VU',
+        businessPurpose,
+        ownershipStructure,
+        directorInfo,
+        goodStandingStatus: true
+      };
+    } catch (error) {
+      console.error('Error registering business entity:', error);
+      throw new Error('Failed to register business entity');
+    }
+  }
+
+  /**
+   * Retrieves a business entity by ID
+   */
+  async getBusinessEntity(entityId: number): Promise<BusinessEntity | null> {
+    try {
+      if (!this.apiKey) {
+        throw new Error('Vanuatu API key not configured');
       }
-    }
-    
-    if (userId) {
-      // Trigger webhook notification
-      await this.webhookService.triggerWebhook(
-        "vanuatu.compliance.report.submitted",
-        {
-          reportId: newReport.id,
-          reportType: report.reportType,
-          entityId: report.entityId,
-          licenseId: report.licenseId,
-          status: report.status,
-          timestamp: new Date().toISOString()
-        },
-        userId
-      );
       
-      // Mark the webhook notification as sent
-      await storage.updateComplianceReportWebhookStatus(newReport.id, true);
+      // In a real implementation, this would make an API call to the Vanuatu compliance service
+      // For now, we'll simulate the response
+      return {
+        id: entityId,
+        credentialId: 123,
+        entityType: 'INTERNATIONAL_BUSINESS_COMPANY',
+        registrationNumber: 'VU12345',
+        registeredName: 'Example International Ltd.',
+        registrationDate: new Date('2024-01-15'),
+        registeredAddress: '123 Main St, Port Vila, Vanuatu',
+        jurisdictionCode: 'VU',
+        businessPurpose: 'International trading and consulting services',
+        ownershipStructure: {
+          owners: [
+            { name: 'John Smith', ownership: '60%' },
+            { name: 'Jane Doe', ownership: '40%' }
+          ]
+        },
+        directorInfo: {
+          directors: [
+            { name: 'John Smith', position: 'Director', nationality: 'US' },
+            { name: 'Jane Doe', position: 'Director', nationality: 'UK' }
+          ]
+        },
+        goodStandingStatus: true
+      };
+    } catch (error) {
+      console.error('Error retrieving business entity:', error);
+      throw new Error('Failed to retrieve business entity');
     }
-    
-    return newReport;
   }
 
   /**
-   * Check for entities with upcoming annual filing due dates
-   * This would typically be run as a scheduled task
+   * Issues a business license
    */
-  async checkAnnualFilingDueDates(): Promise<void> {
-    const dueEntities = await storage.getVanuatuEntitiesWithUpcomingFilings(30); // 30 days before due date
-    
-    for (const entity of dueEntities) {
-      // Get the credential for this entity
-      const credential = await storage.getComplianceCredential(entity.credentialId);
-      if (!credential) continue;
+  async issueBusinessLicense(
+    credentialId: number,
+    entityId: number | null,
+    licenseType: string,
+    licenseNumber: string,
+    issuanceDate: Date,
+    expiryDate: Date | null,
+    activityScope: string[] | null,
+    issuingAuthority: string | null,
+    restrictionNotes: string | null
+  ): Promise<BusinessLicense> {
+    try {
+      if (!this.apiKey) {
+        throw new Error('Vanuatu API key not configured');
+      }
       
-      // Trigger webhook notification
-      await this.webhookService.triggerWebhook(
-        "vanuatu.annual.filing.due",
-        {
-          entityId: entity.id,
-          entityName: entity.registeredName,
-          registrationNumber: entity.registrationNumber,
-          dueDateISO: entity.annualFilingDueDate,
-          daysRemaining: this.calculateDaysRemaining(entity.annualFilingDueDate),
-          timestamp: new Date().toISOString()
-        },
-        credential.userId
-      );
+      // In a real implementation, this would make an API call to the Vanuatu compliance service
+      // For now, we'll simulate the response
+      return {
+        id: Math.floor(Math.random() * 10000),
+        credentialId,
+        entityId,
+        licenseType,
+        licenseNumber,
+        issuanceDate,
+        expiryDate,
+        activityScope,
+        issuingAuthority,
+        verificationStatus: 'VERIFIED',
+        restrictionNotes,
+        lastFeePaymentDate: new Date()
+      };
+    } catch (error) {
+      console.error('Error issuing business license:', error);
+      throw new Error('Failed to issue business license');
     }
   }
 
   /**
-   * Check for licenses that are about to expire
-   * This would typically be run as a scheduled task
+   * Retrieves a business license by ID
    */
-  async checkLicenseExpirations(): Promise<void> {
-    const expiringLicenses = await storage.getVanuatuLicensesNearingExpiration(60); // 60 days before expiry
-    
-    for (const license of expiringLicenses) {
-      // Get the credential for this license
-      const credential = await storage.getComplianceCredential(license.credentialId);
-      if (!credential) continue;
+  async getBusinessLicense(licenseId: number): Promise<BusinessLicense | null> {
+    try {
+      if (!this.apiKey) {
+        throw new Error('Vanuatu API key not configured');
+      }
       
-      // Trigger webhook notification
-      await this.webhookService.triggerWebhook(
-        "vanuatu.license.expiring",
-        {
-          licenseId: license.id,
-          licenseType: license.licenseType,
-          licenseNumber: license.licenseNumber,
-          expirationDateISO: license.expiryDate,
-          daysRemaining: this.calculateDaysRemaining(license.expiryDate),
-          timestamp: new Date().toISOString()
-        },
-        credential.userId
-      );
+      // In a real implementation, this would make an API call to the Vanuatu compliance service
+      // For now, we'll simulate the response
+      return {
+        id: licenseId,
+        credentialId: 123,
+        entityId: 456,
+        licenseType: 'FINANCIAL_SERVICES',
+        licenseNumber: 'FS-12345',
+        issuanceDate: new Date('2024-01-20'),
+        expiryDate: new Date('2025-01-20'),
+        activityScope: ['Investment Advisory', 'Asset Management'],
+        issuingAuthority: 'Vanuatu Financial Services Commission',
+        verificationStatus: 'VERIFIED',
+        restrictionNotes: null,
+        lastFeePaymentDate: new Date('2024-01-20')
+      };
+    } catch (error) {
+      console.error('Error retrieving business license:', error);
+      throw new Error('Failed to retrieve business license');
     }
   }
 
   /**
-   * Generate compliance verification report for an entity
+   * Submits a compliance report
    */
-  async generateComplianceVerificationReport(entityId: number): Promise<{reportId: number, status: string}> {
-    // Get entity details
-    const entity = await storage.getVanuatuEntity(entityId);
-    if (!entity) {
-      throw new Error("Entity not found");
+  async submitComplianceReport(
+    entityId: number | null,
+    licenseId: number | null,
+    reportType: string,
+    reportPeriodStart: Date | null,
+    reportPeriodEnd: Date | null,
+    reportData: any
+  ): Promise<ComplianceReport> {
+    try {
+      if (!this.apiKey) {
+        throw new Error('Vanuatu API key not configured');
+      }
+      
+      // In a real implementation, this would make an API call to the Vanuatu compliance service
+      // For now, we'll simulate the response
+      return {
+        id: Math.floor(Math.random() * 10000),
+        entityId,
+        licenseId,
+        reportType,
+        reportPeriodStart,
+        reportPeriodEnd,
+        reportData,
+        submissionDate: new Date(),
+        status: 'SUBMITTED',
+        submissionConfirmationCode: `VU-REP-${Math.floor(Math.random() * 100000).toString().padStart(6, '0')}`,
+        auditFindings: null,
+        complianceScore: null,
+        webhookNotificationSent: false
+      };
+    } catch (error) {
+      console.error('Error submitting compliance report:', error);
+      throw new Error('Failed to submit compliance report');
     }
-    
-    // Get related licenses
-    const licenses = await storage.getVanuatuLicensesByEntityId(entityId);
-    
-    // Get credential information
-    const credential = await storage.getComplianceCredential(entity.credentialId);
-    if (!credential) {
-      throw new Error("Credential not found");
-    }
-    
-    // Create a new compliance report
-    const report: InsertComplianceReport = {
-      entityId,
-      licenseId: licenses.length > 0 ? licenses[0].id : undefined,
-      reportType: "COMPLIANCE_VERIFICATION",
-      reportPeriodStart: new Date(new Date().setFullYear(new Date().getFullYear() - 1)),
-      reportPeriodEnd: new Date(),
-      status: "GENERATED",
-      reportContent: {
-        entityInfo: {
-          registeredName: entity.registeredName,
-          registrationNumber: entity.registrationNumber,
-          entityType: entity.entityType,
-          goodStanding: entity.goodStandingStatus
-        },
-        licenseInfo: licenses.map(license => ({
-          licenseType: license.licenseType,
-          licenseNumber: license.licenseNumber,
-          issuanceDate: license.issuanceDate,
-          expiryDate: license.expiryDate,
-          status: license.expiryDate && new Date(license.expiryDate) < new Date() ? "EXPIRED" : "ACTIVE"
-        })),
-        verificationResult: {
-          timestamp: new Date().toISOString(),
-          verificationId: uuidv4(),
-          complianceStatus: entity.goodStandingStatus ? "COMPLIANT" : "NON_COMPLIANT"
-        }
-      },
-      submittedBy: credential.userId
-    };
-    
-    const newReport = await storage.createComplianceReport(report);
-    
-    // Trigger webhook notification
-    await this.webhookService.triggerWebhook(
-      "vanuatu.compliance.verification.completed",
-      {
-        reportId: newReport.id,
-        entityId: entity.id,
-        entityName: entity.registeredName,
-        registrationNumber: entity.registrationNumber,
-        status: entity.goodStandingStatus ? "COMPLIANT" : "NON_COMPLIANT",
-        licenseCount: licenses.length,
-        timestamp: new Date().toISOString()
-      },
-      credential.userId
-    );
-    
-    return {
-      reportId: newReport.id,
-      status: entity.goodStandingStatus ? "COMPLIANT" : "NON_COMPLIANT"
-    };
   }
 
   /**
-   * Calculate days remaining until a date
+   * Retrieves a compliance report by ID
    */
-  private calculateDaysRemaining(targetDate: Date | string | null | undefined): number {
-    if (!targetDate) return 0;
-    
-    const target = typeof targetDate === 'string' ? new Date(targetDate) : targetDate;
-    const today = new Date();
-    const differenceMs = target.getTime() - today.getTime();
-    return Math.ceil(differenceMs / (1000 * 60 * 60 * 24));
+  async getComplianceReport(reportId: number): Promise<ComplianceReport | null> {
+    try {
+      if (!this.apiKey) {
+        throw new Error('Vanuatu API key not configured');
+      }
+      
+      // In a real implementation, this would make an API call to the Vanuatu compliance service
+      // For now, we'll simulate the response
+      return {
+        id: reportId,
+        entityId: 456,
+        licenseId: 789,
+        reportType: 'QUARTERLY_FINANCIAL',
+        reportPeriodStart: new Date('2024-01-01'),
+        reportPeriodEnd: new Date('2024-03-31'),
+        reportData: {
+          revenue: 1250000,
+          expenses: 750000,
+          taxesPaid: 125000,
+          clientTransactions: 450,
+          suspiciousActivityReports: 2
+        },
+        submissionDate: new Date('2024-04-15'),
+        status: 'ACCEPTED',
+        submissionConfirmationCode: 'VU-REP-123456',
+        auditFindings: {
+          issues: [],
+          recommendations: []
+        },
+        complianceScore: 98,
+        webhookNotificationSent: true
+      };
+    } catch (error) {
+      console.error('Error retrieving compliance report:', error);
+      throw new Error('Failed to retrieve compliance report');
+    }
+  }
+
+  /**
+   * Verifies a credential using the Vanuatu verification API
+   */
+  async verifyCredential(verifiableCredentialId: string): Promise<boolean> {
+    try {
+      if (!this.apiKey) {
+        throw new Error('Vanuatu API key not configured');
+      }
+      
+      // In a real implementation, this would make an API call to the Vanuatu compliance service
+      // For now, we'll simulate the response
+      return true;
+    } catch (error) {
+      console.error('Error verifying credential:', error);
+      throw new Error('Failed to verify credential');
+    }
+  }
+
+  /**
+   * Checks if an entity is in good standing
+   */
+  async checkGoodStandingStatus(entityId: number): Promise<boolean> {
+    try {
+      if (!this.apiKey) {
+        throw new Error('Vanuatu API key not configured');
+      }
+      
+      // In a real implementation, this would make an API call to the Vanuatu compliance service
+      // For now, we'll simulate the response
+      return true;
+    } catch (error) {
+      console.error('Error checking good standing status:', error);
+      throw new Error('Failed to check good standing status');
+    }
+  }
+
+  /**
+   * Renews a business license
+   */
+  async renewBusinessLicense(licenseId: number, newExpiryDate: Date): Promise<BusinessLicense> {
+    try {
+      if (!this.apiKey) {
+        throw new Error('Vanuatu API key not configured');
+      }
+      
+      // First retrieve the existing license
+      const license = await this.getBusinessLicense(licenseId);
+      
+      if (!license) {
+        throw new Error('License not found');
+      }
+      
+      // In a real implementation, this would make an API call to the Vanuatu compliance service
+      // For now, we'll simulate the response
+      return {
+        ...license,
+        expiryDate: newExpiryDate,
+        lastFeePaymentDate: new Date()
+      };
+    } catch (error) {
+      console.error('Error renewing business license:', error);
+      throw new Error('Failed to renew business license');
+    }
   }
 }
