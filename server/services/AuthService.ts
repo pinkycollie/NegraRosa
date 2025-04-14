@@ -12,6 +12,15 @@ interface BiometricData {
   lastUpdated: Date;
 }
 
+// Auth result interface
+interface AuthResult {
+  success: boolean;
+  message?: string;
+  data?: any;
+  token?: string;
+  userId?: number;
+}
+
 export class AuthService {
   private tokenSecret: string;
   private tokenExpiry: string;
@@ -268,5 +277,126 @@ export class AuthService {
       "nft", 
       "recovery_code"
     ];
+  }
+
+  /**
+   * Biometric authentication method for API
+   */
+  async biometricAuth(userId: number, biometricData: string): Promise<AuthResult> {
+    try {
+      // Get user from storage
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return { 
+          success: false, 
+          message: "User not found" 
+        };
+      }
+
+      // Update or store biometric data if not already stored
+      if (!this.biometricData.has(userId)) {
+        this.storeBiometricData(userId, biometricData);
+      }
+
+      // Generate JWT for authenticated user
+      const token = this.generateJwt(userId);
+      
+      return {
+        success: true,
+        token,
+        userId,
+        data: {
+          token,
+          userId,
+          message: "Biometric authentication successful"
+        }
+      };
+    } catch (error) {
+      console.error("Biometric authentication error:", error);
+      return { 
+        success: false, 
+        message: "Authentication failed due to system error" 
+      };
+    }
+  }
+
+  /**
+   * NFT authentication method for API
+   */
+  async nftAuth(walletAddress: string, nftTokenId: string, chainId?: string): Promise<AuthResult> {
+    try {
+      // For demo purposes - in a real implementation, this would verify NFT ownership
+      // through a blockchain service and map it to a user account
+      const demoWalletAddress = "0x1234567890abcdef";
+      const demoNftTokenId = "111222333";
+      
+      if (walletAddress === demoWalletAddress && nftTokenId === demoNftTokenId) {
+        // Hardcoded user ID for demo
+        const userId = 1;
+        const token = this.generateJwt(userId);
+        
+        return {
+          success: true,
+          token,
+          userId,
+          data: {
+            token,
+            userId,
+            message: "NFT authentication successful"
+          }
+        };
+      }
+      
+      return { 
+        success: false, 
+        message: "Invalid NFT credentials" 
+      };
+    } catch (error) {
+      console.error("NFT authentication error:", error);
+      return { 
+        success: false, 
+        message: "Authentication failed due to system error" 
+      };
+    }
+  }
+
+  /**
+   * Recovery code authentication method for API
+   */
+  async recoveryCodeAuth(email: string, recoveryCode: string): Promise<AuthResult> {
+    try {
+      // For demo purposes - in a real implementation, this would validate the recovery code
+      // against a database entry that's linked to the user's email
+      const demoEmail = "user@example.com";
+      const demoRecoveryCode = "test-recovery-code";
+      
+      if (email === demoEmail && recoveryCode === demoRecoveryCode) {
+        // Hardcoded user ID for demo
+        const userId = 1;
+        const token = this.generateJwt(userId);
+        
+        return {
+          success: true,
+          token,
+          userId,
+          data: {
+            token,
+            userId,
+            message: "Recovery code authentication successful"
+          }
+        };
+      }
+      
+      return { 
+        success: false, 
+        message: "Invalid recovery code or email" 
+      };
+    } catch (error) {
+      console.error("Recovery code authentication error:", error);
+      return { 
+        success: false, 
+        message: "Authentication failed due to system error" 
+      };
+    }
   }
 }

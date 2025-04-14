@@ -1,21 +1,21 @@
 import { Router } from 'express';
-import authRoutes from './auth';
-import usersRoutes from './users';
-import webhooksRoutes from './webhooks';
-import verificationRoutes from './verification';
-import fibonRoseTrustRoutes from './fibonRoseTrust';
-import vanuatuRoutes from './vanuatu';
-import tenantsRoutes from './tenants';
+import authRouter from './auth';
+import usersRouter from './users';
+import webhooksRouter from './webhooks';
+import verificationRouter from './verification';
+import fibonRoseTrustRouter from './fibonRoseTrust';
+import vanuatuRouter from './vanuatu';
+import tenantsRouter from './tenants';
 
 const router = Router();
 
-// Register all API routes
-router.use('/auth', authRoutes);
-router.use('/users', usersRoutes);
-router.use('/webhooks', webhooksRoutes);
-router.use('/verification', verificationRoutes);
-router.use('/fibonrose-trust', fibonRoseTrustRoutes);
-router.use('/vanuatu', vanuatuRoutes);
-router.use('/tenants', tenantsRoutes);
+// Mount all API routes
+router.use('/auth', authRouter);
+router.use('/users', usersRouter);
+router.use('/verification', verificationRouter);
+router.use('/webhooks', webhooksRouter);
+router.use('/fibonrose-trust', fibonRoseTrustRouter);
+router.use('/vanuatu', vanuatuRouter);
+router.use('/tenants', tenantsRouter);
 
 export default router;

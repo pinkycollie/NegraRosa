@@ -56,6 +56,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
   
+  // Mount the MBTQ Core Services API v1 router
+  apiRouter.use("/v1", apiV1Router);
+  
   // Apply JSON middleware
   apiRouter.use(json());
   

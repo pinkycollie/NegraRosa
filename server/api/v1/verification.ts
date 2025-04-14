@@ -1,29 +1,41 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import { Request, Response } from 'express';
+import { storage as appStorage } from '../../storage';
 import { auth0Service } from '../../services/Auth0Service';
-import { storage } from '../../storage';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
-
-// Configure multer for file uploads
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const dir = path.join(process.cwd(), 'uploads');
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-      cb(null, `${Date.now()}-${file.originalname}`);
-    },
-  }),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-});
 
 const router = Router();
+
+// Configure multer for handling file uploads
+const storage = multer.diskStorage({
+  destination: function(req, file, cb) {
+    const uploadDir = path.join(__dirname, '../../../uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function(req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: function(req, file, cb) {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error('Only JPEG, PNG, GIF and PDF files are allowed'));
+    }
+    cb(null, true);
+  }
+});
 
 /**
  * @route POST /api/v1/verification/submit
@@ -32,46 +44,36 @@ const router = Router();
  */
 router.post('/submit', auth0Service.checkJwt, upload.single('document'), async (req: Request, res: Response) => {
   try {
-    // Get the user based on the auth token
-    const user = await storage.getUserByExternalId(req.user.sub);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    const { type, explanation } = req.body;
+    const { type, status = 'PENDING', data } = req.body;
     
     if (!type) {
-      return res.status(400).json({ message: 'Verification type is required' });
+      return res.status(400).json({ message: 'Please provide verification type' });
     }
     
-    // Prepare the data object
-    const data: any = {
-      type,
-      explanation: explanation || null,
-    };
+    let documentData = null;
     
-    // If a file was uploaded, add it to the data
     if (req.file) {
-      data.documentPath = req.file.path;
-      data.documentType = req.file.mimetype;
-      data.documentName = req.file.originalname;
+      documentData = {
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        path: req.file.path,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      };
     }
     
-    // Create the verification record
-    const verification = await storage.createVerification({
-      id: null, // Will be assigned by the database
-      userId: user.id,
+    // Create verification record
+    const verification = await appStorage.createVerification({
+      userId: req.user.id,
       type,
-      status: 'pending',
-      data,
-      createdAt: new Date(),
-      verifiedAt: null
+      status,
+      data: documentData || data || null
     });
     
-    return res.status(201).json(verification);
-  } catch (error: any) {
-    console.error('Error submitting verification:', error);
-    return res.status(500).json({ message: 'Error submitting verification', error: error.message });
+    res.status(201).json(verification);
+  } catch (error) {
+    console.error('Verification submission error:', error);
+    res.status(500).json({ message: 'Server error during verification submission' });
   }
 });
 
@@ -83,31 +85,26 @@ router.post('/submit', auth0Service.checkJwt, upload.single('document'), async (
 router.get('/:id', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
     const verificationId = parseInt(req.params.id);
+    
     if (isNaN(verificationId)) {
       return res.status(400).json({ message: 'Invalid verification ID' });
     }
     
-    // Get the user based on the auth token
-    const user = await storage.getUserByExternalId(req.user.sub);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    const verification = await appStorage.getVerification(verificationId);
     
-    // Get the verification
-    const verification = await storage.getVerification(verificationId);
     if (!verification) {
       return res.status(404).json({ message: 'Verification not found' });
     }
     
-    // Check if the verification belongs to the user or the user is an admin
-    if (verification.userId !== user.id && !req.user.permissions?.includes('read:verifications')) {
-      return res.status(403).json({ message: 'Access denied' });
+    // Check if user has permission to see this verification
+    if (verification.userId !== req.user.id && !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to access this verification' });
     }
     
-    return res.json(verification);
-  } catch (error: any) {
-    console.error('Error fetching verification:', error);
-    return res.status(500).json({ message: 'Error fetching verification', error: error.message });
+    res.json(verification);
+  } catch (error) {
+    console.error('Verification retrieval error:', error);
+    res.status(500).json({ message: 'Server error retrieving verification' });
   }
 });
 
@@ -118,19 +115,12 @@ router.get('/:id', auth0Service.checkJwt, async (req: Request, res: Response) =>
  */
 router.get('/', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    // Get the user based on the auth token
-    const user = await storage.getUserByExternalId(req.user.sub);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    const verifications = await appStorage.getVerificationsByUserId(req.user.id);
     
-    // Get all verifications for the user
-    const verifications = await storage.getVerificationsByUserId(user.id);
-    
-    return res.json(verifications);
-  } catch (error: any) {
-    console.error('Error fetching verifications:', error);
-    return res.status(500).json({ message: 'Error fetching verifications', error: error.message });
+    res.json(verifications);
+  } catch (error) {
+    console.error('Verifications retrieval error:', error);
+    res.status(500).json({ message: 'Server error retrieving verifications' });
   }
 });
 
@@ -142,51 +132,37 @@ router.get('/', auth0Service.checkJwt, async (req: Request, res: Response) => {
 router.put('/:id', auth0Service.checkJwt, auth0Service.checkPermissions(['update:verifications']), async (req: Request, res: Response) => {
   try {
     const verificationId = parseInt(req.params.id);
+    const { status, feedback } = req.body;
+    
     if (isNaN(verificationId)) {
       return res.status(400).json({ message: 'Invalid verification ID' });
     }
     
-    const { status, adminNotes } = req.body;
-    
     if (!status) {
-      return res.status(400).json({ message: 'Status is required' });
+      return res.status(400).json({ message: 'Please provide status' });
     }
     
-    // Check if status is valid
-    const validStatuses = ['pending', 'approved', 'rejected', 'needs_more_info'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        message: 'Invalid status',
-        validStatuses
-      });
-    }
+    const verification = await appStorage.getVerification(verificationId);
     
-    // Get the verification
-    const verification = await storage.getVerification(verificationId);
     if (!verification) {
       return res.status(404).json({ message: 'Verification not found' });
     }
     
-    // Update the verification
-    const updates: any = { status };
-    if (adminNotes) {
-      const data = { ...verification.data, adminNotes };
-      updates.data = data;
-    }
+    // Update verification
+    const updatedVerification = await appStorage.updateVerification(verificationId, {
+      status,
+      data: {
+        ...verification.data,
+        feedback,
+        updatedBy: req.user.id,
+        updatedAt: new Date()
+      }
+    });
     
-    // If status is changing to approved, update verifiedAt
-    if (status === 'approved' && verification.status !== 'approved') {
-      updates.verifiedAt = new Date();
-    } else if (status !== 'approved' && verification.status === 'approved') {
-      updates.verifiedAt = null;
-    }
-    
-    const updatedVerification = await storage.updateVerification(verificationId, updates);
-    
-    return res.json(updatedVerification);
-  } catch (error: any) {
-    console.error('Error updating verification:', error);
-    return res.status(500).json({ message: 'Error updating verification', error: error.message });
+    res.json(updatedVerification);
+  } catch (error) {
+    console.error('Verification update error:', error);
+    res.status(500).json({ message: 'Server error updating verification' });
   }
 });
 
@@ -198,55 +174,44 @@ router.put('/:id', auth0Service.checkJwt, auth0Service.checkPermissions(['update
 router.post('/:id/document', auth0Service.checkJwt, upload.single('document'), async (req: Request, res: Response) => {
   try {
     const verificationId = parseInt(req.params.id);
+    
     if (isNaN(verificationId)) {
       return res.status(400).json({ message: 'Invalid verification ID' });
     }
     
     if (!req.file) {
-      return res.status(400).json({ message: 'Document file is required' });
+      return res.status(400).json({ message: 'No document uploaded' });
     }
     
-    // Get the user based on the auth token
-    const user = await storage.getUserByExternalId(req.user.sub);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    const verification = await appStorage.getVerification(verificationId);
     
-    // Get the verification
-    const verification = await storage.getVerification(verificationId);
     if (!verification) {
       return res.status(404).json({ message: 'Verification not found' });
     }
     
-    // Check if the verification belongs to the user
-    if (verification.userId !== user.id) {
-      return res.status(403).json({ message: 'Access denied' });
+    // Check if user owns this verification
+    if (verification.userId !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to update this verification' });
     }
     
-    // Check if verification can be updated
-    if (verification.status === 'approved') {
-      return res.status(400).json({ message: 'Cannot update an approved verification' });
-    }
-    
-    // Update the data object with new document
-    const data = {
-      ...verification.data,
-      documentPath: req.file.path,
-      documentType: req.file.mimetype,
-      documentName: req.file.originalname,
-      documentUpdatedAt: new Date()
+    const documentData = {
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      path: req.file.path,
+      size: req.file.size,
+      mimetype: req.file.mimetype
     };
     
-    // Update the verification
-    const updatedVerification = await storage.updateVerification(verificationId, {
-      data,
-      status: verification.status === 'rejected' ? 'pending' : verification.status
+    // Update verification with document
+    const updatedVerification = await appStorage.updateVerification(verificationId, {
+      data: documentData,
+      status: "DOCUMENT_UPLOADED"
     });
     
-    return res.json(updatedVerification);
-  } catch (error: any) {
-    console.error('Error updating verification document:', error);
-    return res.status(500).json({ message: 'Error updating verification document', error: error.message });
+    res.json(updatedVerification);
+  } catch (error) {
+    console.error('Document upload error:', error);
+    res.status(500).json({ message: 'Server error uploading document' });
   }
 });
 
@@ -258,46 +223,32 @@ router.post('/:id/document', auth0Service.checkJwt, upload.single('document'), a
 router.get('/:id/document', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
     const verificationId = parseInt(req.params.id);
+    
     if (isNaN(verificationId)) {
       return res.status(400).json({ message: 'Invalid verification ID' });
     }
     
-    // Get the user based on the auth token
-    const user = await storage.getUserByExternalId(req.user.sub);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    const verification = await appStorage.getVerification(verificationId);
     
-    // Get the verification
-    const verification = await storage.getVerification(verificationId);
     if (!verification) {
       return res.status(404).json({ message: 'Verification not found' });
     }
     
-    // Check if the verification belongs to the user or the user is an admin
-    if (verification.userId !== user.id && !req.user.permissions?.includes('read:verifications')) {
-      return res.status(403).json({ message: 'Access denied' });
+    // Check if user has permission to see this document
+    if (verification.userId !== req.user.id && !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to access this document' });
     }
     
     // Check if document exists
-    const data = verification.data as any;
-    if (!data.documentPath) {
+    if (!verification.data || !verification.data.path) {
       return res.status(404).json({ message: 'No document found for this verification' });
     }
     
-    // Check if file exists
-    if (!fs.existsSync(data.documentPath)) {
-      return res.status(404).json({ message: 'Document file not found' });
-    }
-    
-    // Send the file
-    res.setHeader('Content-Type', data.documentType || 'application/octet-stream');
-    res.setHeader('Content-Disposition', `attachment; filename="${data.documentName}"`);
-    
-    return res.sendFile(data.documentPath);
-  } catch (error: any) {
-    console.error('Error fetching verification document:', error);
-    return res.status(500).json({ message: 'Error fetching verification document', error: error.message });
+    // Send file
+    res.sendFile(verification.data.path, { root: '/' });
+  } catch (error) {
+    console.error('Document retrieval error:', error);
+    res.status(500).json({ message: 'Server error retrieving document' });
   }
 });
 
@@ -308,38 +259,44 @@ router.get('/:id/document', auth0Service.checkJwt, async (req: Request, res: Res
  */
 router.post('/biometric', auth0Service.checkJwt, upload.single('image'), async (req: Request, res: Response) => {
   try {
-    // Get the user based on the auth token
-    const user = await storage.getUserByExternalId(req.user.sub);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    const { data } = req.body;
+    
+    let imageData = null;
+    
+    if (req.file) {
+      imageData = {
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        path: req.file.path,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      };
     }
     
-    if (!req.file) {
-      return res.status(400).json({ message: 'Biometric image is required' });
-    }
-    
-    // In a real system, this would process the biometric data
-    // For this example, we'll just create a verification record
-    
-    const verification = await storage.createVerification({
-      id: null, // Will be assigned by the database
-      userId: user.id,
-      type: 'biometric',
-      status: 'pending',
-      data: {
-        imagePath: req.file.path,
-        imageType: req.file.mimetype,
-        confidence: 0.85, // Example confidence score
-        processedAt: new Date()
-      },
-      createdAt: new Date(),
-      verifiedAt: null
+    // Create verification record
+    const verification = await appStorage.createVerification({
+      userId: req.user.id,
+      type: 'BIOMETRIC',
+      status: 'PENDING',
+      data: imageData || data || null
     });
     
-    return res.status(201).json(verification);
-  } catch (error: any) {
-    console.error('Error submitting biometric verification:', error);
-    return res.status(500).json({ message: 'Error submitting biometric verification', error: error.message });
+    // In a real implementation, you'd likely call a biometric verification service here
+    // For demo purposes, we'll just return the verification
+    
+    // If the biometric data contains both the file and additional data
+    if (req.file && data) {
+      const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+      
+      await appStorage.updateVerification(verification.id, {
+        data: { ...imageData, ...parsedData }
+      });
+    }
+    
+    res.status(201).json(verification);
+  } catch (error) {
+    console.error('Biometric verification error:', error);
+    res.status(500).json({ message: 'Server error during biometric verification' });
   }
 });
 
@@ -350,45 +307,33 @@ router.post('/biometric', auth0Service.checkJwt, upload.single('image'), async (
  */
 router.post('/nft', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    // Get the user based on the auth token
-    const user = await storage.getUserByExternalId(req.user.sub);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    const { walletAddress, nftTokenId, chainId, contractAddress } = req.body;
+    
+    if (!walletAddress || !nftTokenId) {
+      return res.status(400).json({ message: 'Please provide wallet address and NFT token ID' });
     }
     
-    const { walletAddress, tokenId, contractAddress, chainId } = req.body;
-    
-    if (!walletAddress || !tokenId || !contractAddress) {
-      return res.status(400).json({ 
-        message: 'Missing required fields', 
-        required: ['walletAddress', 'tokenId', 'contractAddress'] 
-      });
-    }
-    
-    // In a real system, this would verify NFT ownership
-    // For this example, we'll just create a verification record
-    
-    const verification = await storage.createVerification({
-      id: null, // Will be assigned by the database
-      userId: user.id,
-      type: 'nft',
-      status: 'pending',
+    // Create verification record
+    const verification = await appStorage.createVerification({
+      userId: req.user.id,
+      type: 'NFT',
+      status: 'PENDING',
       data: {
         walletAddress,
-        tokenId,
+        nftTokenId,
+        chainId: chainId || '1', // Default to Ethereum mainnet
         contractAddress,
-        chainId: chainId || 1, // Default to Ethereum mainnet
-        verificationId: uuidv4(),
-        submittedAt: new Date()
-      },
-      createdAt: new Date(),
-      verifiedAt: null
+        verifiedAt: null
+      }
     });
     
-    return res.status(201).json(verification);
-  } catch (error: any) {
-    console.error('Error submitting NFT verification:', error);
-    return res.status(500).json({ message: 'Error submitting NFT verification', error: error.message });
+    // In a real implementation, you'd validate the NFT ownership
+    // For now, we'll simulate successful verification
+    
+    res.status(201).json(verification);
+  } catch (error) {
+    console.error('NFT verification error:', error);
+    res.status(500).json({ message: 'Server error during NFT verification' });
   }
 });
 
@@ -402,49 +347,35 @@ router.post('/recovery', async (req: Request, res: Response) => {
     const { email, recoveryCode } = req.body;
     
     if (!email || !recoveryCode) {
-      return res.status(400).json({ 
-        message: 'Missing required fields', 
-        required: ['email', 'recoveryCode'] 
-      });
+      return res.status(400).json({ message: 'Please provide email and recovery code' });
     }
     
-    // In a real system, this would verify the recovery code
-    // For this example, we'll just check if the user exists
+    // Find user by email
+    const user = await appStorage.getUserByEmail(email);
     
-    const user = await storage.getUserByEmail(email);
     if (!user) {
-      // Don't reveal if email exists or not for security
-      return res.status(200).json({ 
-        message: 'If the email exists, a verification process has been initiated',
-        success: false
-      });
+      return res.status(404).json({ message: 'User not found' });
     }
     
-    // Create a verification record for the recovery attempt
-    await storage.createVerification({
-      id: null, // Will be assigned by the database
+    // Create verification record
+    const verification = await appStorage.createVerification({
       userId: user.id,
-      type: 'recovery',
-      status: 'pending',
+      type: 'RECOVERY_CODE',
+      status: 'PENDING',
       data: {
-        recoveryCodeProvided: recoveryCode,
-        attemptedAt: new Date(),
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
-      },
-      createdAt: new Date(),
-      verifiedAt: null
+        recoveryCode,
+        email,
+        verifiedAt: null
+      }
     });
     
-    // In a real system, we would send an email with a link to verify
+    // In a real implementation, you'd validate the recovery code
+    // For now, we'll simulate successful verification
     
-    return res.status(200).json({
-      message: 'If the email exists, a verification process has been initiated',
-      success: true
-    });
-  } catch (error: any) {
-    console.error('Error submitting recovery verification:', error);
-    return res.status(500).json({ message: 'Error processing recovery request', error: error.message });
+    res.status(201).json(verification);
+  } catch (error) {
+    console.error('Recovery code verification error:', error);
+    res.status(500).json({ message: 'Server error during recovery code verification' });
   }
 });
 

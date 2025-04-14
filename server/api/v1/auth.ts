@@ -1,5 +1,12 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import { Request, Response } from 'express';
+import { storage } from '../../storage';
 import { auth0Service } from '../../services/Auth0Service';
+import { z } from 'zod';
+import { AuthService } from '../../services/AuthService';
+
+// Create an instance of the AuthService
+const authService = new AuthService();
 
 const router = Router();
 
@@ -8,28 +15,24 @@ const router = Router();
  * @desc Authenticate user and get token
  * @access Public
  */
-router.post('/login', async (req, res) => {
+router.post('/login', async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
     
     if (!username || !password) {
-      return res.status(400).json({ message: 'Missing credentials' });
+      return res.status(400).json({ message: 'Please provide username and password' });
     }
     
-    const authResult = await auth0Service.login(username, password);
+    const loginResult = await auth0Service.login(username, password);
     
-    if (authResult.error) {
-      return res.status(401).json({ message: authResult.error });
+    if (!loginResult.success) {
+      return res.status(401).json({ message: loginResult.message || 'Authentication failed' });
     }
     
-    return res.json({
-      token: authResult.access_token,
-      expiresIn: authResult.expires_in,
-      userId: authResult.user_id
-    });
+    res.json(loginResult.data);
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).json({ message: 'Authentication failed', error: String(error) });
+    res.status(500).json({ message: 'Server error during login' });
   }
 });
 
@@ -38,30 +41,38 @@ router.post('/login', async (req, res) => {
  * @desc Register new user
  * @access Public
  */
-router.post('/register', async (req, res) => {
+router.post('/register', async (req: Request, res: Response) => {
   try {
-    const { username, email, password, fullName } = req.body;
-    
-    if (!username || !email || !password) {
-      return res.status(400).json({ 
-        message: 'Missing required fields', 
-        required: ['username', 'email', 'password'] 
-      });
-    }
-    
-    const registerResult = await auth0Service.register(username, email, password, fullName);
-    
-    if (registerResult.error) {
-      return res.status(400).json({ message: registerResult.error });
-    }
-    
-    return res.status(201).json({
-      message: 'Registration successful',
-      userId: registerResult.user_id
+    const userSchema = z.object({
+      username: z.string().min(3),
+      password: z.string().min(6),
+      email: z.string().email(),
+      fullName: z.string().optional(),
+      phone: z.string().optional()
     });
+    
+    const userData = userSchema.parse(req.body);
+    
+    // Check if username or email already exists
+    const existingUser = await storage.getUserByUsername(userData.username);
+    if (existingUser) {
+      return res.status(409).json({ message: 'Username already exists' });
+    }
+    
+    // Register with Auth0 and our database
+    const registerResult = await auth0Service.register(userData);
+    
+    if (!registerResult.success) {
+      return res.status(400).json({ message: registerResult.message || 'Registration failed' });
+    }
+    
+    res.status(201).json(registerResult.data);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: 'Invalid user data', errors: error.errors });
+    }
     console.error('Registration error:', error);
-    return res.status(500).json({ message: 'Registration failed', error: String(error) });
+    res.status(500).json({ message: 'Server error during registration' });
   }
 });
 
@@ -70,27 +81,13 @@ router.post('/register', async (req, res) => {
  * @desc Verify JWT token
  * @access Public
  */
-router.post('/verify-token', async (req, res) => {
+router.post('/verify-token', auth0Service.checkJwt, (req: Request, res: Response) => {
   try {
-    const { token } = req.body;
-    
-    if (!token) {
-      return res.status(400).json({ message: 'Token is required' });
-    }
-    
-    const verifyResult = await auth0Service.verifyToken(token);
-    
-    if (verifyResult.error) {
-      return res.status(401).json({ message: verifyResult.error });
-    }
-    
-    return res.json({
-      valid: true,
-      decodedToken: verifyResult
-    });
+    // If middleware passed, token is valid
+    res.json({ valid: true });
   } catch (error) {
     console.error('Token verification error:', error);
-    return res.status(500).json({ message: 'Token verification failed', error: String(error) });
+    res.status(500).json({ message: 'Server error during token verification' });
   }
 });
 
@@ -99,32 +96,28 @@ router.post('/verify-token', async (req, res) => {
  * @desc Change user password
  * @access Private
  */
-router.post('/change-password', auth0Service.checkJwt, async (req, res) => {
+router.post('/change-password', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
     const { currentPassword, newPassword } = req.body;
     
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ 
-        message: 'Missing required fields', 
-        required: ['currentPassword', 'newPassword'] 
-      });
+      return res.status(400).json({ message: 'Please provide current and new password' });
     }
     
-    // Get the user ID from the token
-    const userId = req.user.sub;
-    
-    const changeResult = await auth0Service.changePassword(userId, currentPassword, newPassword);
-    
-    if (changeResult.error) {
-      return res.status(400).json({ message: changeResult.error });
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
     }
     
-    return res.json({
-      message: 'Password changed successfully'
-    });
+    const changePasswordResult = await auth0Service.changePassword(req.user.id, currentPassword, newPassword);
+    
+    if (!changePasswordResult.success) {
+      return res.status(400).json({ message: changePasswordResult.message || 'Password change failed' });
+    }
+    
+    res.json({ message: 'Password changed successfully' });
   } catch (error) {
     console.error('Password change error:', error);
-    return res.status(500).json({ message: 'Password change failed', error: String(error) });
+    res.status(500).json({ message: 'Server error during password change' });
   }
 });
 
@@ -133,26 +126,24 @@ router.post('/change-password', auth0Service.checkJwt, async (req, res) => {
  * @desc Initiate forgot password process
  * @access Public
  */
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
     
     if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+      return res.status(400).json({ message: 'Please provide email address' });
     }
     
-    const forgotResult = await auth0Service.forgotPassword(email);
+    const forgotPasswordResult = await auth0Service.forgotPassword(email);
     
-    if (forgotResult.error) {
-      return res.status(400).json({ message: forgotResult.error });
+    if (!forgotPasswordResult.success) {
+      return res.status(400).json({ message: forgotPasswordResult.message || 'Forgot password request failed' });
     }
     
-    return res.json({
-      message: 'Password reset initiated successfully. Check your email for further instructions.'
-    });
+    res.json({ message: 'Password reset initiated. Check your email for instructions.' });
   } catch (error) {
     console.error('Forgot password error:', error);
-    return res.status(500).json({ message: 'Forgot password request failed', error: String(error) });
+    res.status(500).json({ message: 'Server error during forgot password process' });
   }
 });
 
@@ -161,28 +152,24 @@ router.post('/forgot-password', async (req, res) => {
  * @desc Refresh access token
  * @access Public
  */
-router.post('/refresh-token', async (req, res) => {
+router.post('/refresh-token', async (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body;
     
     if (!refreshToken) {
-      return res.status(400).json({ message: 'Refresh token is required' });
+      return res.status(400).json({ message: 'Please provide refresh token' });
     }
     
-    const refreshResult = await auth0Service.refreshToken(refreshToken);
+    const tokenResult = await auth0Service.refreshToken(refreshToken);
     
-    if (refreshResult.error) {
-      return res.status(401).json({ message: refreshResult.error });
+    if (!tokenResult.success) {
+      return res.status(401).json({ message: tokenResult.message || 'Token refresh failed' });
     }
     
-    return res.json({
-      token: refreshResult.access_token,
-      refreshToken: refreshResult.refresh_token,
-      expiresIn: refreshResult.expires_in
-    });
+    res.json(tokenResult.data);
   } catch (error) {
     console.error('Token refresh error:', error);
-    return res.status(500).json({ message: 'Token refresh failed', error: String(error) });
+    res.status(500).json({ message: 'Server error during token refresh' });
   }
 });
 
@@ -191,19 +178,18 @@ router.post('/refresh-token', async (req, res) => {
  * @desc Get current user information
  * @access Private
  */
-router.get('/me', auth0Service.checkJwt, async (req, res) => {
+router.get('/me', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    // The user ID is in the token payload (req.user.sub)
-    const userInfo = await auth0Service.getUserInfo(req.user.sub);
+    const userInfo = await auth0Service.getUserInfo(req.user.id);
     
-    if (!userInfo) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!userInfo.success) {
+      return res.status(404).json({ message: userInfo.message || 'User not found' });
     }
     
-    return res.json(userInfo);
+    res.json(userInfo.data);
   } catch (error) {
-    console.error('Error fetching user info:', error);
-    return res.status(500).json({ message: 'Error fetching user info', error: String(error) });
+    console.error('Get user info error:', error);
+    res.status(500).json({ message: 'Server error fetching user information' });
   }
 });
 
@@ -212,18 +198,91 @@ router.get('/me', auth0Service.checkJwt, async (req, res) => {
  * @desc Logout user
  * @access Private
  */
-router.post('/logout', auth0Service.checkJwt, async (req, res) => {
+router.post('/logout', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    // Auth0 doesn't actually invalidate tokens server-side
-    // The client should simply remove the token from storage
-    // This endpoint would be used for any server-side cleanup needed
-    
-    return res.json({
-      message: 'Logout successful'
-    });
+    // Clients should delete the token on their side
+    res.json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
     console.error('Logout error:', error);
-    return res.status(500).json({ message: 'Logout failed', error: String(error) });
+    res.status(500).json({ message: 'Server error during logout' });
+  }
+});
+
+/**
+ * @route POST /api/v1/auth/biometric
+ * @desc Authenticate with biometric verification
+ * @access Public
+ */
+router.post('/biometric', async (req: Request, res: Response) => {
+  try {
+    const { biometricData, userId } = req.body;
+    
+    if (!biometricData || !userId) {
+      return res.status(400).json({ message: 'Please provide biometric data and user ID' });
+    }
+    
+    const authResult = await authService.biometricAuth(userId, biometricData);
+    
+    if (!authResult.success) {
+      return res.status(401).json({ message: authResult.message || 'Biometric authentication failed' });
+    }
+    
+    res.json(authResult.data);
+  } catch (error) {
+    console.error('Biometric authentication error:', error);
+    res.status(500).json({ message: 'Server error during biometric authentication' });
+  }
+});
+
+/**
+ * @route POST /api/v1/auth/nft
+ * @desc Authenticate with NFT verification
+ * @access Public
+ */
+router.post('/nft', async (req: Request, res: Response) => {
+  try {
+    const { walletAddress, nftTokenId, chainId } = req.body;
+    
+    if (!walletAddress || !nftTokenId) {
+      return res.status(400).json({ message: 'Please provide wallet address and NFT token ID' });
+    }
+    
+    const authResult = await authService.nftAuth(walletAddress, nftTokenId, chainId);
+    
+    if (!authResult.success) {
+      return res.status(401).json({ message: authResult.message || 'NFT authentication failed' });
+    }
+    
+    res.json(authResult.data);
+  } catch (error) {
+    console.error('NFT authentication error:', error);
+    res.status(500).json({ message: 'Server error during NFT authentication' });
+  }
+});
+
+/**
+ * @route POST /api/v1/auth/recovery-code
+ * @desc Authenticate with recovery code
+ * @access Public
+ */
+router.post('/recovery-code', async (req: Request, res: Response) => {
+  try {
+    const { email, recoveryCode } = req.body;
+    
+    if (!email || !recoveryCode) {
+      return res.status(400).json({ message: 'Please provide email and recovery code' });
+    }
+    
+    const authResult = await authService.recoveryCodeAuth(email, recoveryCode);
+    
+    if (!authResult.success) {
+      return res.status(401).json({ message: authResult.message || 'Recovery code authentication failed' });
+    }
+    
+    res.json(authResult.data);
+  } catch (error) {
+    console.error('Recovery code authentication error:', error);
+    res.status(500).json({ message: 'Server error during recovery code authentication' });
   }
 });
 
