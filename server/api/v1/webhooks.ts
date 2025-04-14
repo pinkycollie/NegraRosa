@@ -1,26 +1,26 @@
 import { Router, Request, Response } from 'express';
 import { auth0Service } from '../../services/Auth0Service';
 import { storage } from '../../storage';
+import { webhookService } from '../../services/WebhookService';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
 /**
  * @route GET /api/v1/webhooks
- * @desc Get all webhooks (admin only)
- * @access Private/Admin
+ * @desc Get all webhooks for the authenticated user
+ * @access Private
  */
-router.get('/', auth0Service.checkJwt, auth0Service.checkPermissions(['read:webhooks']), async (req: Request, res: Response) => {
+router.get('/', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    // This would be implemented with a proper method in a real scenario
-    // For now, we'll get all users and collect all their webhooks
-    const users = await storage.getAllUsers();
-    const webhooks = [];
-    
-    for (const user of users) {
-      const userWebhooks = await storage.getWebhooksByUserId(user.id);
-      webhooks.push(...userWebhooks);
+    // Get the user based on the auth token
+    const user = await storage.getUserByExternalId(req.user.sub);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
+    
+    // Get all webhooks for the user
+    const webhooks = await storage.getWebhooksByUserId(user.id);
     
     return res.json(webhooks);
   } catch (error: any) {
@@ -31,18 +31,27 @@ router.get('/', auth0Service.checkJwt, auth0Service.checkPermissions(['read:webh
 
 /**
  * @route GET /api/v1/webhooks/:id
- * @desc Get webhook by ID
+ * @desc Get a webhook by ID
  * @access Private
  */
 router.get('/:id', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    const webhook = await storage.getWebhook(req.params.id);
+    const webhookId = req.params.id;
+    
+    // Get the user based on the auth token
+    const user = await storage.getUserByExternalId(req.user.sub);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Get the webhook
+    const webhook = await storage.getWebhookById(webhookId);
     if (!webhook) {
       return res.status(404).json({ message: 'Webhook not found' });
     }
     
-    // Check if the user has permission to access this webhook
-    if (!req.user.permissions?.includes('read:webhooks') && webhook.userId !== req.user.id) {
+    // Check if the webhook belongs to the user or the user is an admin
+    if (webhook.userId !== user.id && !req.user.permissions?.includes('read:webhooks')) {
       return res.status(403).json({ message: 'Access denied' });
     }
     
@@ -60,31 +69,49 @@ router.get('/:id', auth0Service.checkJwt, async (req: Request, res: Response) =>
  */
 router.post('/', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    // Get user ID from Auth0 user
+    const { name, url, event, active } = req.body;
+    
+    if (!name || !url || !event) {
+      return res.status(400).json({ 
+        message: 'Missing required fields', 
+        required: ['name', 'url', 'event'] 
+      });
+    }
+    
+    // Get the user based on the auth token
     const user = await storage.getUserByExternalId(req.user.sub);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    const { url, events, description, headers = {}, active = true, format = 'JSON' } = req.body;
-    
-    if (!url || !events || !Array.isArray(events) || events.length === 0) {
-      return res.status(400).json({ message: 'Missing required fields: url, events' });
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch (e) {
+      return res.status(400).json({ message: 'Invalid URL format' });
     }
     
-    const webhookId = uuidv4();
+    // Check available events
+    const availableEvents = webhookService.getAvailableEvents();
+    if (!availableEvents.includes(event)) {
+      return res.status(400).json({ 
+        message: 'Invalid event type',
+        availableEvents 
+      });
+    }
+    
+    // Create the webhook
     const webhook = await storage.createWebhook({
-      id: webhookId,
-      userId: user.id,
+      id: uuidv4(),
+      name,
       url,
-      events,
-      description,
-      headers,
-      active,
-      format,
+      userId: user.id,
+      event,
+      active: active !== undefined ? active : true,
       createdAt: new Date(),
       updatedAt: new Date(),
-      secret: uuidv4() // Generate a webhook secret for signing payloads
+      lastTriggeredAt: null,
+      payload: {}
     });
     
     return res.status(201).json(webhook);
@@ -101,32 +128,55 @@ router.post('/', auth0Service.checkJwt, async (req: Request, res: Response) => {
  */
 router.put('/:id', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    const webhook = await storage.getWebhook(req.params.id);
-    if (!webhook) {
-      return res.status(404).json({ message: 'Webhook not found' });
-    }
+    const webhookId = req.params.id;
+    const { name, url, event, active } = req.body;
     
-    // Check if the user has permission to update this webhook
+    // Get the user based on the auth token
     const user = await storage.getUserByExternalId(req.user.sub);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    if (!req.user.permissions?.includes('update:webhooks') && webhook.userId !== user.id) {
+    // Get the webhook
+    const webhook = await storage.getWebhookById(webhookId);
+    if (!webhook) {
+      return res.status(404).json({ message: 'Webhook not found' });
+    }
+    
+    // Check if the webhook belongs to the user or the user is an admin
+    if (webhook.userId !== user.id && !req.user.permissions?.includes('update:webhooks')) {
       return res.status(403).json({ message: 'Access denied' });
     }
     
-    const { url, events, description, headers, active, format } = req.body;
+    // Check URL format if provided
+    if (url) {
+      try {
+        new URL(url);
+      } catch (e) {
+        return res.status(400).json({ message: 'Invalid URL format' });
+      }
+    }
+    
+    // Check event if provided
+    if (event) {
+      const availableEvents = webhookService.getAvailableEvents();
+      if (!availableEvents.includes(event)) {
+        return res.status(400).json({ 
+          message: 'Invalid event type',
+          availableEvents 
+        });
+      }
+    }
+    
+    // Update the webhook
     const updates: any = { updatedAt: new Date() };
-    
-    if (url) updates.url = url;
-    if (events) updates.events = events;
-    if (description !== undefined) updates.description = description;
-    if (headers) updates.headers = headers;
+    if (name !== undefined) updates.name = name;
+    if (url !== undefined) updates.url = url;
+    if (event !== undefined) updates.event = event;
     if (active !== undefined) updates.active = active;
-    if (format) updates.format = format;
     
-    const updatedWebhook = await storage.updateWebhook(req.params.id, updates);
+    const updatedWebhook = await storage.updateWebhook(webhookId, updates);
+    
     return res.json(updatedWebhook);
   } catch (error: any) {
     console.error('Error updating webhook:', error);
@@ -141,22 +191,27 @@ router.put('/:id', auth0Service.checkJwt, async (req: Request, res: Response) =>
  */
 router.delete('/:id', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    const webhook = await storage.getWebhook(req.params.id);
-    if (!webhook) {
-      return res.status(404).json({ message: 'Webhook not found' });
-    }
+    const webhookId = req.params.id;
     
-    // Check if the user has permission to delete this webhook
+    // Get the user based on the auth token
     const user = await storage.getUserByExternalId(req.user.sub);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    if (!req.user.permissions?.includes('delete:webhooks') && webhook.userId !== user.id) {
+    // Get the webhook
+    const webhook = await storage.getWebhookById(webhookId);
+    if (!webhook) {
+      return res.status(404).json({ message: 'Webhook not found' });
+    }
+    
+    // Check if the webhook belongs to the user or the user is an admin
+    if (webhook.userId !== user.id && !req.user.permissions?.includes('delete:webhooks')) {
       return res.status(403).json({ message: 'Access denied' });
     }
     
-    const success = await storage.deleteWebhook(req.params.id);
+    // Delete the webhook
+    const success = await storage.deleteWebhook(webhookId);
     if (!success) {
       return res.status(500).json({ message: 'Failed to delete webhook' });
     }
@@ -169,95 +224,149 @@ router.delete('/:id', auth0Service.checkJwt, async (req: Request, res: Response)
 });
 
 /**
- * @route GET /api/v1/webhooks/:id/payloads
- * @desc Get webhook payloads history
+ * @route GET /api/v1/webhooks/:id/deliveries
+ * @desc Get webhook delivery history
  * @access Private
  */
-router.get('/:id/payloads', auth0Service.checkJwt, async (req: Request, res: Response) => {
+router.get('/:id/deliveries', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    const webhook = await storage.getWebhook(req.params.id);
-    if (!webhook) {
-      return res.status(404).json({ message: 'Webhook not found' });
-    }
+    const webhookId = req.params.id;
     
-    // Check if the user has permission to access this webhook's payloads
+    // Get the user based on the auth token
     const user = await storage.getUserByExternalId(req.user.sub);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    if (!req.user.permissions?.includes('read:webhooks') && webhook.userId !== user.id) {
+    // Get the webhook
+    const webhook = await storage.getWebhookById(webhookId);
+    if (!webhook) {
+      return res.status(404).json({ message: 'Webhook not found' });
+    }
+    
+    // Check if the webhook belongs to the user or the user is an admin
+    if (webhook.userId !== user.id && !req.user.permissions?.includes('read:webhook_deliveries')) {
       return res.status(403).json({ message: 'Access denied' });
     }
     
-    const payloads = await storage.getWebhookPayloadsByWebhookId(req.params.id);
-    return res.json(payloads);
+    // Get delivery history
+    const deliveries = await storage.getWebhookDeliveriesByWebhookId(webhookId);
+    
+    return res.json(deliveries);
   } catch (error: any) {
-    console.error('Error fetching webhook payloads:', error);
-    return res.status(500).json({ message: 'Error fetching webhook payloads', error: error.message });
+    console.error('Error fetching webhook deliveries:', error);
+    return res.status(500).json({ message: 'Error fetching webhook deliveries', error: error.message });
   }
 });
 
 /**
  * @route POST /api/v1/webhooks/:id/test
- * @desc Test webhook by sending a test payload
+ * @desc Test a webhook
  * @access Private
  */
 router.post('/:id/test', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    const webhook = await storage.getWebhook(req.params.id);
-    if (!webhook) {
-      return res.status(404).json({ message: 'Webhook not found' });
-    }
+    const webhookId = req.params.id;
+    const { payload } = req.body;
     
-    // Check if the user has permission to test this webhook
+    // Get the user based on the auth token
     const user = await storage.getUserByExternalId(req.user.sub);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    if (!req.user.permissions?.includes('update:webhooks') && webhook.userId !== user.id) {
+    // Get the webhook
+    const webhook = await storage.getWebhookById(webhookId);
+    if (!webhook) {
+      return res.status(404).json({ message: 'Webhook not found' });
+    }
+    
+    // Check if the webhook belongs to the user or the user is an admin
+    if (webhook.userId !== user.id && !req.user.permissions?.includes('test:webhooks')) {
       return res.status(403).json({ message: 'Access denied' });
     }
     
-    // Create a test payload
-    const testPayload = {
-      id: uuidv4(),
-      event: 'webhook.test',
-      data: {
-        test: true,
-        timestamp: new Date().toISOString(),
-        message: 'This is a test webhook event'
-      },
-      webhookId: webhook.id,
-      timestamp: new Date(),
-      deliveryStatus: 'PENDING',
-      responseCode: null,
-      responseBody: null,
-      notionEntryId: null,
-      retryCount: 0
-    };
-    
-    // Store the test payload
-    const payload = await storage.createWebhookPayload(testPayload);
-    
-    // In a real implementation, this would trigger an actual HTTP request to the webhook URL
-    // But for now, we'll just simulate a successful delivery
-    const updatedPayload = await storage.updateWebhookPayloadStatus(
-      payload.id,
-      'DELIVERED',
-      200,
-      JSON.stringify({ success: true, message: 'Test webhook received' })
-    );
+    // Test the webhook
+    const testResult = await webhookService.triggerWebhook(webhook, payload || {
+      message: 'This is a test webhook delivery',
+      timestamp: new Date().toISOString(),
+      event: webhook.event,
+      test: true
+    });
     
     return res.json({
-      success: true,
-      payload: updatedPayload,
-      message: 'Test webhook sent successfully'
+      success: testResult.success,
+      deliveryId: testResult.deliveryId,
+      message: testResult.success ? 'Webhook test was successful' : 'Webhook test failed',
+      errors: testResult.errors
     });
   } catch (error: any) {
     console.error('Error testing webhook:', error);
     return res.status(500).json({ message: 'Error testing webhook', error: error.message });
+  }
+});
+
+/**
+ * @route POST /api/v1/webhooks/import
+ * @desc Import webhooks from CSV
+ * @access Private
+ */
+router.post('/import', auth0Service.checkJwt, async (req: Request, res: Response) => {
+  try {
+    const { csvData } = req.body;
+    
+    if (!csvData) {
+      return res.status(400).json({ message: 'Missing CSV data' });
+    }
+    
+    // Get the user based on the auth token
+    const user = await storage.getUserByExternalId(req.user.sub);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Process the CSV import
+    const importResult = await webhookService.importWebhooksFromCSV(csvData, user.id);
+    
+    return res.json({
+      success: importResult.success,
+      imported: importResult.imported,
+      errors: importResult.errors,
+      webhooks: importResult.webhooks
+    });
+  } catch (error: any) {
+    console.error('Error importing webhooks:', error);
+    return res.status(500).json({ message: 'Error importing webhooks', error: error.message });
+  }
+});
+
+/**
+ * @route GET /api/v1/webhooks/export
+ * @desc Export webhooks to CSV
+ * @access Private
+ */
+router.get('/export', auth0Service.checkJwt, async (req: Request, res: Response) => {
+  try {
+    // Get the user based on the auth token
+    const user = await storage.getUserByExternalId(req.user.sub);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Get all webhooks for the user
+    const webhooks = await storage.getWebhooksByUserId(user.id);
+    
+    // Generate CSV
+    const csv = webhookService.exportWebhooksToCSV(webhooks);
+    
+    // Set response headers for file download
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=webhooks.csv');
+    
+    return res.send(csv);
+  } catch (error: any) {
+    console.error('Error exporting webhooks:', error);
+    return res.status(500).json({ message: 'Error exporting webhooks', error: error.message });
   }
 });
 

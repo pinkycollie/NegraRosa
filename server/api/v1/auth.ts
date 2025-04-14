@@ -1,99 +1,230 @@
 import { Router, Request, Response } from 'express';
 import { auth0Service } from '../../services/Auth0Service';
-import { storage } from '../../storage';
-
-// Extend Express Request type to include custom properties
-declare global {
-  namespace Express {
-    interface Request {
-      user?: any;
-      tenantId?: string;
-    }
-  }
-}
 
 const router = Router();
 
 /**
- * @route GET /api/v1/auth/me
- * @desc Get authenticated user profile
- * @access Private
- */
-router.get('/me', auth0Service.checkJwt, async (req: Request, res: Response) => {
-  try {
-    if (!req.user?.sub) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
-    // Get or create user in our database
-    const user = await auth0Service.syncUserFromAuth0(req.user.sub);
-    return res.json(user);
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
-    return res.status(500).json({ message: 'Error fetching user profile', error: error.message });
-  }
-});
-
-/**
- * @route GET /api/v1/auth/permissions
- * @desc Get authenticated user permissions
- * @access Private
- */
-router.get('/permissions', auth0Service.checkJwt, (req: Request, res: Response) => {
-  try {
-    if (!req.user?.permissions) {
-      return res.json({ permissions: [] });
-    }
-    return res.json({ permissions: req.user.permissions });
-  } catch (error) {
-    console.error('Error fetching user permissions:', error);
-    return res.status(500).json({ message: 'Error fetching user permissions', error: error.message });
-  }
-});
-
-/**
- * @route GET /api/v1/auth/tenants
- * @desc Get user's assigned tenants
- * @access Private
- */
-router.get('/tenants', auth0Service.checkJwt, async (req: Request, res: Response) => {
-  try {
-    if (!req.user?.sub) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
-    // Get internal user from Auth0 ID
-    const user = await storage.getUserByExternalId(req.user.sub);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Get tenants from storage
-    const tenants = await storage.getUserTenants(user.id);
-    return res.json(tenants);
-  } catch (error) {
-    console.error('Error fetching user tenants:', error);
-    return res.status(500).json({ message: 'Error fetching user tenants', error: error.message });
-  }
-});
-
-/**
- * @route GET /api/v1/auth/config
- * @desc Get Auth0 configuration for frontend
+ * @route POST /api/v1/auth/login
+ * @desc Authenticate user and get token
  * @access Public
  */
-router.get('/config', (req: Request, res: Response) => {
-  // Only expose public configuration settings
-  const config = {
-    domain: process.env.AUTH0_DOMAIN,
-    clientId: process.env.AUTH0_CLIENT_ID,
-    audience: process.env.AUTH0_AUDIENCE,
-    scope: 'openid profile email',
-    redirectUri: process.env.AUTH0_CALLBACK_URL || `${req.protocol}://${req.get('host')}/callback`
-  };
-  
-  res.json(config);
+router.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Missing credentials' });
+    }
+    
+    const authResult = await auth0Service.login(username, password);
+    
+    if (authResult.error) {
+      return res.status(401).json({ message: authResult.error });
+    }
+    
+    return res.json({
+      token: authResult.access_token,
+      expiresIn: authResult.expires_in,
+      userId: authResult.user_id
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({ message: 'Authentication failed', error: String(error) });
+  }
+});
+
+/**
+ * @route POST /api/v1/auth/register
+ * @desc Register new user
+ * @access Public
+ */
+router.post('/register', async (req, res) => {
+  try {
+    const { username, email, password, fullName } = req.body;
+    
+    if (!username || !email || !password) {
+      return res.status(400).json({ 
+        message: 'Missing required fields', 
+        required: ['username', 'email', 'password'] 
+      });
+    }
+    
+    const registerResult = await auth0Service.register(username, email, password, fullName);
+    
+    if (registerResult.error) {
+      return res.status(400).json({ message: registerResult.error });
+    }
+    
+    return res.status(201).json({
+      message: 'Registration successful',
+      userId: registerResult.user_id
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    return res.status(500).json({ message: 'Registration failed', error: String(error) });
+  }
+});
+
+/**
+ * @route POST /api/v1/auth/verify-token
+ * @desc Verify JWT token
+ * @access Public
+ */
+router.post('/verify-token', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required' });
+    }
+    
+    const verifyResult = await auth0Service.verifyToken(token);
+    
+    if (verifyResult.error) {
+      return res.status(401).json({ message: verifyResult.error });
+    }
+    
+    return res.json({
+      valid: true,
+      decodedToken: verifyResult
+    });
+  } catch (error) {
+    console.error('Token verification error:', error);
+    return res.status(500).json({ message: 'Token verification failed', error: String(error) });
+  }
+});
+
+/**
+ * @route POST /api/v1/auth/change-password
+ * @desc Change user password
+ * @access Private
+ */
+router.post('/change-password', auth0Service.checkJwt, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ 
+        message: 'Missing required fields', 
+        required: ['currentPassword', 'newPassword'] 
+      });
+    }
+    
+    // Get the user ID from the token
+    const userId = req.user.sub;
+    
+    const changeResult = await auth0Service.changePassword(userId, currentPassword, newPassword);
+    
+    if (changeResult.error) {
+      return res.status(400).json({ message: changeResult.error });
+    }
+    
+    return res.json({
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Password change error:', error);
+    return res.status(500).json({ message: 'Password change failed', error: String(error) });
+  }
+});
+
+/**
+ * @route POST /api/v1/auth/forgot-password
+ * @desc Initiate forgot password process
+ * @access Public
+ */
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    
+    const forgotResult = await auth0Service.forgotPassword(email);
+    
+    if (forgotResult.error) {
+      return res.status(400).json({ message: forgotResult.error });
+    }
+    
+    return res.json({
+      message: 'Password reset initiated successfully. Check your email for further instructions.'
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    return res.status(500).json({ message: 'Forgot password request failed', error: String(error) });
+  }
+});
+
+/**
+ * @route POST /api/v1/auth/refresh-token
+ * @desc Refresh access token
+ * @access Public
+ */
+router.post('/refresh-token', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+      return res.status(400).json({ message: 'Refresh token is required' });
+    }
+    
+    const refreshResult = await auth0Service.refreshToken(refreshToken);
+    
+    if (refreshResult.error) {
+      return res.status(401).json({ message: refreshResult.error });
+    }
+    
+    return res.json({
+      token: refreshResult.access_token,
+      refreshToken: refreshResult.refresh_token,
+      expiresIn: refreshResult.expires_in
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    return res.status(500).json({ message: 'Token refresh failed', error: String(error) });
+  }
+});
+
+/**
+ * @route GET /api/v1/auth/me
+ * @desc Get current user information
+ * @access Private
+ */
+router.get('/me', auth0Service.checkJwt, async (req, res) => {
+  try {
+    // The user ID is in the token payload (req.user.sub)
+    const userInfo = await auth0Service.getUserInfo(req.user.sub);
+    
+    if (!userInfo) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    return res.json(userInfo);
+  } catch (error) {
+    console.error('Error fetching user info:', error);
+    return res.status(500).json({ message: 'Error fetching user info', error: String(error) });
+  }
+});
+
+/**
+ * @route POST /api/v1/auth/logout
+ * @desc Logout user
+ * @access Private
+ */
+router.post('/logout', auth0Service.checkJwt, async (req, res) => {
+  try {
+    // Auth0 doesn't actually invalidate tokens server-side
+    // The client should simply remove the token from storage
+    // This endpoint would be used for any server-side cleanup needed
+    
+    return res.json({
+      message: 'Logout successful'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return res.status(500).json({ message: 'Logout failed', error: String(error) });
+  }
 });
 
 export default router;

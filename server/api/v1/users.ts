@@ -5,200 +5,302 @@ import { storage } from '../../storage';
 const router = Router();
 
 /**
- * @route GET /api/v1/users/me
- * @desc Get current user's profile (alternative to /auth/me)
+ * @route GET /api/v1/users
+ * @desc Get all users (admin only)
+ * @access Private/Admin
+ */
+router.get('/', auth0Service.checkJwt, auth0Service.checkPermissions(['read:users']), async (req: Request, res: Response) => {
+  try {
+    const users = await storage.getAllUsers();
+    
+    // Remove sensitive information before sending response
+    const sanitizedUsers = users.map(user => {
+      const { password, ...userWithoutPassword } = user;
+      return userWithoutPassword;
+    });
+    
+    return res.json(sanitizedUsers);
+  } catch (error: any) {
+    console.error('Error fetching users:', error);
+    return res.status(500).json({ message: 'Error fetching users', error: error.message });
+  }
+});
+
+/**
+ * @route GET /api/v1/users/:id
+ * @desc Get user by ID
  * @access Private
  */
-router.get('/me', auth0Service.checkJwt, async (req: Request, res: Response) => {
+router.get('/:id', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    if (!req.user?.sub) {
-      return res.status(401).json({ message: 'Not authenticated' });
+    const userId = parseInt(req.params.id);
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
     }
-
-    const user = await storage.getUserByExternalId(req.user.sub);
+    
+    // Check if the user has permission to view this user
+    const requestingUser = await storage.getUserByExternalId(req.user.sub);
+    if (!requestingUser) {
+      return res.status(404).json({ message: 'Requesting user not found' });
+    }
+    
+    if (userId !== requestingUser.id && !req.user.permissions?.includes('read:users')) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    const user = await storage.getUser(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
-    return res.json(user);
+    
+    // Remove password from response
+    const { password, ...userWithoutPassword } = user;
+    
+    return res.json(userWithoutPassword);
   } catch (error: any) {
-    console.error('Error fetching user profile:', error);
-    return res.status(500).json({ message: 'Error fetching user profile', error: error.message });
+    console.error('Error fetching user:', error);
+    return res.status(500).json({ message: 'Error fetching user', error: error.message });
   }
 });
 
 /**
- * @route GET /api/v1/users/:userId/reputation
- * @desc Get user's reputation
- * @access Private
+ * @route POST /api/v1/users
+ * @desc Create a new user (admin only)
+ * @access Private/Admin
  */
-router.get('/:userId/reputation', auth0Service.checkJwt, async (req: Request, res: Response) => {
+router.post('/', auth0Service.checkJwt, auth0Service.checkPermissions(['create:users']), async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId);
-    if (isNaN(userId)) {
-      return res.status(400).json({ message: 'Invalid user ID' });
+    const { username, email, password, fullName, phone } = req.body;
+    
+    if (!username || !email || !password) {
+      return res.status(400).json({ 
+        message: 'Missing required fields', 
+        required: ['username', 'email', 'password'] 
+      });
     }
-
-    const reputation = await storage.getReputation(userId);
-    if (!reputation) {
-      return res.status(404).json({ message: 'Reputation not found' });
+    
+    // Check if username or email already exists
+    const existingByUsername = await storage.getUserByUsername(username);
+    if (existingByUsername) {
+      return res.status(409).json({ message: 'Username already exists' });
     }
-
-    return res.json(reputation);
-  } catch (error: any) {
-    console.error('Error fetching reputation:', error);
-    return res.status(500).json({ message: 'Error fetching reputation', error: error.message });
-  }
-});
-
-/**
- * @route GET /api/v1/users/:userId/verifications
- * @desc Get user's verifications
- * @access Private
- */
-router.get('/:userId/verifications', auth0Service.checkJwt, async (req: Request, res: Response) => {
-  try {
-    const userId = parseInt(req.params.userId);
-    if (isNaN(userId)) {
-      return res.status(400).json({ message: 'Invalid user ID' });
+    
+    const existingByEmail = await storage.getUserByEmail(email);
+    if (existingByEmail) {
+      return res.status(409).json({ message: 'Email already exists' });
     }
-
-    const verifications = await storage.getVerificationsByUserId(userId);
-    return res.json({
-      verifications,
-      status: {
-        verified: verifications.some(v => v.status === 'VERIFIED'),
-        verificationCount: verifications.length,
-        methods: verifications.map(v => v.type)
-      }
+    
+    // Create user in Auth0
+    const createAuthResult = await auth0Service.createUser(username, email, password, fullName);
+    
+    if (createAuthResult.error) {
+      return res.status(400).json({ message: createAuthResult.error });
+    }
+    
+    // Create user in local storage
+    const user = await storage.createUser({
+      username,
+      password, // This should be hashed in a real implementation
+      email,
+      fullName: fullName || null,
+      phone: phone || null,
+      createdAt: new Date(),
+    });
+    
+    // Remove sensitive information before sending response
+    const { password: _, ...userResponse } = user;
+    
+    return res.status(201).json({
+      ...userResponse,
+      auth0Id: createAuthResult.user_id
     });
   } catch (error: any) {
-    console.error('Error fetching verifications:', error);
-    return res.status(500).json({ message: 'Error fetching verifications', error: error.message });
+    console.error('Error creating user:', error);
+    return res.status(500).json({ message: 'Error creating user', error: error.message });
   }
 });
 
 /**
- * @route GET /api/v1/users/:userId/transactions
- * @desc Get user's transactions
+ * @route PUT /api/v1/users/:id
+ * @desc Update a user
  * @access Private
  */
-router.get('/:userId/transactions', auth0Service.checkJwt, async (req: Request, res: Response) => {
+router.put('/:id', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = parseInt(req.params.id);
     if (isNaN(userId)) {
       return res.status(400).json({ message: 'Invalid user ID' });
     }
-
-    const transactions = await storage.getTransactionsByUserId(userId);
-    return res.json(transactions);
+    
+    // Check if the user has permission to update this user
+    const requestingUser = await storage.getUserByExternalId(req.user.sub);
+    if (!requestingUser) {
+      return res.status(404).json({ message: 'Requesting user not found' });
+    }
+    
+    if (userId !== requestingUser.id && !req.user.permissions?.includes('update:users')) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const { fullName, phone } = req.body;
+    const updates: any = {};
+    
+    if (fullName !== undefined) updates.fullName = fullName;
+    if (phone !== undefined) updates.phone = phone;
+    
+    // Update user in Auth0 if it's connected
+    if (user.externalId) {
+      const updateAuthResult = await auth0Service.updateUser(user.externalId, updates);
+      
+      if (updateAuthResult.error) {
+        return res.status(400).json({ message: updateAuthResult.error });
+      }
+    }
+    
+    // Update user in local storage
+    const updatedUser = await storage.updateUser(userId, updates);
+    
+    // Remove password from response
+    const { password, ...userWithoutPassword } = updatedUser;
+    
+    return res.json(userWithoutPassword);
   } catch (error: any) {
-    console.error('Error fetching transactions:', error);
-    return res.status(500).json({ message: 'Error fetching transactions', error: error.message });
+    console.error('Error updating user:', error);
+    return res.status(500).json({ message: 'Error updating user', error: error.message });
   }
 });
 
 /**
- * @route GET /api/v1/users/:userId/why-submissions
- * @desc Get user's WHY submissions
- * @access Private
+ * @route DELETE /api/v1/users/:id
+ * @desc Delete a user (admin only)
+ * @access Private/Admin
  */
-router.get('/:userId/why-submissions', auth0Service.checkJwt, async (req: Request, res: Response) => {
+router.delete('/:id', auth0Service.checkJwt, auth0Service.checkPermissions(['delete:users']), async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = parseInt(req.params.id);
     if (isNaN(userId)) {
       return res.status(400).json({ message: 'Invalid user ID' });
     }
-
-    const submissions = await storage.getWhySubmissionsByUserId(userId);
-    return res.json(submissions);
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Delete user from Auth0 if connected
+    if (user.externalId) {
+      const deleteAuthResult = await auth0Service.deleteUser(user.externalId);
+      
+      if (deleteAuthResult.error) {
+        return res.status(400).json({ message: deleteAuthResult.error });
+      }
+    }
+    
+    // Delete user from local storage
+    const success = await storage.deleteUser(userId);
+    if (!success) {
+      return res.status(500).json({ message: 'Failed to delete user' });
+    }
+    
+    return res.status(204).end();
   } catch (error: any) {
-    console.error('Error fetching WHY submissions:', error);
-    return res.status(500).json({ message: 'Error fetching WHY submissions', error: error.message });
+    console.error('Error deleting user:', error);
+    return res.status(500).json({ message: 'Error deleting user', error: error.message });
   }
 });
 
 /**
- * @route GET /api/v1/users/:userId/why-notifications
- * @desc Get user's WHY notifications
+ * @route GET /api/v1/users/:id/permissions
+ * @desc Get user permissions
  * @access Private
  */
-router.get('/:userId/why-notifications', auth0Service.checkJwt, async (req: Request, res: Response) => {
+router.get('/:id/permissions', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = parseInt(req.params.id);
     if (isNaN(userId)) {
       return res.status(400).json({ message: 'Invalid user ID' });
     }
-
-    const notifications = await storage.getWhyNotificationsByUserId(userId);
-    return res.json(notifications);
+    
+    // Check if the user has permission to view this user's permissions
+    const requestingUser = await storage.getUserByExternalId(req.user.sub);
+    if (!requestingUser) {
+      return res.status(404).json({ message: 'Requesting user not found' });
+    }
+    
+    if (userId !== requestingUser.id && !req.user.permissions?.includes('read:permissions')) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Get user permissions from Auth0
+    if (!user.externalId) {
+      return res.json({ permissions: [] });
+    }
+    
+    const permissionsResult = await auth0Service.getUserPermissions(user.externalId);
+    
+    if (permissionsResult.error) {
+      return res.status(400).json({ message: permissionsResult.error });
+    }
+    
+    return res.json({ permissions: permissionsResult.permissions || [] });
   } catch (error: any) {
-    console.error('Error fetching WHY notifications:', error);
-    return res.status(500).json({ message: 'Error fetching WHY notifications', error: error.message });
+    console.error('Error fetching user permissions:', error);
+    return res.status(500).json({ message: 'Error fetching user permissions', error: error.message });
   }
 });
 
 /**
- * @route GET /api/v1/users/:userId/webhooks
- * @desc Get user's webhooks
+ * @route GET /api/v1/users/:id/roles
+ * @desc Get user roles
  * @access Private
  */
-router.get('/:userId/webhooks', auth0Service.checkJwt, async (req: Request, res: Response) => {
+router.get('/:id/roles', auth0Service.checkJwt, async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = parseInt(req.params.id);
     if (isNaN(userId)) {
       return res.status(400).json({ message: 'Invalid user ID' });
     }
-
-    const webhooks = await storage.getWebhooksByUserId(userId);
-    return res.json(webhooks);
-  } catch (error: any) {
-    console.error('Error fetching webhooks:', error);
-    return res.status(500).json({ message: 'Error fetching webhooks', error: error.message });
-  }
-});
-
-/**
- * @route GET /api/v1/users/:userId/compliance-credentials
- * @desc Get user's Vanuatu compliance credentials
- * @access Private
- */
-router.get('/:userId/compliance-credentials', auth0Service.checkJwt, async (req: Request, res: Response) => {
-  try {
-    const userId = parseInt(req.params.userId);
-    if (isNaN(userId)) {
-      return res.status(400).json({ message: 'Invalid user ID' });
+    
+    // Check if the user has permission to view this user's roles
+    const requestingUser = await storage.getUserByExternalId(req.user.sub);
+    if (!requestingUser) {
+      return res.status(404).json({ message: 'Requesting user not found' });
     }
-
-    const credentials = await storage.getComplianceCredentialsByUserId(userId);
-    return res.json(credentials);
-  } catch (error: any) {
-    console.error('Error fetching compliance credentials:', error);
-    return res.status(500).json({ message: 'Error fetching compliance credentials', error: error.message });
-  }
-});
-
-/**
- * @route GET /api/v1/users/:userId/business-credit-profile
- * @desc Get user's business credit profile
- * @access Private
- */
-router.get('/:userId/business-credit-profile', auth0Service.checkJwt, async (req: Request, res: Response) => {
-  try {
-    const userId = parseInt(req.params.userId);
-    if (isNaN(userId)) {
-      return res.status(400).json({ message: 'Invalid user ID' });
+    
+    if (userId !== requestingUser.id && !req.user.permissions?.includes('read:roles')) {
+      return res.status(403).json({ message: 'Access denied' });
     }
-
-    const profile = await storage.getBusinessCreditProfileByUserId(userId);
-    if (!profile) {
-      return res.status(404).json({ message: 'Business credit profile not found' });
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
-
-    return res.json(profile);
+    
+    // Get user roles from Auth0
+    if (!user.externalId) {
+      return res.json({ roles: [] });
+    }
+    
+    const rolesResult = await auth0Service.getUserRoles(user.externalId);
+    
+    if (rolesResult.error) {
+      return res.status(400).json({ message: rolesResult.error });
+    }
+    
+    return res.json({ roles: rolesResult.roles || [] });
   } catch (error: any) {
-    console.error('Error fetching business credit profile:', error);
-    return res.status(500).json({ message: 'Error fetching business credit profile', error: error.message });
+    console.error('Error fetching user roles:', error);
+    return res.status(500).json({ message: 'Error fetching user roles', error: error.message });
   }
 });
 
