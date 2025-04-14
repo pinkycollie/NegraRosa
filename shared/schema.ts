@@ -490,6 +490,166 @@ export const insertWebhookPayloadSchema = createInsertSchema(webhookPayloads).pi
   retryCount: true,
 });
 
+// Vanuatu Compliance - Integrated with Credentials System
+export const complianceCredentials = pgTable("compliance_credentials", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  jurisdictionCode: text("jurisdiction_code").notNull(), // VANUATU, CAYMAN, BVI, etc.
+  credentialType: text("credential_type").notNull(), // ENTITY, LICENSE, COMPLIANCE_OFFICER
+  status: text("status").notNull(), // PENDING, ACTIVE, REVOKED, EXPIRED
+  issuedAt: timestamp("issued_at"),
+  expiresAt: timestamp("expires_at"),
+  metadata: jsonb("metadata"), // Jurisdiction-specific metadata
+  verificationHash: text("verification_hash"), // For blockchain verification
+  verifiableCredentialId: text("verifiable_credential_id"), // For W3C Verifiable Credentials
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertComplianceCredentialSchema = createInsertSchema(complianceCredentials).pick({
+  userId: true,
+  jurisdictionCode: true,
+  credentialType: true,
+  status: true,
+  issuedAt: true,
+  expiresAt: true,
+  metadata: true,
+  verificationHash: true,
+  verifiableCredentialId: true,
+});
+
+// Vanuatu-specific compliance schema
+export const vanuatuEntities = pgTable("vanuatu_entities", {
+  id: serial("id").primaryKey(),
+  credentialId: integer("credential_id").notNull().references(() => complianceCredentials.id),
+  entityType: text("entity_type").notNull(), // IBC, LIMITED, FOUNDATION
+  registrationNumber: text("registration_number").notNull(),
+  registeredName: text("registered_name").notNull(),
+  registrationDate: timestamp("registration_date"),
+  registeredAddress: text("registered_address"),
+  registeredAgentName: text("registered_agent_name"),
+  directorsData: jsonb("directors_data"), // JSON array of directors
+  shareholdersData: jsonb("shareholders_data"), // JSON array of shareholders
+  businessActivities: text("business_activities").array(),
+  annualFilingDueDate: timestamp("annual_filing_due_date"),
+  goodStandingStatus: boolean("good_standing_status").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertVanuatuEntitySchema = createInsertSchema(vanuatuEntities).pick({
+  credentialId: true,
+  entityType: true,
+  registrationNumber: true,
+  registeredName: true,
+  registrationDate: true,
+  registeredAddress: true,
+  registeredAgentName: true,
+  directorsData: true,
+  shareholdersData: true,
+  businessActivities: true,
+  annualFilingDueDate: true,
+  goodStandingStatus: true,
+});
+
+// Vanuatu Financial Licenses
+export const vanuatuLicenses = pgTable("vanuatu_licenses", {
+  id: serial("id").primaryKey(),
+  credentialId: integer("credential_id").notNull().references(() => complianceCredentials.id),
+  entityId: integer("entity_id").references(() => vanuatuEntities.id),
+  licenseType: text("license_type").notNull(), // DEALER, BANKING, SECURITIES, INSURANCE
+  licenseNumber: text("license_number").notNull(),
+  issuanceDate: timestamp("issuance_date").notNull(),
+  expiryDate: timestamp("expiry_date"),
+  activityScope: text("activity_scope").array(),
+  restrictionNotes: text("restriction_notes"),
+  regulatoryContactEmail: text("regulatory_contact_email"),
+  complianceOfficerId: integer("compliance_officer_id").references(() => users.id),
+  annualFeeAmount: real("annual_fee_amount"),
+  lastFeePaymentDate: timestamp("last_fee_payment_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertVanuatuLicenseSchema = createInsertSchema(vanuatuLicenses).pick({
+  credentialId: true,
+  entityId: true,
+  licenseType: true,
+  licenseNumber: true,
+  issuanceDate: true,
+  expiryDate: true,
+  activityScope: true,
+  restrictionNotes: true,
+  regulatoryContactEmail: true,
+  complianceOfficerId: true,
+  annualFeeAmount: true,
+  lastFeePaymentDate: true,
+});
+
+// Vanuatu Compliance Reports
+export const complianceReports = pgTable("compliance_reports", {
+  id: serial("id").primaryKey(),
+  entityId: integer("entity_id").references(() => vanuatuEntities.id),
+  licenseId: integer("license_id").references(() => vanuatuLicenses.id),
+  reportType: text("report_type").notNull(), // ANNUAL_RETURN, KYC_AUDIT, AML_REPORT
+  reportPeriodStart: timestamp("report_period_start"),
+  reportPeriodEnd: timestamp("report_period_end"),
+  filingDate: timestamp("filing_date"),
+  status: text("status").notNull(), // DRAFT, SUBMITTED, ACCEPTED, REJECTED
+  submissionReference: text("submission_reference"),
+  reportContent: jsonb("report_content"),
+  attachments: jsonb("attachments"), // URLs to supporting documents
+  submittedBy: integer("submitted_by").references(() => users.id),
+  reviewedBy: integer("reviewed_by").references(() => users.id),
+  reviewNotes: text("review_notes"),
+  webhookNotificationSent: boolean("webhook_notification_sent").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertComplianceReportSchema = createInsertSchema(complianceReports).pick({
+  entityId: true,
+  licenseId: true,
+  reportType: true,
+  reportPeriodStart: true,
+  reportPeriodEnd: true,
+  filingDate: true,
+  status: true,
+  submissionReference: true,
+  reportContent: true,
+  attachments: true,
+  submittedBy: true,
+  reviewedBy: true,
+  reviewNotes: true,
+  webhookNotificationSent: true,
+});
+
+// New compliance verification events for webhooks
+export const verificationEvents = [
+  ...verificationTypes.options,
+  "VANUATU_ENTITY_VERIFICATION",
+  "VANUATU_LICENSE_VERIFICATION",
+  "VANUATU_ANNUAL_COMPLIANCE",
+  "VANUATU_AML_VERIFICATION",
+  "VANUATU_KYC_AUDIT",
+] as const;
+
+export const extendedVerificationTypes = z.enum(verificationEvents);
+export type ExtendedVerificationType = z.infer<typeof extendedVerificationTypes>;
+
+// Export types
+export type InsertComplianceCredential = z.infer<typeof insertComplianceCredentialSchema>;
+export type ComplianceCredential = typeof complianceCredentials.$inferSelect;
+
+export type InsertVanuatuEntity = z.infer<typeof insertVanuatuEntitySchema>;
+export type VanuatuEntity = typeof vanuatuEntities.$inferSelect;
+
+export type InsertVanuatuLicense = z.infer<typeof insertVanuatuLicenseSchema>;
+export type VanuatuLicense = typeof vanuatuLicenses.$inferSelect;
+
+export type InsertComplianceReport = z.infer<typeof insertComplianceReportSchema>;
+export type ComplianceReport = typeof complianceReports.$inferSelect;
+
 export type InsertWebhook = z.infer<typeof insertWebhookSchema>;
 export type Webhook = typeof webhooks.$inferSelect;
 
