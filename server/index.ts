@@ -1,10 +1,19 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { VanuatuComplianceService } from "./services/VanuatuComplianceService";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Initialize Vanuatu Compliance service
+if (!process.env.VANUATU_API_KEY) {
+  console.log('Vanuatu Compliance service not fully configured. Missing: VANUATU_API_KEY');
+} else {
+  const vanuatuService = new VanuatuComplianceService();
+  console.log('Vanuatu Compliance service initialized');
+}
 
 app.use((req, res, next) => {
   const start = Date.now();
