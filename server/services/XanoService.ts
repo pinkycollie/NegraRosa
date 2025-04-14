@@ -234,12 +234,13 @@ class XanoService {
         message: 'Event sent successfully to PinkSync',
         eventId: response.data.eventId || uuidv4()
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error sending event to PinkSync:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       
       return { 
         success: false, 
-        error: `Failed to send event to PinkSync: ${error.message}` 
+        error: `Failed to send event to PinkSync: ${errorMessage}` 
       };
     }
   }
@@ -302,12 +303,13 @@ class XanoService {
         message: `Successfully synced ${syncedCount} webhooks with PinkSync`,
         syncedItems: syncedCount
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error syncing with PinkSync:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       
       return { 
         success: false, 
-        message: `Failed to sync with PinkSync: ${error.message}` 
+        message: `Failed to sync with PinkSync: ${errorMessage}` 
       };
     }
   }
