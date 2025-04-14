@@ -141,30 +141,54 @@ class XanoService {
         });
       }
       
-      // Send webhook payload to Xano
-      const url = this.apiBaseUrl?.endsWith('/') 
-        ? `${this.apiBaseUrl}webhooks/receive`
-        : `${this.apiBaseUrl}/webhooks/receive`;
-        
-      const response = await axios.post(
-        url, 
-        {
-          webhookId: webhook.id,
-          event: webhook.event,
-          payload
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      // Try multiple URL formats to find the right one for Xano
+      const possiblePaths = [
+        'api/webhooks/receive',
+        'webhooks/receive',
+        'webhook',
+        'hooks',
+        'pinksync/webhook'
+      ];
       
-      return { 
-        success: true, 
-        message: 'Webhook payload sent successfully to Xano'
-      };
+      let lastError;
+      
+      // Try each possible URL format
+      for (const path of possiblePaths) {
+        try {
+          const url = this.apiBaseUrl?.endsWith('/')
+            ? `${this.apiBaseUrl}${path}`
+            : `${this.apiBaseUrl}/${path}`;
+            
+          console.log(`Trying Xano webhook URL: ${url}`);
+          
+          const response = await axios.post(
+            url, 
+            {
+              webhookId: webhook.id,
+              event: webhook.event,
+              payload
+            },
+            {
+              headers: {
+                'Authorization': `Bearer ${this.apiKey}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          
+          return { 
+            success: true, 
+            message: `Webhook payload sent successfully to Xano via ${path}`
+          };
+        } catch (err) {
+          // Log but continue to try next URL format
+          lastError = err;
+          console.log(`Failed with ${path}: ${err.message}`);
+        }
+      }
+      
+      // If we reach here, all attempts failed
+      throw lastError;
     } catch (error) {
       console.error('Error sending webhook to Xano:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);

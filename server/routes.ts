@@ -1645,11 +1645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           url: "internal://pinksync",
           event: "pinksync.*",
           userId: userId || 1,
-          active: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          lastTriggeredAt: null,
-          payload: null
+          active: true
         });
       }
       
@@ -1672,11 +1668,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         event: `pinksync.${event}`,
         data: data,
         deliveryStatus: result.success ? 'SUCCESS' : 'FAILED',
-        timestamp: new Date(),
         responseCode: result.success ? 200 : 500,
-        responseBody: JSON.stringify(result),
-        notionEntryId: null,
-        retryCount: 0
+        responseBody: JSON.stringify(result)
       });
       
       res.json({
@@ -1781,8 +1774,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         webhookId,
         event,
         data,
-        deliveryStatus: 'PENDING',
-        timestamp: new Date()
+        deliveryStatus: 'PENDING'
       };
       
       // Save payload
