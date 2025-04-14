@@ -1,61 +1,53 @@
-import { createServer } from 'http';
 import express from 'express';
+import bodyParser from 'body-parser';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 import { registerRoutes } from '../server/routes.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+// Initialize Express
 const app = express();
 
-// Setup Express routes from the main server
-const setupServer = async () => {
+// Standard Express middleware
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// CORS headers for Vercel environment
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
+// Setup all routes
+const setup = async () => {
   try {
-    // Register all API routes
-    const server = await registerRoutes(app);
-
-    // Static files from the client build
-    app.use(express.static(resolve(__dirname, '../client/dist')));
-
-    // Handle client-side routing
-    app.get('*', (req, res) => {
-      res.sendFile(resolve(__dirname, '../client/dist/index.html'));
-    });
-
-    return server;
+    // Register all API routes from server/routes.js
+    await registerRoutes(app);
+    
+    // For Vercel serverless functions, we don't need to create a server
+    // The API is handled by Vercel's serverless infrastructure
+    console.log('API routes registered successfully');
+    
+    return app;
   } catch (error) {
-    console.error('Error setting up server:', error);
+    console.error('Error setting up API routes:', error);
     throw error;
   }
 };
 
-// Create and start the server
-let server;
-setupServer()
-  .then((httpServer) => {
-    server = httpServer;
+// For local development, we need a listening server
+if (process.env.NODE_ENV !== 'production') {
+  setup().then(() => {
     const port = process.env.PORT || 3000;
-    server.listen(port, () => {
-      console.log(`Server running on port ${port}`);
+    app.listen(port, () => {
+      console.log(`Development server running on port ${port}`);
     });
-  })
-  .catch((error) => {
-    console.error('Failed to start server:', error);
-    process.exit(1);
   });
+}
 
-// Handle graceful shutdown
-const shutdown = () => {
-  if (server) {
-    server.close(() => {
-      console.log('Server shut down gracefully');
-      process.exit(0);
-    });
-  } else {
-    process.exit(0);
-  }
-};
-
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
-
-export default app;
+// Export the Express application for Vercel
+export default setup();
