@@ -1,186 +1,164 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { storage } from '../storage';
+import axios, { AxiosError } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+import { Webhook, WebhookPayload } from '@shared/schema';
+import { storage } from '../storage';
 
 /**
- * Service for interacting with Xano API
+ * Service for interacting with Xano API for webhook management
+ * and PinkSync integration.
  */
-export class XanoService {
-  private axiosInstance: AxiosInstance;
-  private baseUrl: string | undefined;
-  private apiKey: string | undefined;
-  private initialized: boolean = false;
-
+class XanoService {
+  private apiBaseUrl: string | null;
+  private apiKey: string | null;
+  
   constructor() {
-    this.baseUrl = process.env.XANO_API_BASE_URL;
-    this.apiKey = process.env.XANO_API_KEY;
-
-    if (this.baseUrl && this.apiKey) {
-      this.initialized = true;
+    this.apiBaseUrl = process.env.XANO_API_BASE_URL || null;
+    this.apiKey = process.env.XANO_API_KEY || null;
+    
+    if (this.apiBaseUrl && this.apiKey) {
       console.log('Xano service initialized');
     } else {
-      console.log('Xano service not configured. Missing:', 
-        !this.baseUrl ? 'XANO_API_BASE_URL' : '', 
-        !this.apiKey ? 'XANO_API_KEY' : ''
-      );
+      console.log('Xano service not configured. Missing: ' + 
+        (!this.apiBaseUrl ? 'XANO_API_BASE_URL' : '') + 
+        (!this.apiKey ? ((!this.apiBaseUrl ? ', ' : '') + 'XANO_API_KEY') : ''));
     }
-
-    this.axiosInstance = axios.create({
-      baseURL: this.baseUrl,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`
-      }
-    });
   }
-
+  
   /**
-   * Check if Xano service is initialized
-   */
-  isInitialized(): boolean {
-    return this.initialized;
-  }
-
-  /**
-   * Test connection to Xano API
+   * Tests the connection to Xano API
    */
   async testConnection(): Promise<{ success: boolean; message: string }> {
-    if (!this.initialized) {
-      return { 
-        success: false, 
-        message: 'Xano service not configured. Missing API key or base URL.' 
-      };
-    }
-
     try {
-      // Try to access an endpoint that should be accessible with the API key
-      // This might need to be adjusted based on your specific Xano setup
-      await this.axiosInstance.get('/auth/status');
+      if (!this.apiBaseUrl || !this.apiKey) {
+        return { 
+          success: false, 
+          message: 'Xano API not configured. Please set XANO_API_BASE_URL and XANO_API_KEY environment variables.' 
+        };
+      }
+      
+      // Make a simple ping request to Xano API
+      const response = await axios.get(`${this.apiBaseUrl}/ping`, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
       return { 
         success: true, 
         message: 'Successfully connected to Xano API' 
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error testing Xano connection:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
       return { 
         success: false, 
-        message: `Failed to connect to Xano API: ${error.message || 'Unknown error'}` 
+        message: `Failed to connect to Xano API: ${errorMessage}` 
       };
     }
   }
-
+  
   /**
-   * Get records from a Xano collection
+   * Registers a new webhook endpoint in Xano
    */
-  async getRecords<T>(collectionPath: string, params?: Record<string, any>): Promise<T[]> {
-    if (!this.initialized) {
-      throw new Error('Xano service not configured');
-    }
-
+  async registerWebhookEndpoint(
+    endpoint: string, 
+    description: string = 'NegraRosa webhook endpoint'
+  ): Promise<{ success: boolean; message: string; webhookId?: string }> {
     try {
-      const response: AxiosResponse<T[]> = await this.axiosInstance.get(collectionPath, { params });
-      return response.data;
-    } catch (error: any) {
-      console.error(`Error fetching records from ${collectionPath}:`, error);
-      throw new Error(`Failed to fetch records: ${error.message || 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Create a record in a Xano collection
-   */
-  async createRecord<T>(collectionPath: string, data: Record<string, any>): Promise<T> {
-    if (!this.initialized) {
-      throw new Error('Xano service not configured');
-    }
-
-    try {
-      const response: AxiosResponse<T> = await this.axiosInstance.post(collectionPath, data);
-      return response.data;
-    } catch (error: any) {
-      console.error(`Error creating record in ${collectionPath}:`, error);
-      throw new Error(`Failed to create record: ${error.message || 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Update a record in a Xano collection
-   */
-  async updateRecord<T>(collectionPath: string, recordId: string | number, data: Record<string, any>): Promise<T> {
-    if (!this.initialized) {
-      throw new Error('Xano service not configured');
-    }
-
-    try {
-      const response: AxiosResponse<T> = await this.axiosInstance.put(`${collectionPath}/${recordId}`, data);
-      return response.data;
-    } catch (error: any) {
-      console.error(`Error updating record ${recordId} in ${collectionPath}:`, error);
-      throw new Error(`Failed to update record: ${error.message || 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Delete a record from a Xano collection
-   */
-  async deleteRecord(collectionPath: string, recordId: string | number): Promise<boolean> {
-    if (!this.initialized) {
-      throw new Error('Xano service not configured');
-    }
-
-    try {
-      await this.axiosInstance.delete(`${collectionPath}/${recordId}`);
-      return true;
-    } catch (error: any) {
-      console.error(`Error deleting record ${recordId} from ${collectionPath}:`, error);
-      throw new Error(`Failed to delete record: ${error.message || 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Send webhook data to Xano
-   */
-  async sendWebhookToXano(webhook: any, payload: any): Promise<{ success: boolean; xanoId?: string; error?: string }> {
-    if (!this.initialized) {
-      return { success: false, error: 'Xano service not configured' };
-    }
-
-    try {
-      // Format the data to send to Xano
-      const xanoPayload = {
-        webhook_id: webhook.id,
-        event: webhook.event,
-        timestamp: new Date().toISOString(),
-        data: payload
-      };
-
-      // Send to Xano webhooks endpoint (adjust path as needed for your Xano setup)
-      const response = await this.axiosInstance.post('/webhooks/incoming', xanoPayload);
+      if (!this.apiBaseUrl || !this.apiKey) {
+        return { 
+          success: false, 
+          message: 'Xano API not configured. Please set XANO_API_BASE_URL and XANO_API_KEY environment variables.' 
+        };
+      }
       
-      // Store the data in our webhook payload system
-      const payloadId = uuidv4();
-      await storage.createWebhookPayload({
-        id: payloadId,
-        webhookId: webhook.id,
-        event: webhook.event,
-        data: payload,
-        deliveryStatus: 'SUCCESS',
-        timestamp: new Date(),
-        responseCode: response.status,
-        responseBody: JSON.stringify(response.data),
-        notionEntryId: null,
-        retryCount: 0
-      });
-
+      // Register webhook endpoint in Xano
+      const response = await axios.post(
+        `${this.apiBaseUrl}/webhooks/register`, 
+        {
+          endpoint,
+          description
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
       return { 
-        success: true,
-        xanoId: response.data.id?.toString() || undefined
+        success: true, 
+        message: 'Webhook endpoint registered successfully in Xano', 
+        webhookId: response.data.webhookId || uuidv4()
       };
-    } catch (error: any) {
-      console.error('Error sending webhook to Xano:', error);
+    } catch (error) {
+      console.error('Error registering webhook in Xano:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       
-      // Store the failed attempt
+      return { 
+        success: false, 
+        message: `Failed to register webhook in Xano: ${errorMessage}` 
+      };
+    }
+  }
+  
+  /**
+   * Sends a webhook payload to Xano
+   */
+  async sendWebhookToXano(
+    webhook: Webhook, 
+    payload: any
+  ): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      if (!this.apiBaseUrl || !this.apiKey) {
+        return { 
+          success: false, 
+          error: 'Xano API not configured. Please set XANO_API_BASE_URL and XANO_API_KEY environment variables.' 
+        };
+      }
+      
+      // Check if the webhook URL is for Xano
+      if (!webhook.url.includes('xano') && !webhook.url.includes('internal://pinksync')) {
+        // Save payload to database with note that this is a Xano notification
+        const payloadId = uuidv4();
+        await storage.createWebhookPayload({
+          id: payloadId,
+          webhookId: webhook.id,
+          event: webhook.event,
+          data: payload,
+          deliveryStatus: 'REDIRECTED_TO_XANO'
+        });
+      }
+      
+      // Send webhook payload to Xano
+      const response = await axios.post(
+        `${this.apiBaseUrl}/webhooks/receive`, 
+        {
+          webhookId: webhook.id,
+          event: webhook.event,
+          payload
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      return { 
+        success: true, 
+        message: 'Webhook payload sent successfully to Xano'
+      };
+    } catch (error) {
+      console.error('Error sending webhook to Xano:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const axiosError = error as AxiosError;
+      
+      // Save failed delivery to database
       try {
         const payloadId = uuidv4();
         await storage.createWebhookPayload({
@@ -189,47 +167,127 @@ export class XanoService {
           event: webhook.event,
           data: payload,
           deliveryStatus: 'FAILED',
-          timestamp: new Date(),
-          responseCode: error.response?.status || null,
-          responseBody: JSON.stringify(error.message || 'Unknown error'),
-          notionEntryId: null,
-          retryCount: 0
+          responseCode: axiosError.response?.status || 500,
+          responseBody: JSON.stringify(axiosError.response?.data || errorMessage)
         });
-      } catch (storageError) {
-        console.error('Error storing failed webhook payload:', storageError);
+      } catch (dbError) {
+        console.error('Error saving failed webhook payload:', dbError);
       }
-
+      
       return { 
         success: false, 
-        error: `Failed to send webhook to Xano: ${error.message || 'Unknown error'}` 
+        error: `Failed to send webhook to Xano: ${errorMessage}` 
       };
     }
   }
-
+  
   /**
-   * Register a webhook endpoint in Xano
+   * Sends an event to PinkSync via Xano
    */
-  async registerWebhookEndpoint(endpoint: string, description: string): Promise<{ success: boolean; id?: string; error?: string }> {
-    if (!this.initialized) {
-      return { success: false, error: 'Xano service not configured' };
-    }
-
+  async sendEventToPinkSync(
+    event: string,
+    data: any,
+    userId: number = 1
+  ): Promise<{ success: boolean; message?: string; error?: string; eventId?: string }> {
     try {
-      // This endpoint path may need to be adjusted for your Xano setup
-      const response = await this.axiosInstance.post('/webhooks/register', {
-        endpoint,
-        description
-      });
-
+      if (!this.apiBaseUrl || !this.apiKey) {
+        return { 
+          success: false, 
+          error: 'Xano API not configured. Please set XANO_API_BASE_URL and XANO_API_KEY environment variables.' 
+        };
+      }
+      
+      // Send event to PinkSync via Xano
+      const response = await axios.post(
+        `${this.apiBaseUrl}/pinksync/events`, 
+        {
+          event,
+          data,
+          userId
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
       return { 
-        success: true,
-        id: response.data.id?.toString() || undefined
+        success: true, 
+        message: 'Event sent successfully to PinkSync',
+        eventId: response.data.eventId || uuidv4()
       };
-    } catch (error: any) {
-      console.error('Error registering webhook endpoint in Xano:', error);
+    } catch (error) {
+      console.error('Error sending event to PinkSync:', error);
+      
       return { 
         success: false, 
-        error: `Failed to register webhook endpoint: ${error.message || 'Unknown error'}` 
+        error: `Failed to send event to PinkSync: ${error.message}` 
+      };
+    }
+  }
+  
+  /**
+   * Syncs webhooks with PinkSync via Xano
+   */
+  async syncWithPinkSync(): Promise<{ success: boolean; message: string; syncedItems?: number }> {
+    try {
+      if (!this.apiBaseUrl || !this.apiKey) {
+        return { 
+          success: false, 
+          message: 'Xano API not configured. Please set XANO_API_BASE_URL and XANO_API_KEY environment variables.' 
+        };
+      }
+      
+      // Fetch PinkSync webhooks from Xano
+      const response = await axios.get(
+        `${this.apiBaseUrl}/pinksync/webhooks`, 
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      const pinkSyncWebhooks = response.data.webhooks || [];
+      let syncedCount = 0;
+      
+      // Sync PinkSync webhooks with our system
+      for (const webhook of pinkSyncWebhooks) {
+        // Check if webhook already exists
+        const existingWebhooks = await storage.getWebhooksByUserId(webhook.userId || 1);
+        const exists = existingWebhooks.some(w => 
+          w.event === webhook.event && 
+          w.url === webhook.url
+        );
+        
+        if (!exists) {
+          // Create webhook in our system
+          await storage.createWebhook({
+            id: webhook.id || uuidv4(),
+            name: webhook.name || `PinkSync Webhook - ${webhook.event}`,
+            url: webhook.url,
+            event: webhook.event,
+            userId: webhook.userId || 1,
+            active: webhook.active !== false
+          });
+          syncedCount++;
+        }
+      }
+      
+      return {
+        success: true,
+        message: `Successfully synced ${syncedCount} webhooks with PinkSync`,
+        syncedItems: syncedCount
+      };
+    } catch (error) {
+      console.error('Error syncing with PinkSync:', error);
+      
+      return { 
+        success: false, 
+        message: `Failed to sync with PinkSync: ${error.message}` 
       };
     }
   }

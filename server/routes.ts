@@ -1616,6 +1616,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // PinkSync via Xano integration
+  apiRouter.get("/pinksync/sync", async (req, res) => {
+    try {
+      const result = await xanoService.syncWithPinkSync();
+      res.json(result);
+    } catch (error) {
+      console.error("Error syncing with PinkSync:", error);
+      res.status(500).json({ message: "Server error syncing with PinkSync" });
+    }
+  });
+  
   apiRouter.post("/pinksync/events", async (req, res) => {
     try {
       const { event, data, userId } = req.body;
