@@ -1,0 +1,12 @@
+{
+  "repoIdentifier": {
+    "domain": "replit.com",
+    "owner": "pinkycollie",
+    "name": "NegraRosa-Security-Framework"
+  },
+  "ai": {
+    "openai": {
+      "model": "gpt-4-turbo"
+    }
+  }
+}
