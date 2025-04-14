@@ -18,7 +18,19 @@ import {
   ComplianceCredential, InsertComplianceCredential,
   VanuatuEntity, InsertVanuatuEntity,
   VanuatuLicense, InsertVanuatuLicense,
-  ComplianceReport, InsertComplianceReport
+  ComplianceReport, InsertComplianceReport,
+  // Finance/Tax/Insurance Module types
+  FinancialTransaction, InsertFinancialTransaction,
+  ApiFirewallLog, InsertApiFirewallLog,
+  InsurancePolicy, InsertInsurancePolicy,
+  // Real Estate Module types
+  PropertyDocument, InsertPropertyDocument,
+  PropertyTag, InsertPropertyTag,
+  PropertyVerification, InsertPropertyVerification,
+  // Business Credit Module types 
+  BusinessCreditProfile, InsertBusinessCreditProfile,
+  CreditEnrichmentLog, InsertCreditEnrichmentLog,
+  ZkpCreditProof, InsertZkpCreditProof
 } from "@shared/schema";
 
 export interface IStorage {
@@ -259,6 +271,21 @@ export class MemStorage implements IStorage {
   private vanuatuLicenses: Map<number, VanuatuLicense>;
   private complianceReports: Map<number, ComplianceReport>;
   
+  // Finance/Tax/Insurance Module maps
+  private financialTransactions: Map<number, FinancialTransaction>;
+  private apiFirewallLogs: Map<number, ApiFirewallLog>;
+  private insurancePolicies: Map<number, InsurancePolicy>;
+  
+  // Real Estate Module maps
+  private propertyDocuments: Map<number, PropertyDocument>;
+  private propertyTags: Map<number, PropertyTag>;
+  private propertyVerifications: Map<number, PropertyVerification>;
+  
+  // Business Credit Module maps
+  private businessCreditProfiles: Map<number, BusinessCreditProfile>;
+  private creditEnrichmentLogs: Map<number, CreditEnrichmentLog>;
+  private zkpCreditProofs: Map<number, ZkpCreditProof>;
+  
   private nextUserId: number;
   private nextVerificationId: number;
   private nextReputationId: number;
@@ -278,6 +305,21 @@ export class MemStorage implements IStorage {
   private nextVanuatuEntityId: number;
   private nextVanuatuLicenseId: number;
   private nextComplianceReportId: number;
+  
+  // Finance/Tax/Insurance Module counters
+  private nextFinancialTransactionId: number;
+  private nextApiFirewallLogId: number;
+  private nextInsurancePolicyId: number;
+  
+  // Real Estate Module counters
+  private nextPropertyDocumentId: number;
+  private nextPropertyTagId: number;
+  private nextPropertyVerificationId: number;
+  
+  // Business Credit Module counters
+  private nextBusinessCreditProfileId: number;
+  private nextCreditEnrichmentLogId: number;
+  private nextZkpCreditProofId: number;
 
   constructor() {
     this.users = new Map();
@@ -302,6 +344,21 @@ export class MemStorage implements IStorage {
     this.vanuatuLicenses = new Map();
     this.complianceReports = new Map();
     
+    // Initialize Finance/Tax/Insurance Module maps
+    this.financialTransactions = new Map();
+    this.apiFirewallLogs = new Map();
+    this.insurancePolicies = new Map();
+    
+    // Initialize Real Estate Module maps
+    this.propertyDocuments = new Map();
+    this.propertyTags = new Map();
+    this.propertyVerifications = new Map();
+    
+    // Initialize Business Credit Module maps
+    this.businessCreditProfiles = new Map();
+    this.creditEnrichmentLogs = new Map();
+    this.zkpCreditProofs = new Map();
+    
     this.nextUserId = 1;
     this.nextVerificationId = 1;
     this.nextReputationId = 1;
@@ -321,6 +378,21 @@ export class MemStorage implements IStorage {
     this.nextVanuatuEntityId = 1;
     this.nextVanuatuLicenseId = 1;
     this.nextComplianceReportId = 1;
+    
+    // Initialize Finance/Tax/Insurance Module counters
+    this.nextFinancialTransactionId = 1;
+    this.nextApiFirewallLogId = 1;
+    this.nextInsurancePolicyId = 1;
+    
+    // Initialize Real Estate Module counters
+    this.nextPropertyDocumentId = 1;
+    this.nextPropertyTagId = 1;
+    this.nextPropertyVerificationId = 1;
+    
+    // Initialize Business Credit Module counters
+    this.nextBusinessCreditProfileId = 1;
+    this.nextCreditEnrichmentLogId = 1;
+    this.nextZkpCreditProofId = 1;
     
     // Add a test user for development
     this.createUser({
