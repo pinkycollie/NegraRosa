@@ -37,7 +37,11 @@ class XanoService {
       }
       
       // Make a simple ping request to Xano API
-      const response = await axios.get(`${this.apiBaseUrl}/ping`, {
+      const url = this.apiBaseUrl?.endsWith('/') 
+        ? `${this.apiBaseUrl}ping`
+        : `${this.apiBaseUrl}/ping`;
+      
+      const response = await axios.get(url, {
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json'
@@ -75,8 +79,12 @@ class XanoService {
       }
       
       // Register webhook endpoint in Xano
+      const url = this.apiBaseUrl?.endsWith('/') 
+        ? `${this.apiBaseUrl}webhooks/register`
+        : `${this.apiBaseUrl}/webhooks/register`;
+      
       const response = await axios.post(
-        `${this.apiBaseUrl}/webhooks/register`, 
+        url, 
         {
           endpoint,
           description
@@ -134,8 +142,12 @@ class XanoService {
       }
       
       // Send webhook payload to Xano
+      const url = this.apiBaseUrl?.endsWith('/') 
+        ? `${this.apiBaseUrl}webhooks/receive`
+        : `${this.apiBaseUrl}/webhooks/receive`;
+        
       const response = await axios.post(
-        `${this.apiBaseUrl}/webhooks/receive`, 
+        url, 
         {
           webhookId: webhook.id,
           event: webhook.event,
@@ -198,8 +210,12 @@ class XanoService {
       }
       
       // Send event to PinkSync via Xano
+      const url = this.apiBaseUrl?.endsWith('/') 
+        ? `${this.apiBaseUrl}pinksync/events`
+        : `${this.apiBaseUrl}/pinksync/events`;
+        
       const response = await axios.post(
-        `${this.apiBaseUrl}/pinksync/events`, 
+        url, 
         {
           event,
           data,
@@ -241,8 +257,12 @@ class XanoService {
       }
       
       // Fetch PinkSync webhooks from Xano
+      const url = this.apiBaseUrl?.endsWith('/') 
+        ? `${this.apiBaseUrl}pinksync/webhooks`
+        : `${this.apiBaseUrl}/pinksync/webhooks`;
+        
       const response = await axios.get(
-        `${this.apiBaseUrl}/pinksync/webhooks`, 
+        url, 
         {
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
