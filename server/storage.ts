@@ -179,6 +179,59 @@ export interface IStorage {
   updateComplianceReport(id: number, updates: Partial<ComplianceReport>): Promise<ComplianceReport | undefined>;
   updateComplianceReportWebhookStatus(id: number, sent: boolean): Promise<ComplianceReport | undefined>;
   
+  // Finance/Tax/Insurance Module
+  createFinancialTransaction(transaction: InsertFinancialTransaction): Promise<FinancialTransaction>;
+  getFinancialTransactionsByUserId(userId: number): Promise<FinancialTransaction[]>;
+  getFinancialTransaction(id: number): Promise<FinancialTransaction | undefined>;
+  updateFinancialTransaction(id: number, updates: Partial<FinancialTransaction>): Promise<FinancialTransaction | undefined>;
+  getFinancialTransactionsByMerkleRoot(merkleRoot: string): Promise<FinancialTransaction[]>;
+  
+  logApiFirewallEvent(log: InsertApiFirewallLog): Promise<ApiFirewallLog>;
+  getApiFirewallLogsByUserId(userId: number): Promise<ApiFirewallLog[]>;
+  getApiFirewallLogsByPath(path: string): Promise<ApiFirewallLog[]>;
+  
+  createInsurancePolicy(policy: InsertInsurancePolicy): Promise<InsurancePolicy>;
+  getInsurancePoliciesByUserId(userId: number): Promise<InsurancePolicy[]>;
+  getInsurancePolicy(id: number): Promise<InsurancePolicy | undefined>;
+  updateInsurancePolicy(id: number, updates: Partial<InsurancePolicy>): Promise<InsurancePolicy | undefined>;
+  
+  // Real Estate Module
+  createPropertyDocument(document: InsertPropertyDocument): Promise<PropertyDocument>;
+  getPropertyDocumentsByUserId(userId: number): Promise<PropertyDocument[]>;
+  getPropertyDocumentsByPropertyId(propertyId: string): Promise<PropertyDocument[]>;
+  getPropertyDocument(id: number): Promise<PropertyDocument | undefined>;
+  updatePropertyDocument(id: number, updates: Partial<PropertyDocument>): Promise<PropertyDocument | undefined>;
+  logDocumentAccess(id: number, userId: number, actionType: string): Promise<PropertyDocument | undefined>;
+  
+  createPropertyTag(tag: InsertPropertyTag): Promise<PropertyTag>;
+  getPropertyTagsByPropertyId(propertyId: string): Promise<PropertyTag[]>;
+  getPropertyTag(id: number): Promise<PropertyTag | undefined>;
+  getPropertyTagByUid(tagUid: string): Promise<PropertyTag | undefined>;
+  updatePropertyTag(id: number, updates: Partial<PropertyTag>): Promise<PropertyTag | undefined>;
+  logTagScan(id: number): Promise<PropertyTag | undefined>;
+  
+  createPropertyVerification(verification: InsertPropertyVerification): Promise<PropertyVerification>;
+  getPropertyVerificationsByPropertyId(propertyId: string): Promise<PropertyVerification[]>;
+  getPropertyVerification(id: number): Promise<PropertyVerification | undefined>;
+  updatePropertyVerification(id: number, updates: Partial<PropertyVerification>): Promise<PropertyVerification | undefined>;
+  
+  // Business Credit Module
+  createBusinessCreditProfile(profile: InsertBusinessCreditProfile): Promise<BusinessCreditProfile>;
+  getBusinessCreditProfileByUserId(userId: number): Promise<BusinessCreditProfile | undefined>;
+  getBusinessCreditProfile(id: number): Promise<BusinessCreditProfile | undefined>;
+  updateBusinessCreditProfile(id: number, updates: Partial<BusinessCreditProfile>): Promise<BusinessCreditProfile | undefined>;
+  getBusinessCreditProfileByBusinessName(businessName: string): Promise<BusinessCreditProfile | undefined>;
+  
+  createCreditEnrichmentLog(log: InsertCreditEnrichmentLog): Promise<CreditEnrichmentLog>;
+  getCreditEnrichmentLogsByProfileId(profileId: number): Promise<CreditEnrichmentLog[]>;
+  getCreditEnrichmentLog(id: number): Promise<CreditEnrichmentLog | undefined>;
+  
+  createZkpCreditProof(proof: InsertZkpCreditProof): Promise<ZkpCreditProof>;
+  getZkpCreditProofsByProfileId(profileId: number): Promise<ZkpCreditProof[]>;
+  getZkpCreditProof(id: number): Promise<ZkpCreditProof | undefined>;
+  getZkpCreditProofByPublicIdentifier(publicIdentifier: string): Promise<ZkpCreditProof | undefined>;
+  verifyZkpCreditProof(id: number): Promise<ZkpCreditProof | undefined>;
+  
   // User utilities
   getAllUsers(): Promise<User[]>;
 }
@@ -1119,6 +1172,222 @@ export class MemStorage implements IStorage {
   // User utilities
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.users.values());
+  }
+
+  // Vanuatu Compliance - Credentials
+  async createComplianceCredential(credential: InsertComplianceCredential): Promise<ComplianceCredential> {
+    const id = this.nextComplianceCredentialId++;
+    const now = new Date();
+    const newCredential: ComplianceCredential = {
+      ...credential,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.complianceCredentials.set(id, newCredential);
+    return newCredential;
+  }
+
+  async getComplianceCredential(id: number): Promise<ComplianceCredential | undefined> {
+    return this.complianceCredentials.get(id);
+  }
+
+  async getComplianceCredentialsByUserId(userId: number): Promise<ComplianceCredential[]> {
+    return Array.from(this.complianceCredentials.values())
+      .filter(credential => credential.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Most recent first
+  }
+
+  async getComplianceCredentialsByJurisdiction(jurisdictionCode: string): Promise<ComplianceCredential[]> {
+    return Array.from(this.complianceCredentials.values())
+      .filter(credential => credential.jurisdictionCode === jurisdictionCode)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Most recent first
+  }
+
+  async updateComplianceCredential(id: number, updates: Partial<ComplianceCredential>): Promise<ComplianceCredential | undefined> {
+    const credential = this.complianceCredentials.get(id);
+    if (!credential) return undefined;
+    
+    const updatedCredential: ComplianceCredential = {
+      ...credential,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.complianceCredentials.set(id, updatedCredential);
+    return updatedCredential;
+  }
+  
+  // Vanuatu Entities
+  async createVanuatuEntity(entity: InsertVanuatuEntity): Promise<VanuatuEntity> {
+    const id = this.nextVanuatuEntityId++;
+    const now = new Date();
+    const newEntity: VanuatuEntity = {
+      ...entity,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.vanuatuEntities.set(id, newEntity);
+    return newEntity;
+  }
+
+  async getVanuatuEntity(id: number): Promise<VanuatuEntity | undefined> {
+    return this.vanuatuEntities.get(id);
+  }
+
+  async getVanuatuEntitiesByCredentialId(credentialId: number): Promise<VanuatuEntity[]> {
+    return Array.from(this.vanuatuEntities.values())
+      .filter(entity => entity.credentialId === credentialId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Most recent first
+  }
+
+  async getVanuatuEntitiesWithUpcomingFilings(daysThreshold: number): Promise<VanuatuEntity[]> {
+    const now = new Date();
+    const thresholdDate = new Date(now);
+    thresholdDate.setDate(now.getDate() + daysThreshold);
+    
+    return Array.from(this.vanuatuEntities.values())
+      .filter(entity => {
+        if (!entity.annualFilingDueDate) return false;
+        const dueDate = new Date(entity.annualFilingDueDate);
+        return dueDate <= thresholdDate && dueDate >= now;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.annualFilingDueDate!);
+        const dateB = new Date(b.annualFilingDueDate!);
+        return dateA.getTime() - dateB.getTime(); // Sort by closest due date first
+      });
+  }
+
+  async updateVanuatuEntity(id: number, updates: Partial<VanuatuEntity>): Promise<VanuatuEntity | undefined> {
+    const entity = this.vanuatuEntities.get(id);
+    if (!entity) return undefined;
+    
+    const updatedEntity: VanuatuEntity = {
+      ...entity,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.vanuatuEntities.set(id, updatedEntity);
+    return updatedEntity;
+  }
+  
+  // Vanuatu Licenses
+  async createVanuatuLicense(license: InsertVanuatuLicense): Promise<VanuatuLicense> {
+    const id = this.nextVanuatuLicenseId++;
+    const now = new Date();
+    const newLicense: VanuatuLicense = {
+      ...license,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.vanuatuLicenses.set(id, newLicense);
+    return newLicense;
+  }
+
+  async getVanuatuLicense(id: number): Promise<VanuatuLicense | undefined> {
+    return this.vanuatuLicenses.get(id);
+  }
+
+  async getVanuatuLicensesByEntityId(entityId: number): Promise<VanuatuLicense[]> {
+    return Array.from(this.vanuatuLicenses.values())
+      .filter(license => license.entityId === entityId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Most recent first
+  }
+
+  async getVanuatuLicensesByCredentialId(credentialId: number): Promise<VanuatuLicense[]> {
+    return Array.from(this.vanuatuLicenses.values())
+      .filter(license => license.credentialId === credentialId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Most recent first
+  }
+
+  async getVanuatuLicensesNearingExpiration(daysThreshold: number): Promise<VanuatuLicense[]> {
+    const now = new Date();
+    const thresholdDate = new Date(now);
+    thresholdDate.setDate(now.getDate() + daysThreshold);
+    
+    return Array.from(this.vanuatuLicenses.values())
+      .filter(license => {
+        if (!license.expiryDate) return false;
+        const expiryDate = new Date(license.expiryDate);
+        return expiryDate <= thresholdDate && expiryDate >= now;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.expiryDate!);
+        const dateB = new Date(b.expiryDate!);
+        return dateA.getTime() - dateB.getTime(); // Sort by closest expiry date first
+      });
+  }
+
+  async updateVanuatuLicense(id: number, updates: Partial<VanuatuLicense>): Promise<VanuatuLicense | undefined> {
+    const license = this.vanuatuLicenses.get(id);
+    if (!license) return undefined;
+    
+    const updatedLicense: VanuatuLicense = {
+      ...license,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.vanuatuLicenses.set(id, updatedLicense);
+    return updatedLicense;
+  }
+  
+  // Compliance Reports
+  async createComplianceReport(report: InsertComplianceReport): Promise<ComplianceReport> {
+    const id = this.nextComplianceReportId++;
+    const now = new Date();
+    const newReport: ComplianceReport = {
+      ...report,
+      id,
+      createdAt: now,
+      updatedAt: now,
+      webhookSent: false
+    };
+    this.complianceReports.set(id, newReport);
+    return newReport;
+  }
+
+  async getComplianceReport(id: number): Promise<ComplianceReport | undefined> {
+    return this.complianceReports.get(id);
+  }
+
+  async getComplianceReportsByEntityId(entityId: number): Promise<ComplianceReport[]> {
+    return Array.from(this.complianceReports.values())
+      .filter(report => report.entityId === entityId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Most recent first
+  }
+
+  async getComplianceReportsByLicenseId(licenseId: number): Promise<ComplianceReport[]> {
+    return Array.from(this.complianceReports.values())
+      .filter(report => report.licenseId === licenseId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Most recent first
+  }
+
+  async updateComplianceReport(id: number, updates: Partial<ComplianceReport>): Promise<ComplianceReport | undefined> {
+    const report = this.complianceReports.get(id);
+    if (!report) return undefined;
+    
+    const updatedReport: ComplianceReport = {
+      ...report,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.complianceReports.set(id, updatedReport);
+    return updatedReport;
+  }
+
+  async updateComplianceReportWebhookStatus(id: number, sent: boolean): Promise<ComplianceReport | undefined> {
+    const report = this.complianceReports.get(id);
+    if (!report) return undefined;
+    
+    const updatedReport: ComplianceReport = {
+      ...report,
+      webhookSent: sent,
+      updatedAt: new Date()
+    };
+    this.complianceReports.set(id, updatedReport);
+    return updatedReport;
   }
 }
 

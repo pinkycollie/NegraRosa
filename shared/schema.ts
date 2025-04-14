@@ -650,8 +650,326 @@ export type VanuatuLicense = typeof vanuatuLicenses.$inferSelect;
 export type InsertComplianceReport = z.infer<typeof insertComplianceReportSchema>;
 export type ComplianceReport = typeof complianceReports.$inferSelect;
 
+// Finance/Tax/Insurance Module schemas
+export const financialTransactions = pgTable("financial_transactions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  transactionType: text("transaction_type").notNull(), // e.g., "PAYMENT", "REFUND", "TRANSFER", "TAX_FILING"
+  amount: real("amount").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  status: text("status").notNull(),
+  description: text("description"),
+  metadata: jsonb("metadata"),
+  merkleRoot: text("merkle_root"), // For audit trail anchoring
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  taxReportable: boolean("tax_reportable").default(false),
+  riskScore: integer("risk_score"),
+  anomalyDetected: boolean("anomaly_detected").default(false),
+  anomalyDetails: jsonb("anomaly_details"),
+});
+
+export const apiFirewallLogs = pgTable("api_firewall_logs", {
+  id: serial("id").primaryKey(),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+  requestPath: text("request_path").notNull(),
+  requestMethod: text("request_method").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  userId: integer("user_id").references(() => users.id),
+  blocked: boolean("blocked").default(false),
+  ruleTriggered: text("rule_triggered"),
+  riskScore: integer("risk_score"),
+  requestPayload: jsonb("request_payload"),
+  responseCode: integer("response_code"),
+  processingTimeMs: integer("processing_time_ms"),
+});
+
+export const insurancePolicies = pgTable("insurance_policies", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  policyType: text("policy_type").notNull(), // e.g., "LIABILITY", "E&O", "CYBER"
+  policyNumber: text("policy_number").notNull(),
+  provider: text("provider").notNull(),
+  coverageAmount: real("coverage_amount").notNull(),
+  premium: real("premium").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  status: text("status").notNull(),
+  documentUrl: text("document_url"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  claimHistory: jsonb("claim_history"),
+  specialConditions: text("special_conditions"),
+});
+
+// Real Estate Module schemas
+export const propertyDocuments = pgTable("property_documents", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  propertyId: text("property_id").notNull(),
+  documentType: text("document_type").notNull(), // e.g., "DEED", "MORTGAGE", "DISCLOSURE"
+  documentTitle: text("document_title").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileHash: text("file_hash").notNull(), // SHA-256 hash for integrity verification
+  issuedBy: text("issued_by"),
+  issuedDate: timestamp("issued_date"),
+  expirationDate: timestamp("expiration_date"),
+  status: text("status").notNull(),
+  verificationStatus: text("verification_status").notNull(),
+  metadataJson: jsonb("metadata_json"),
+  accessLog: jsonb("access_log"),
+  uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
+  lastAccessedAt: timestamp("last_accessed_at"),
+});
+
+export const propertyTags = pgTable("property_tags", {
+  id: serial("id").primaryKey(),
+  propertyId: text("property_id").notNull(),
+  tagType: text("tag_type").notNull(), // "QR" or "NFC"
+  tagUid: text("tag_uid").notNull().unique(),
+  tagData: jsonb("tag_data").notNull(),
+  physicalLocation: text("physical_location"),
+  installDate: timestamp("install_date"),
+  lastScannedAt: timestamp("last_scanned_at"),
+  scannedCount: integer("scanned_count").default(0),
+  status: text("status").notNull().default("ACTIVE"),
+  securityLevel: text("security_level").notNull().default("STANDARD"),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const propertyVerifications = pgTable("property_verifications", {
+  id: serial("id").primaryKey(),
+  propertyId: text("property_id").notNull(),
+  verificationType: text("verification_type").notNull(), // e.g., "OWNERSHIP", "OCCUPANCY", "CONDITION"
+  verifierUserId: integer("verifier_user_id").references(() => users.id),
+  verificationDate: timestamp("verification_date").notNull(),
+  status: text("status").notNull(),
+  findings: jsonb("findings"),
+  evidenceUrls: jsonb("evidence_urls"),
+  comments: text("comments"),
+  expirationDate: timestamp("expiration_date"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
+// Business Credit Module schemas
+export const businessCreditProfiles = pgTable("business_credit_profiles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  businessName: text("business_name").notNull(),
+  ein: text("ein"), // Employer Identification Number
+  duns: text("duns"), // Dun & Bradstreet number
+  address: text("address"),
+  industry: text("industry"),
+  foundingDate: timestamp("founding_date"),
+  creditScore: integer("credit_score"),
+  scoreDate: timestamp("score_date"),
+  scoreProvider: text("score_provider"), // e.g., "EXPERIAN", "EQUIFAX", "INTERNAL"
+  financialHealth: text("financial_health"), // e.g., "EXCELLENT", "GOOD", "FAIR", "POOR"
+  creditUtilization: real("credit_utilization"), // Percentage
+  paymentHistory: jsonb("payment_history"),
+  publicRecords: jsonb("public_records"),
+  tradelines: jsonb("tradelines"),
+  lastUpdated: timestamp("last_updated").notNull().defaultNow(),
+  dataSourcesByEnrichment: jsonb("data_sources"),
+  zkpVerified: boolean("zkp_verified").default(false)
+});
+
+export const creditEnrichmentLogs = pgTable("credit_enrichment_logs", {
+  id: serial("id").primaryKey(),
+  businessCreditProfileId: integer("business_credit_profile_id").notNull().references(() => businessCreditProfiles.id),
+  dataSource: text("data_source").notNull(), // e.g., "EXPERIAN", "EQUIFAX", "DNB"
+  enrichmentType: text("enrichment_type").notNull(), // e.g., "CREDIT_SCORE", "TRADE_LINES", "PUBLIC_RECORDS"
+  requestTimestamp: timestamp("request_timestamp").notNull().defaultNow(),
+  responseTimestamp: timestamp("response_timestamp"),
+  successful: boolean("successful").default(false),
+  errorMessage: text("error_message"),
+  dataRetrieved: jsonb("data_retrieved"),
+  creditScoreChange: integer("credit_score_change"),
+  costAmount: real("cost_amount"), // Cost of the API call if applicable
+  apiRequestId: text("api_request_id"), // External API reference ID
+  userId: integer("user_id").references(() => users.id),
+});
+
+export const zkpCreditProofs = pgTable("zkp_credit_proofs", {
+  id: serial("id").primaryKey(),
+  businessCreditProfileId: integer("business_credit_profile_id").notNull().references(() => businessCreditProfiles.id),
+  proofType: text("proof_type").notNull(), // e.g., "CREDIT_SCORE_RANGE", "PAYMENT_HISTORY", "AGE_OF_BUSINESS"
+  proofData: jsonb("proof_data").notNull(),
+  isValid: boolean("is_valid").notNull(),
+  generatedAt: timestamp("generated_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at"),
+  verificationCount: integer("verification_count").default(0),
+  lastVerifiedAt: timestamp("last_verified_at"),
+  publicIdentifier: text("public_identifier"), // Public reference for third parties
+  createdBy: integer("created_by").references(() => users.id),
+});
+
+// Insert schema definitions
+export const insertFinancialTransactionSchema = createInsertSchema(financialTransactions).pick({
+  userId: true,
+  transactionType: true,
+  amount: true,
+  currency: true,
+  status: true,
+  description: true,
+  metadata: true,
+  merkleRoot: true,
+  ipAddress: true,
+  userAgent: true,
+  taxReportable: true,
+  riskScore: true,
+  anomalyDetected: true,
+  anomalyDetails: true
+});
+
+export const insertApiFirewallLogSchema = createInsertSchema(apiFirewallLogs).pick({
+  requestPath: true,
+  requestMethod: true,
+  ipAddress: true,
+  userAgent: true,
+  userId: true,
+  blocked: true,
+  ruleTriggered: true,
+  riskScore: true,
+  requestPayload: true,
+  responseCode: true,
+  processingTimeMs: true
+});
+
+export const insertInsurancePolicySchema = createInsertSchema(insurancePolicies).pick({
+  userId: true,
+  policyType: true,
+  policyNumber: true,
+  provider: true,
+  coverageAmount: true,
+  premium: true,
+  startDate: true,
+  endDate: true,
+  status: true,
+  documentUrl: true,
+  claimHistory: true,
+  specialConditions: true
+});
+
+export const insertPropertyDocumentSchema = createInsertSchema(propertyDocuments).pick({
+  userId: true,
+  propertyId: true,
+  documentType: true,
+  documentTitle: true,
+  fileUrl: true,
+  fileHash: true,
+  issuedBy: true,
+  issuedDate: true,
+  expirationDate: true,
+  status: true,
+  verificationStatus: true,
+  metadataJson: true,
+  accessLog: true
+});
+
+export const insertPropertyTagSchema = createInsertSchema(propertyTags).pick({
+  propertyId: true,
+  tagType: true,
+  tagUid: true,
+  tagData: true,
+  physicalLocation: true,
+  installDate: true,
+  securityLevel: true,
+  createdBy: true
+});
+
+export const insertPropertyVerificationSchema = createInsertSchema(propertyVerifications).pick({
+  propertyId: true,
+  verificationType: true,
+  verifierUserId: true,
+  verificationDate: true,
+  status: true,
+  findings: true,
+  evidenceUrls: true,
+  comments: true,
+  expirationDate: true
+});
+
+export const insertBusinessCreditProfileSchema = createInsertSchema(businessCreditProfiles).pick({
+  userId: true,
+  businessName: true,
+  ein: true,
+  duns: true,
+  address: true,
+  industry: true,
+  foundingDate: true,
+  creditScore: true,
+  scoreDate: true,
+  scoreProvider: true,
+  financialHealth: true,
+  creditUtilization: true,
+  paymentHistory: true,
+  publicRecords: true,
+  tradelines: true,
+  dataSourcesByEnrichment: true,
+  zkpVerified: true
+});
+
+export const insertCreditEnrichmentLogSchema = createInsertSchema(creditEnrichmentLogs).pick({
+  businessCreditProfileId: true,
+  dataSource: true,
+  enrichmentType: true,
+  responseTimestamp: true,
+  successful: true,
+  errorMessage: true,
+  dataRetrieved: true,
+  creditScoreChange: true,
+  costAmount: true,
+  apiRequestId: true,
+  userId: true
+});
+
+export const insertZkpCreditProofSchema = createInsertSchema(zkpCreditProofs).pick({
+  businessCreditProfileId: true,
+  proofType: true,
+  proofData: true,
+  isValid: true,
+  expiresAt: true,
+  publicIdentifier: true,
+  createdBy: true
+});
+
 export type InsertWebhook = z.infer<typeof insertWebhookSchema>;
 export type Webhook = typeof webhooks.$inferSelect;
 
 export type InsertWebhookPayload = z.infer<typeof insertWebhookPayloadSchema>;
 export type WebhookPayload = typeof webhookPayloads.$inferSelect;
+
+// Domain-Specific Module types
+export type InsertFinancialTransaction = z.infer<typeof insertFinancialTransactionSchema>;
+export type FinancialTransaction = typeof financialTransactions.$inferSelect;
+
+export type InsertApiFirewallLog = z.infer<typeof insertApiFirewallLogSchema>;
+export type ApiFirewallLog = typeof apiFirewallLogs.$inferSelect;
+
+export type InsertInsurancePolicy = z.infer<typeof insertInsurancePolicySchema>;
+export type InsurancePolicy = typeof insurancePolicies.$inferSelect;
+
+export type InsertPropertyDocument = z.infer<typeof insertPropertyDocumentSchema>;
+export type PropertyDocument = typeof propertyDocuments.$inferSelect;
+
+export type InsertPropertyTag = z.infer<typeof insertPropertyTagSchema>;
+export type PropertyTag = typeof propertyTags.$inferSelect;
+
+export type InsertPropertyVerification = z.infer<typeof insertPropertyVerificationSchema>;
+export type PropertyVerification = typeof propertyVerifications.$inferSelect;
+
+export type InsertBusinessCreditProfile = z.infer<typeof insertBusinessCreditProfileSchema>;
+export type BusinessCreditProfile = typeof businessCreditProfiles.$inferSelect;
+
+export type InsertCreditEnrichmentLog = z.infer<typeof insertCreditEnrichmentLogSchema>;
+export type CreditEnrichmentLog = typeof creditEnrichmentLogs.$inferSelect;
+
+export type InsertZkpCreditProof = z.infer<typeof insertZkpCreditProofSchema>;
+export type ZkpCreditProof = typeof zkpCreditProofs.$inferSelect;
