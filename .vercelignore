@@ -1,0 +1,12 @@
+.git
+node_modules
+.env
+.env.local
+.env.*.local
+*.log
+.vscode
+.idea
+coverage
+.DS_Store
+attached_assets
+test-*.js
