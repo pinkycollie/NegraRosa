@@ -14,6 +14,7 @@ import { webhookService } from "./services/WebhookService";
 import { webhookDataService } from "./services/WebhookDataService";
 import { backgroundTaskService } from "./services/BackgroundTaskService";
 import { csvImportService } from "./services/CSVImportService";
+import { xanoService } from "./services/XanoService";
 import { z } from "zod";
 import { 
   insertUserSchema, 
