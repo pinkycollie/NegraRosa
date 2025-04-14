@@ -61,6 +61,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Apply JSON middleware
   apiRouter.use(json());
+
+  // NegraRosa Authentication endpoints
+  apiRouter.post("/auth/biometric", async (req, res) => {
+    try {
+      const { userId, biometricData } = req.body;
+      
+      if (!userId || !biometricData) {
+        return res.status(400).json({ message: "Missing required fields: userId and biometricData" });
+      }
+      
+      // Call the AuthService method
+      const authResult = await authService.biometricAuth(userId, biometricData);
+      
+      if (!authResult.success) {
+        return res.status(401).json({ 
+          success: false, 
+          message: authResult.message || "Biometric authentication failed" 
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: "Biometric authentication successful",
+        token: authResult.token,
+        userId: authResult.userId,
+        data: authResult.data
+      });
+    } catch (error) {
+      console.error("Error during biometric authentication:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Server error during biometric authentication" 
+      });
+    }
+  });
+  
+  apiRouter.post("/auth/nft", async (req, res) => {
+    try {
+      const { walletAddress, nftTokenId, chainId } = req.body;
+      
+      if (!walletAddress || !nftTokenId) {
+        return res.status(400).json({ 
+          message: "Missing required fields: walletAddress and nftTokenId" 
+        });
+      }
+      
+      // Call the AuthService method
+      const authResult = await authService.nftAuth(walletAddress, nftTokenId, chainId);
+      
+      if (!authResult.success) {
+        return res.status(401).json({ 
+          success: false, 
+          message: authResult.message || "NFT authentication failed" 
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: "NFT authentication successful",
+        token: authResult.token,
+        userId: authResult.userId,
+        data: authResult.data
+      });
+    } catch (error) {
+      console.error("Error during NFT authentication:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Server error during NFT authentication" 
+      });
+    }
+  });
+  
+  apiRouter.post("/auth/recovery-code", async (req, res) => {
+    try {
+      const { email, recoveryCode } = req.body;
+      
+      if (!email || !recoveryCode) {
+        return res.status(400).json({ 
+          message: "Missing required fields: email and recoveryCode" 
+        });
+      }
+      
+      // Call the AuthService method
+      const authResult = await authService.recoveryCodeAuth(email, recoveryCode);
+      
+      if (!authResult.success) {
+        return res.status(401).json({ 
+          success: false, 
+          message: authResult.message || "Recovery code authentication failed" 
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: "Recovery code authentication successful",
+        token: authResult.token,
+        userId: authResult.userId,
+        data: authResult.data
+      });
+    } catch (error) {
+      console.error("Error during recovery code authentication:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Server error during recovery code authentication" 
+      });
+    }
+  });
+  
+  apiRouter.get("/auth/methods", async (_req, res) => {
+    try {
+      const methods = await authService.getAvailableVerificationMethods();
+      
+      res.json({
+        success: true,
+        methods
+      });
+    } catch (error) {
+      console.error("Error fetching authentication methods:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Server error fetching authentication methods" 
+      });
+    }
+  });
   
   // User endpoints
   apiRouter.post("/users", async (req, res) => {
