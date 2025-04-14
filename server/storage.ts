@@ -14,7 +14,11 @@ import {
   WhyNotification, InsertWhyNotification,
   Webhook, InsertWebhook,
   WebhookPayload, InsertWebhookPayload,
-  VerificationType
+  VerificationType,
+  ComplianceCredential, InsertComplianceCredential,
+  VanuatuEntity, InsertVanuatuEntity,
+  VanuatuLicense, InsertVanuatuLicense,
+  ComplianceReport, InsertComplianceReport
 } from "@shared/schema";
 
 export interface IStorage {
@@ -145,6 +149,36 @@ export interface IStorage {
   updateWebhookPayloadNotionId(id: string, notionEntryId: string): Promise<WebhookPayload | undefined>;
   updateWebhookPayloadRetryCount(id: string, retryCount: number): Promise<WebhookPayload | undefined>;
   
+  // Vanuatu Compliance - Credentials
+  createComplianceCredential(credential: InsertComplianceCredential): Promise<ComplianceCredential>;
+  getComplianceCredential(id: number): Promise<ComplianceCredential | undefined>;
+  getComplianceCredentialsByUserId(userId: number): Promise<ComplianceCredential[]>;
+  getComplianceCredentialsByJurisdiction(jurisdictionCode: string): Promise<ComplianceCredential[]>;
+  updateComplianceCredential(id: number, updates: Partial<ComplianceCredential>): Promise<ComplianceCredential | undefined>;
+  
+  // Vanuatu Entities
+  createVanuatuEntity(entity: InsertVanuatuEntity): Promise<VanuatuEntity>;
+  getVanuatuEntity(id: number): Promise<VanuatuEntity | undefined>;
+  getVanuatuEntitiesByCredentialId(credentialId: number): Promise<VanuatuEntity[]>;
+  getVanuatuEntitiesWithUpcomingFilings(daysThreshold: number): Promise<VanuatuEntity[]>;
+  updateVanuatuEntity(id: number, updates: Partial<VanuatuEntity>): Promise<VanuatuEntity | undefined>;
+  
+  // Vanuatu Licenses
+  createVanuatuLicense(license: InsertVanuatuLicense): Promise<VanuatuLicense>;
+  getVanuatuLicense(id: number): Promise<VanuatuLicense | undefined>;
+  getVanuatuLicensesByEntityId(entityId: number): Promise<VanuatuLicense[]>;
+  getVanuatuLicensesByCredentialId(credentialId: number): Promise<VanuatuLicense[]>;
+  getVanuatuLicensesNearingExpiration(daysThreshold: number): Promise<VanuatuLicense[]>;
+  updateVanuatuLicense(id: number, updates: Partial<VanuatuLicense>): Promise<VanuatuLicense | undefined>;
+  
+  // Compliance Reports
+  createComplianceReport(report: InsertComplianceReport): Promise<ComplianceReport>;
+  getComplianceReport(id: number): Promise<ComplianceReport | undefined>;
+  getComplianceReportsByEntityId(entityId: number): Promise<ComplianceReport[]>;
+  getComplianceReportsByLicenseId(licenseId: number): Promise<ComplianceReport[]>;
+  updateComplianceReport(id: number, updates: Partial<ComplianceReport>): Promise<ComplianceReport | undefined>;
+  updateComplianceReportWebhookStatus(id: number, sent: boolean): Promise<ComplianceReport | undefined>;
+  
   // User utilities
   getAllUsers(): Promise<User[]>;
 }
@@ -166,6 +200,12 @@ export class MemStorage implements IStorage {
   private webhooks: Map<string, Webhook>;
   private webhookPayloads: Map<string, WebhookPayload>;
   
+  // Vanuatu compliance maps
+  private complianceCredentials: Map<number, ComplianceCredential>;
+  private vanuatuEntities: Map<number, VanuatuEntity>;
+  private vanuatuLicenses: Map<number, VanuatuLicense>;
+  private complianceReports: Map<number, ComplianceReport>;
+  
   private nextUserId: number;
   private nextVerificationId: number;
   private nextReputationId: number;
@@ -179,6 +219,12 @@ export class MemStorage implements IStorage {
   private nextJobApplicationId: number;
   private nextWhySubmissionId: number;
   private nextWhyNotificationId: number;
+  
+  // Vanuatu compliance counters
+  private nextComplianceCredentialId: number;
+  private nextVanuatuEntityId: number;
+  private nextVanuatuLicenseId: number;
+  private nextComplianceReportId: number;
 
   constructor() {
     this.users = new Map();
@@ -197,6 +243,12 @@ export class MemStorage implements IStorage {
     this.webhooks = new Map();
     this.webhookPayloads = new Map();
     
+    // Initialize Vanuatu compliance maps
+    this.complianceCredentials = new Map();
+    this.vanuatuEntities = new Map();
+    this.vanuatuLicenses = new Map();
+    this.complianceReports = new Map();
+    
     this.nextUserId = 1;
     this.nextVerificationId = 1;
     this.nextReputationId = 1;
@@ -210,6 +262,12 @@ export class MemStorage implements IStorage {
     this.nextJobApplicationId = 1;
     this.nextWhySubmissionId = 1;
     this.nextWhyNotificationId = 1;
+    
+    // Initialize Vanuatu compliance counters
+    this.nextComplianceCredentialId = 1;
+    this.nextVanuatuEntityId = 1;
+    this.nextVanuatuLicenseId = 1;
+    this.nextComplianceReportId = 1;
     
     // Add a test user for development
     this.createUser({
