@@ -37,7 +37,24 @@ export interface IStorage {
   // User management
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByExternalId(externalId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  createUserFromAuth0(userData: {
+    externalId: string;
+    username: string;
+    email: string;
+    fullName: string | null;
+    phone: string | null;
+    auth0Metadata: any;
+  }): Promise<User>;
+  updateUserFromAuth0(userId: number, updates: {
+    email: string;
+    fullName: string | null;
+    auth0Metadata: any;
+    lastLogin: Date;
+  }): Promise<User | undefined>;
+  getUserTenantMembership(userId: number, tenantId: string): Promise<any>;
+  getUserTenants(userId: number): Promise<any[]>;
   
   // Verification methods
   createVerification(verification: InsertVerification): Promise<Verification>;
@@ -413,6 +430,115 @@ export class MemStorage implements IStorage {
     return Array.from(this.users.values()).find(
       (user) => user.username === username,
     );
+  }
+
+  async getUserByExternalId(externalId: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.externalId === externalId,
+    );
+  }
+  
+  async createUserFromAuth0(userData: {
+    externalId: string;
+    username: string;
+    email: string;
+    fullName: string | null;
+    phone: string | null;
+    auth0Metadata: any;
+  }): Promise<User> {
+    const id = this.nextUserId++;
+    const now = new Date();
+    const user: User = {
+      id,
+      externalId: userData.externalId,
+      username: userData.username,
+      password: "", // We don't need passwords for Auth0 users
+      email: userData.email,
+      fullName: userData.fullName,
+      phone: userData.phone,
+      createdAt: now,
+      auth0Metadata: userData.auth0Metadata,
+      lastLogin: now
+    };
+    this.users.set(id, user);
+    
+    // Initialize reputation for new user
+    await this.createReputation({
+      userId: id,
+      score: 0,
+      positiveTransactions: 0,
+      totalTransactions: 0,
+      verificationCount: 0,
+      accountAge: 0
+    });
+    
+    return user;
+  }
+  
+  async updateUserFromAuth0(userId: number, updates: {
+    email: string;
+    fullName: string | null;
+    auth0Metadata: any;
+    lastLogin: Date;
+  }): Promise<User | undefined> {
+    const user = this.users.get(userId);
+    if (!user) return undefined;
+    
+    const updatedUser = {
+      ...user,
+      email: updates.email,
+      fullName: updates.fullName,
+      auth0Metadata: updates.auth0Metadata,
+      lastLogin: updates.lastLogin
+    };
+    
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async getUserTenantMembership(userId: number, tenantId: string): Promise<any> {
+    // This would connect to a tenant_membership table in a real implementation
+    // For simplicity, we'll return a mock tenant membership if the user exists
+    const user = await this.getUser(userId);
+    if (!user) return null;
+    
+    // In a real system, we would check if the user has access to the specific tenant
+    // For now, we assume all users have access to any tenant they request
+    return {
+      userId,
+      tenantId,
+      role: "member",
+      active: true
+    };
+  }
+  
+  async getUserTenants(userId: number): Promise<any[]> {
+    // This would fetch the user's tenants from a tenant_membership table
+    // For simplicity, we'll return a mock list of tenants
+    const user = await this.getUser(userId);
+    if (!user) return [];
+    
+    // Mock tenants for demo purposes
+    return [
+      {
+        id: "tenant-1",
+        name: "NegraRosa Security",
+        role: "admin",
+        active: true
+      },
+      {
+        id: "tenant-2",
+        name: "FibonRoseTRUST",
+        role: "member",
+        active: true
+      },
+      {
+        id: "tenant-3",
+        name: "CIVIC Bridge",
+        role: "viewer",
+        active: true
+      }
+    ];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
