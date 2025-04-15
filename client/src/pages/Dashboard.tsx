@@ -180,6 +180,21 @@ export default function Dashboard({ userId }: DashboardProps) {
               {/* Main Identity Overview Component */}
               <IdentityOverview userId={userId} />
               
+              {/* Data Sharing Policy */}
+              <DataSharingPolicy userId={userId} />
+              
+              {/* Court Records Correction */}
+              <CourtRecordsCorrection userId={userId} />
+              
+              {/* Immigration Documentation */}
+              <ImmigrationDocumentation userId={userId} />
+              
+              {/* Financial History Verification */}
+              <FinancialHistoryVerification userId={userId} />
+              
+              {/* Parent Support Verification */}
+              <ParentSupportVerification userId={userId} />
+              
               {/* Biometric Recovery System */}
               <BiometricRecovery userId={userId} />
               
