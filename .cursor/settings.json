@@ -8,5 +8,9 @@
     "openai": {
       "model": "gpt-4-turbo"
     }
+  },
+  "ssh": {
+    "privateKey": "your_ssh_private_key_here",
+    "publicKey": "your_ssh_public_key_here"
   }
 }
