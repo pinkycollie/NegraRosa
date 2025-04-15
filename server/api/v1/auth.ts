@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Request, Response } from 'express';
 import { storage } from '../../storage';
 import { auth0Service } from '../../services/Auth0Service';
+import { civicService } from '../../services/CivicService';
 import { z } from 'zod';
 import { AuthService } from '../../services/AuthService';
 
@@ -325,6 +326,126 @@ router.get('/callback', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('OAuth callback error:', error);
     return res.redirect('/auth-error?message=Server+error+during+authentication');
+  }
+});
+
+/**
+ * @route GET /api/v1/auth/civic/login
+ * @desc Start Civic.com OAuth login flow
+ * @access Public
+ */
+router.get('/civic/login', async (req: Request, res: Response) => {
+  try {
+    // Check if Civic service is properly configured
+    if (!civicService.isFullyConfigured()) {
+      return res.status(400).json({
+        message: 'Civic authentication is not fully configured',
+        error: 'Missing required environment variables'
+      });
+    }
+
+    // Get user ID from query parameter or authenticated session
+    let userId: number | undefined;
+    
+    if (req.query.userId) {
+      userId = parseInt(req.query.userId as string, 10);
+    } else if (req.user?.id) {
+      userId = req.user.id;
+    } else {
+      // Create a temporary user if no user ID provided
+      const user = await storage.createUser({
+        username: `temp_${Date.now()}`,
+        password: '', // Will be set after authentication
+        email: '',    // Will be set after authentication
+        fullName: null,
+        phone: null
+      });
+      userId = user.id;
+    }
+
+    // Generate authorization URL
+    const authUrl = await civicService.startAuthFlow(userId);
+    
+    // Determine if this is an API request or direct browser request
+    if (req.headers.accept?.includes('application/json')) {
+      res.json({ redirectUrl: authUrl });
+    } else {
+      res.redirect(authUrl);
+    }
+  } catch (error) {
+    console.error('Civic login error:', error);
+    res.status(500).json({ message: 'Server error starting Civic authentication' });
+  }
+});
+
+/**
+ * @route GET /api/v1/auth/civic/callback
+ * @desc Handle Civic.com OAuth callback
+ * @access Public
+ */
+router.get('/civic/callback', async (req: Request, res: Response) => {
+  try {
+    console.log('Received Civic callback:', JSON.stringify(req.query));
+    
+    const { code, state } = req.query;
+    
+    if (!code || !state) {
+      return res.status(400).json({ 
+        message: 'Invalid Civic callback', 
+        error: 'Missing code or state parameter'
+      });
+    }
+    
+    // Process the callback with Civic service
+    const result = await civicService.handleCallback(code.toString(), state.toString());
+    
+    // Update or create user based on Civic data
+    const user = await storage.getUser(result.userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Create a session token or JWT
+    // In a real application, we would use proper JWT issuance here
+    const token = `civic_${result.userId}_${Date.now()}`;
+    
+    // Redirect to the frontend with token
+    const redirectUrl = req.query.redirectUrl || '/dashboard';
+    
+    // For security, tokens should not be passed in URL parameters in production
+    // This is just for demonstration - in a real app, use secure cookies or session
+    return res.redirect(`${redirectUrl}?token=${token}&provider=civic`);
+  } catch (error) {
+    console.error('Civic callback error:', error);
+    return res.redirect('/auth-error?message=Server+error+during+Civic+authentication');
+  }
+});
+
+/**
+ * @route POST /api/v1/auth/civic/verify
+ * @desc Request verification of attributes through Civic
+ * @access Private
+ */
+router.post('/civic/verify', auth0Service.checkJwt, async (req: Request, res: Response) => {
+  try {
+    const { attributes } = req.body;
+    
+    if (!attributes || !Array.isArray(attributes) || attributes.length === 0) {
+      return res.status(400).json({ message: 'Please provide attributes to verify' });
+    }
+    
+    // Request verification from Civic
+    const verificationUrl = await civicService.requestVerification(req.user.id, attributes);
+    
+    res.json({ 
+      success: true, 
+      verificationUrl,
+      message: 'Verification request initiated' 
+    });
+  } catch (error) {
+    console.error('Civic verification request error:', error);
+    res.status(500).json({ message: 'Server error during verification request' });
   }
 });
 

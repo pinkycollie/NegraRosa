@@ -19,6 +19,11 @@ import {
   VanuatuEntity, InsertVanuatuEntity,
   VanuatuLicense, InsertVanuatuLicense,
   ComplianceReport, InsertComplianceReport,
+  // OAuth and External Identity types
+  OAuthState, InsertOAuthState,
+  UserToken, InsertUserToken,
+  ExternalIdentity, InsertExternalIdentity,
+  VerificationRequest, InsertVerificationRequest,
   // Finance/Tax/Insurance Module types
   FinancialTransaction, InsertFinancialTransaction,
   ApiFirewallLog, InsertApiFirewallLog,
@@ -375,6 +380,14 @@ export class MemStorage implements IStorage {
     this.whyNotifications = new Map();
     this.webhooks = new Map();
     this.webhookPayloads = new Map();
+    
+    // Initialize OAuth and External Identity maps
+    this.oauthStates = new Map();
+    this.oauthStatesByStateParam = new Map();
+    this.userTokens = new Map();
+    this.externalIdentities = new Map();
+    this.externalIdentitiesByProviderId = new Map();
+    this.verificationRequests = new Map();
     
     // Initialize Vanuatu compliance maps
     this.complianceCredentials = new Map();
@@ -1391,6 +1404,117 @@ export class MemStorage implements IStorage {
   // User utilities
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.users.values());
+  }
+  
+  // OAuth and External Identity Methods
+  async storeOAuthState(userId: number, state: InsertOAuthState): Promise<OAuthState> {
+    const id = 1; // Since we're using Maps, we don't need auto-incrementing IDs
+    const oauthState: OAuthState = {
+      ...state,
+      id,
+      userId,
+      createdAt: new Date()
+    };
+    this.oauthStates.set(id, oauthState);
+    this.oauthStatesByStateParam.set(state.state, oauthState);
+    return oauthState;
+  }
+
+  async getOAuthStateByState(state: string): Promise<OAuthState | undefined> {
+    return this.oauthStatesByStateParam.get(state);
+  }
+
+  async storeUserTokens(userId: number, tokens: InsertUserToken): Promise<UserToken> {
+    const id = 1; // Since we're using Maps, we don't need auto-incrementing IDs
+    const now = new Date();
+    const userToken: UserToken = {
+      ...tokens,
+      id,
+      userId,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.userTokens.set(userId, userToken);
+    return userToken;
+  }
+
+  async getUserTokensByProvider(userId: number, provider: string): Promise<UserToken | undefined> {
+    const token = this.userTokens.get(userId);
+    if (token && token.provider === provider) {
+      return token;
+    }
+    return undefined;
+  }
+
+  async refreshUserTokens(id: number, accessToken: string, refreshToken?: string, expiresAt?: Date): Promise<UserToken | undefined> {
+    const token = this.userTokens.get(id);
+    if (!token) return undefined;
+
+    const updatedToken: UserToken = {
+      ...token,
+      accessToken,
+      refreshToken: refreshToken || token.refreshToken,
+      expiresAt: expiresAt || token.expiresAt,
+      updatedAt: new Date()
+    };
+    this.userTokens.set(id, updatedToken);
+    return updatedToken;
+  }
+
+  async linkExternalIdentity(userId: number, identity: InsertExternalIdentity): Promise<ExternalIdentity> {
+    const id = 1; // Since we're using Maps, we don't need auto-incrementing IDs
+    const now = new Date();
+    const externalIdentity: ExternalIdentity = {
+      ...identity,
+      id,
+      userId,
+      createdAt: now,
+      updatedAt: now,
+      verifiedAt: now
+    };
+    this.externalIdentities.set(id, externalIdentity);
+    this.externalIdentitiesByProviderId.set(`${identity.provider}:${identity.externalId}`, externalIdentity);
+    return externalIdentity;
+  }
+
+  async getExternalIdentities(userId: number): Promise<ExternalIdentity[]> {
+    return Array.from(this.externalIdentities.values())
+      .filter(identity => identity.userId === userId);
+  }
+
+  async getExternalIdentityByExternalId(provider: string, externalId: string): Promise<ExternalIdentity | undefined> {
+    return this.externalIdentitiesByProviderId.get(`${provider}:${externalId}`);
+  }
+
+  async storeVerificationRequest(userId: number, request: InsertVerificationRequest): Promise<VerificationRequest> {
+    const now = new Date();
+    const verificationRequest: VerificationRequest = {
+      ...request,
+      userId,
+      createdAt: now,
+      completedAt: null
+    };
+    this.verificationRequests.set(request.id, verificationRequest);
+    return verificationRequest;
+  }
+
+  async getVerificationRequest(id: string): Promise<VerificationRequest | undefined> {
+    return this.verificationRequests.get(id);
+  }
+
+  async updateVerificationRequestStatus(id: string, status: string, result?: any): Promise<VerificationRequest | undefined> {
+    const request = this.verificationRequests.get(id);
+    if (!request) return undefined;
+
+    const now = new Date();
+    const updatedRequest: VerificationRequest = {
+      ...request,
+      status,
+      result: result || request.result,
+      completedAt: status === 'COMPLETED' ? now : request.completedAt
+    };
+    this.verificationRequests.set(id, updatedRequest);
+    return updatedRequest;
   }
 
   // Vanuatu Compliance - Credentials

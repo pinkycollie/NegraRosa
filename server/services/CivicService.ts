@@ -166,6 +166,7 @@ export class CivicService {
     
     // Store the code verifier and state for later validation
     await storage.storeOAuthState(userId, {
+      userId,
       provider: 'civic',
       state,
       codeVerifier,
