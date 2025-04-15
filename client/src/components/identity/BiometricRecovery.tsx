@@ -10,10 +10,11 @@ import { useToast } from "@/hooks/use-toast";
 import { NftAuth } from './NftAuth';
 
 export interface BiometricRecoveryProps {
-  onRecoverySuccess: (data: { token: string; userId: number }) => void;
+  onRecoverySuccess?: (data: { token: string; userId: number }) => void;
+  userId?: number;
 }
 
-export function BiometricRecovery({ onRecoverySuccess }: BiometricRecoveryProps) {
+export function BiometricRecovery({ onRecoverySuccess, userId }: BiometricRecoveryProps) {
   const { toast } = useToast();
   const [recoveryCode, setRecoveryCode] = useState<string>('');
   const [biometricData, setBiometricData] = useState<string>('');

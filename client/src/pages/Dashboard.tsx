@@ -13,6 +13,8 @@ import RiskManagementWidget from "@/components/risk/RiskManagementWidget";
 import { IdentityOverview } from "@/components/identity/IdentityOverview";
 import { BiometricRecovery } from "@/components/identity/BiometricRecovery";
 import { CompanyPerspectiveWidget } from "@/components/identity/CompanyPerspectiveWidget";
+import { CourtRecordsCorrection } from "@/components/identity/CourtRecordsCorrection";
+import { ImmigrationDocumentation } from "@/components/identity/ImmigrationDocumentation";
 import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, TrendingUp, Award, Users } from "lucide-react";
 
