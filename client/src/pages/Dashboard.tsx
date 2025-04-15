@@ -184,28 +184,28 @@ export default function Dashboard({ userId }: DashboardProps) {
               <CompanyPerspectiveWidget userId={userId} />
               
               {/* Community Impact Section */}
-              <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-100 rounded-lg p-6">
+              <div className="bg-white border border-purple-200 shadow-sm rounded-lg p-6">
                 <div className="flex items-start gap-4">
-                  <div className="bg-white p-3 rounded-full">
-                    <Users className="h-8 w-8 text-purple-600" />
+                  <div className="bg-purple-100 p-3 rounded-full">
+                    <Users className="h-8 w-8 text-purple-700" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-medium text-purple-900 mb-2">Community Impact & Empowerment</h3>
-                    <p className="text-sm text-purple-800 mb-4">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Community Impact & Empowerment</h3>
+                    <p className="text-sm text-gray-700 mb-4">
                       Your "I AM WHO I AM" NFT also serves as a key to community resources, collective bargaining, and economic opportunities.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                      <div className="bg-white/80 p-4 rounded-lg">
-                        <h4 className="font-medium text-sm mb-1">Shared Resources</h4>
-                        <p className="text-xs text-muted-foreground">Access to pooled community resources and support networks</p>
+                      <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                        <h4 className="font-medium text-sm text-gray-800 mb-1">Shared Resources</h4>
+                        <p className="text-xs text-gray-600">Access to pooled community resources and support networks</p>
                       </div>
-                      <div className="bg-white/80 p-4 rounded-lg">
-                        <h4 className="font-medium text-sm mb-1">Economic Opportunities</h4>
-                        <p className="text-xs text-muted-foreground">Priority access to jobs, loans, and investment opportunities</p>
+                      <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                        <h4 className="font-medium text-sm text-gray-800 mb-1">Economic Opportunities</h4>
+                        <p className="text-xs text-gray-600">Priority access to jobs, loans, and investment opportunities</p>
                       </div>
-                      <div className="bg-white/80 p-4 rounded-lg">
-                        <h4 className="font-medium text-sm mb-1">Collective Voice</h4>
-                        <p className="text-xs text-muted-foreground">Participate in community governance and decision-making</p>
+                      <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                        <h4 className="font-medium text-sm text-gray-800 mb-1">Collective Voice</h4>
+                        <p className="text-xs text-gray-600">Participate in community governance and decision-making</p>
                       </div>
                     </div>
                     <a 
