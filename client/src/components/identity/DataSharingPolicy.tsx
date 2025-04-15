@@ -49,7 +49,11 @@ export function DataSharingPolicy({ userId }: DataSharingPolicyProps) {
   const { toast } = useToast();
   
   // FibonRoseTRUST Score Query
-  const { data: trustScore, isLoading: isLoadingTrust } = useQuery({
+  const { data: trustScore, isLoading: isLoadingTrust } = useQuery<{
+    fibonacciLevel: number;
+    accessTier: string;
+    verifiedMethods: string[];
+  }>({
     queryKey: [`/api/v1/fibonrose/trust-score/${userId}`],
     enabled: !!userId,
   });

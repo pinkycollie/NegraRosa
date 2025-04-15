@@ -16,6 +16,8 @@ import { CompanyPerspectiveWidget } from "@/components/identity/CompanyPerspecti
 import { CourtRecordsCorrection } from "@/components/identity/CourtRecordsCorrection";
 import { ImmigrationDocumentation } from "@/components/identity/ImmigrationDocumentation";
 import { FinancialHistoryVerification } from "@/components/identity/FinancialHistoryVerification";
+import { ParentSupportVerification } from "@/components/identity/ParentSupportVerification";
+import { DataSharingPolicy } from "@/components/identity/DataSharingPolicy";
 import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, TrendingUp, Award, Users } from "lucide-react";
 

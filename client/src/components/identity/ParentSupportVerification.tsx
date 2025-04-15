@@ -169,9 +169,7 @@ export function ParentSupportVerification({ userId }: ParentSupportVerificationP
   
   const uploadMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const response = await apiRequest('POST', `/api/users/${userId}/parent-support/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const response = await apiRequest('POST', `/api/users/${userId}/parent-support/upload`, formData);
       return response.json();
     },
     onSuccess: () => {
