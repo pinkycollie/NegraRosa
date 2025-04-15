@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { VanuatuComplianceService } from "./services/VanuatuComplianceService";
+import { civicService } from "./services/CivicService";
 
 const app = express();
 app.use(express.json());
@@ -14,6 +15,19 @@ if (!process.env.VANUATU_API_KEY) {
   const vanuatuService = new VanuatuComplianceService();
   console.log('Vanuatu Compliance service initialized');
 }
+
+// The CivicService is already initialized as a singleton when imported
+
+// Configure global webhook registration URL for services
+const redirectDomain = process.env.REDIRECT_DOMAIN || 'negrarosa.mbtquniverse.com';
+
+// Define webhook registration URLs
+app.locals.webhookConfig = {
+  vanuatuCallback: `https://${redirectDomain}/api/v1/vanuatu/callback`,
+  vanuatuWebhook: `https://${redirectDomain}/api/v1/vanuatu/webhook`,
+  civicCallback: `https://${redirectDomain}/api/v1/auth/civic/callback`,
+  generalWebhook: `https://${redirectDomain}/api/v1/webhooks/receive`
+};
 
 app.use((req, res, next) => {
   const start = Date.now();
