@@ -18,6 +18,9 @@ import { ImmigrationDocumentation } from "@/components/identity/ImmigrationDocum
 import { FinancialHistoryVerification } from "@/components/identity/FinancialHistoryVerification";
 import { ParentSupportVerification } from "@/components/identity/ParentSupportVerification";
 import { DataSharingPolicy } from "@/components/identity/DataSharingPolicy";
+import { DataArchitectureExplainer } from "@/components/identity/DataArchitectureExplainer";
+import { InclusiveSecurityComparison } from "@/components/security/InclusiveSecurityComparison";
+import { PartnershipIntegration } from "@/components/security/PartnershipIntegration";
 import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, TrendingUp, Award, Users } from "lucide-react";
 
@@ -197,11 +200,20 @@ export default function Dashboard({ userId }: DashboardProps) {
               {/* Parent Support Verification */}
               <ParentSupportVerification userId={userId} />
               
+              {/* Data Architecture Explainer */}
+              <DataArchitectureExplainer userId={userId} />
+              
               {/* Biometric Recovery System */}
               <BiometricRecovery userId={userId} />
               
               {/* Company Perspective Widget */}
               <CompanyPerspectiveWidget userId={userId} />
+              
+              {/* Inclusive Security Comparison */}
+              <InclusiveSecurityComparison userId={userId} />
+              
+              {/* Partnership Integration */}
+              <PartnershipIntegration userId={userId} />
               
               {/* Community Impact Section */}
               <div className="bg-white border border-purple-200 shadow-sm rounded-lg p-6">
