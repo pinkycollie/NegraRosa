@@ -35,7 +35,10 @@ export const verificationTypes = z.enum([
   "PAYMENT_METHOD",
   "TRANSACTION_HISTORY",
   "IDENTITY_VERIFICATION",
-  "FINANCIAL_RISK_ASSESSMENT"
+  "FINANCIAL_RISK_ASSESSMENT",
+  // External identity verification providers
+  "CIVIC",
+  "NFT"
 ]);
 
 export type VerificationType = z.infer<typeof verificationTypes>;
@@ -441,6 +444,101 @@ export const insertWhyNotificationSchema = createInsertSchema(whyNotifications).
 
 export type InsertWhyNotification = z.infer<typeof insertWhyNotificationSchema>;
 export type WhyNotification = typeof whyNotifications.$inferSelect;
+
+// OAuth state for authentication flows
+export const oauthStates = pgTable("oauth_states", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  provider: text("provider").notNull(), // 'civic', 'auth0', etc.
+  state: text("state").notNull().unique(),
+  codeVerifier: text("code_verifier").notNull(), // For PKCE OAuth flow
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export const insertOAuthStateSchema = createInsertSchema(oauthStates).pick({
+  userId: true,
+  provider: true,
+  state: true,
+  codeVerifier: true,
+  expiresAt: true,
+});
+
+export type InsertOAuthState = z.infer<typeof insertOAuthStateSchema>;
+export type OAuthState = typeof oauthStates.$inferSelect;
+
+// User tokens for third-party services
+export const userTokens = pgTable("user_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  provider: text("provider").notNull(), // 'civic', 'auth0', etc.
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  expiresAt: timestamp("expires_at"),
+  tokenType: text("token_type").default("Bearer"),
+  scope: text("scope"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertUserTokenSchema = createInsertSchema(userTokens).pick({
+  userId: true,
+  provider: true,
+  accessToken: true,
+  refreshToken: true,
+  expiresAt: true,
+  tokenType: true,
+  scope: true,
+});
+
+export type InsertUserToken = z.infer<typeof insertUserTokenSchema>;
+export type UserToken = typeof userTokens.$inferSelect;
+
+// External identities linked to users
+export const externalIdentities = pgTable("external_identities", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  provider: text("provider").notNull(), // 'civic', 'auth0', etc.
+  externalId: text("external_id").notNull(),
+  data: jsonb("data"), // Additional data from the provider
+  verifiedAt: timestamp("verified_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertExternalIdentitySchema = createInsertSchema(externalIdentities).pick({
+  userId: true,
+  provider: true,
+  externalId: true,
+  data: true,
+});
+
+export type InsertExternalIdentity = z.infer<typeof insertExternalIdentitySchema>;
+export type ExternalIdentity = typeof externalIdentities.$inferSelect;
+
+// Verification requests
+export const verificationRequests = pgTable("verification_requests", {
+  id: text("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  provider: text("provider").notNull(), // 'civic', 'auth0', etc.
+  attributes: text("attributes").array(),
+  status: text("status").notNull(), // PENDING, COMPLETED, REJECTED
+  result: jsonb("result"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const insertVerificationRequestSchema = createInsertSchema(verificationRequests).pick({
+  id: true,
+  userId: true,
+  provider: true,
+  attributes: true,
+  status: true,
+  result: true,
+});
+
+export type InsertVerificationRequest = z.infer<typeof insertVerificationRequestSchema>;
+export type VerificationRequest = typeof verificationRequests.$inferSelect;
 
 // Webhook system
 export const webhooks = pgTable("webhooks", {

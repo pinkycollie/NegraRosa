@@ -56,6 +56,19 @@ export interface IStorage {
   getUserTenantMembership(userId: number, tenantId: string): Promise<any>;
   getUserTenants(userId: number): Promise<any[]>;
   
+  // OAuth and External Identity Management
+  storeOAuthState(userId: number, state: InsertOAuthState): Promise<OAuthState>;
+  getOAuthStateByState(state: string): Promise<OAuthState | undefined>;
+  storeUserTokens(userId: number, tokens: InsertUserToken): Promise<UserToken>;
+  getUserTokensByProvider(userId: number, provider: string): Promise<UserToken | undefined>;
+  refreshUserTokens(id: number, accessToken: string, refreshToken?: string, expiresAt?: Date): Promise<UserToken | undefined>;
+  linkExternalIdentity(userId: number, identity: InsertExternalIdentity): Promise<ExternalIdentity>;
+  getExternalIdentities(userId: number): Promise<ExternalIdentity[]>;
+  getExternalIdentityByExternalId(provider: string, externalId: string): Promise<ExternalIdentity | undefined>;
+  storeVerificationRequest(userId: number, request: InsertVerificationRequest): Promise<VerificationRequest>;
+  getVerificationRequest(id: string): Promise<VerificationRequest | undefined>;
+  updateVerificationRequestStatus(id: string, status: string, result?: any): Promise<VerificationRequest | undefined>;
+  
   // Verification methods
   createVerification(verification: InsertVerification): Promise<Verification>;
   getVerificationsByUserId(userId: number): Promise<Verification[]>;
@@ -281,6 +294,14 @@ export class MemStorage implements IStorage {
   private whyNotifications: Map<number, WhyNotification>;
   private webhooks: Map<string, Webhook>;
   private webhookPayloads: Map<string, WebhookPayload>;
+  
+  // OAuth and External Identity maps
+  private oauthStates: Map<number, OAuthState>;
+  private oauthStatesByStateParam: Map<string, OAuthState>;
+  private userTokens: Map<number, UserToken>;
+  private externalIdentities: Map<number, ExternalIdentity>;
+  private externalIdentitiesByProviderId: Map<string, ExternalIdentity>;
+  private verificationRequests: Map<string, VerificationRequest>;
   
   // Vanuatu compliance maps
   private complianceCredentials: Map<number, ComplianceCredential>;
