@@ -9,7 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface NftAuthProps {
-  onAuthSuccess: (data: { token: string; userId: number }) => void;
+  onAuthSuccess?: (data: { token: string; userId: number }) => void;
 }
 
 export function NftAuth({ onAuthSuccess }: NftAuthProps) {
@@ -43,10 +43,12 @@ export function NftAuth({ onAuthSuccess }: NftAuthProps) {
           variant: 'default',
         });
         
-        onAuthSuccess({
-          token: result.token,
-          userId: result.userId
-        });
+        if (onAuthSuccess) {
+          onAuthSuccess({
+            token: result.token,
+            userId: result.userId
+          });
+        }
       } else {
         setError(result.message || 'NFT verification failed. Please check your token and try again.');
       }

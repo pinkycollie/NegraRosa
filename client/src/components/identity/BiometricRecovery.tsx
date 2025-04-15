@@ -75,10 +75,12 @@ export function BiometricRecovery({ onRecoverySuccess, userId }: BiometricRecove
           variant: 'default',
         });
         
-        onRecoverySuccess({
-          token: result.token,
-          userId: result.userId
-        });
+        if (onRecoverySuccess) {
+          onRecoverySuccess({
+            token: result.token,
+            userId: result.userId
+          });
+        }
       } else {
         setError(result.message || 'Recovery failed. Please check your recovery code and try again.');
       }
@@ -95,6 +97,7 @@ export function BiometricRecovery({ onRecoverySuccess, userId }: BiometricRecove
   };
   
   if (showNftAuth) {
+    // Pass the onRecoverySuccess callback if it exists
     return <NftAuth onAuthSuccess={onRecoverySuccess} />;
   }
 
