@@ -48,12 +48,24 @@ export function DataSharingPolicy({ userId }: DataSharingPolicyProps) {
   const [activeTab, setActiveTab] = useState("permissions");
   const { toast } = useToast();
   
-  // FibonRoseTRUST Score Query
-  const { data: trustScore, isLoading: isLoadingTrust } = useQuery<{
+  // Define FibonRoseTrust score type
+  interface TrustScore {
+    userId: number;
+    baseScore: number;
+    verificationBonus: number;
+    transactionBonus: number;
+    combinedScore: number;
     fibonacciLevel: number;
-    accessTier: string;
+    accessTier: 'BASIC' | 'STANDARD' | 'ADVANCED' | 'PREMIUM';
     verifiedMethods: string[];
-  }>({
+    transactionCount: {
+      total: number;
+      recent: number;
+    }
+  }
+  
+  // FibonRoseTRUST Score Query
+  const { data: trustScore, isLoading: isLoadingTrust } = useQuery<TrustScore>({
     queryKey: [`/api/v1/fibonrose/trust-score/${userId}`],
     enabled: !!userId,
   });
