@@ -9,6 +9,7 @@ import MainframeLayout, { MainframeBlock } from "@/components/MainframeLayout";
 import VerificationDashboard from "@/components/verification/VerificationDashboard";
 import SecurityFramework from "@/components/framework/SecurityFramework";
 import SignLanguageAuth from "@/components/auth/SignLanguageAuth";
+import DeafFirstAuth from "@/components/auth/DeafFirstAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -138,10 +139,10 @@ export default function MainframeDashboard({ userId }: MainframeDashboardProps) 
                 <Code className="h-6 w-6 text-blue-400 mr-3" />
                 <div>
                   <h2 className="text-lg font-bold text-white flex items-center">
-                    Open Source Gesture Verification 
+                    Deaf-First Authentication Framework 
                     <Badge className="ml-3 bg-blue-700 text-white hover:bg-blue-600">New</Badge>
                   </h2>
-                  <p className="text-sm text-blue-300">First-of-its-kind technology for deaf users who struggle with text-based security</p>
+                  <p className="text-sm text-blue-300">Multi-method technology for deaf users with gesture, voice pattern, visual, and tactile authentication</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -169,7 +170,7 @@ export default function MainframeDashboard({ userId }: MainframeDashboardProps) 
                 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2">
-                    <SignLanguageAuth />
+                    <DeafFirstAuth />
                   </div>
                   
                   <div className="space-y-4">

@@ -145,11 +145,31 @@ export default function MainframeLayout({
       </div>
       
       {/* B-roll component - Top sticky menu */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-sm border-b border-purple-800/50">
-        <div className="container mx-auto px-4 py-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide">
-              <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1 rounded-full hover:bg-purple-900/30">
+      <div className="fixed top-0 left-0 right-0 z-40 bg-black/90 backdrop-blur-md border-b border-purple-800/50">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            {/* Main title and logo */}
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-between">
+              <div className="flex items-center">
+                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-800 to-purple-900 border border-purple-700 flex items-center justify-center mr-3">
+                  <span className="text-2xl">🤟</span>
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-white">NegraRosa Security</h1>
+                  <p className="text-xs text-purple-300">Deaf-First Security Framework</p>
+                </div>
+              </div>
+              
+              <div className="sm:hidden">
+                <div className="flex items-center text-purple-400 cursor-pointer bg-purple-900/30 rounded-full px-3 py-1.5 hover:bg-purple-900/50 transition-colors">
+                  <span className="text-xl">🤟</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Navigation links */}
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+              <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30 bg-purple-900/20">
                 <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                   <polyline points="9 22 9 12 15 12 15 22"></polyline>
@@ -157,7 +177,7 @@ export default function MainframeLayout({
                 <span className="text-sm whitespace-nowrap">Home</span>
               </div>
               
-              <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1 rounded-full hover:bg-purple-900/30">
+              <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30">
                 <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
                   <path d="m9 12 2 2 4-4"></path>
@@ -165,7 +185,7 @@ export default function MainframeLayout({
                 <span className="text-sm whitespace-nowrap">Verification</span>
               </div>
               
-              <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1 rounded-full hover:bg-purple-900/30">
+              <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30">
                 <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
                   <circle cx="9" cy="7" r="4"></circle>
@@ -175,7 +195,7 @@ export default function MainframeLayout({
                 <span className="text-sm whitespace-nowrap">Community</span>
               </div>
               
-              <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1 rounded-full hover:bg-purple-900/30">
+              <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30">
                 <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                   <circle cx="8.5" cy="8.5" r="1.5"></circle>
@@ -183,26 +203,13 @@ export default function MainframeLayout({
                 </svg>
                 <span className="text-sm whitespace-nowrap">Visual Security</span>
               </div>
-              
-              <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1 rounded-full hover:bg-purple-900/30">
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-                </svg>
-                <span className="text-sm whitespace-nowrap">Status</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1 rounded-full hover:bg-purple-900/30">
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
-                </svg>
-                <span className="text-sm whitespace-nowrap">Integration</span>
-              </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            {/* Sign in button */}
+            <div className="hidden sm:flex items-center gap-3">
               <div className="flex items-center text-purple-400 cursor-pointer bg-purple-900/30 rounded-full px-3 py-1.5 hover:bg-purple-900/50 transition-colors">
-                <span className="text-2xl mr-2">🤟</span>
-                <span className="hidden sm:inline font-medium">Sign In</span>
+                <span className="text-xl mr-2">🤟</span>
+                <span className="font-medium">Sign In</span>
               </div>
             </div>
           </div>
