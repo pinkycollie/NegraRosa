@@ -119,10 +119,10 @@ export default function MainframeLayout({
       </div>
       
       {/* Support Button - Floating Sign Language Icon */}
-      <div className="fixed bottom-24 right-4 z-50">
-        <button className="bg-purple-800 hover:bg-purple-700 text-white rounded-full p-3 shadow-lg flex items-center gap-2 transition-all hover:shadow-xl">
-          <span className="text-xl">🤟</span>
-          <span className="pr-2">Support & Inquiries</span>
+      <div className="fixed bottom-24 right-6 z-50">
+        <button className="bg-purple-800 hover:bg-purple-700 text-white rounded-full p-4 shadow-lg flex items-center gap-3 transition-all hover:shadow-xl hover:bg-purple-600">
+          <span className="text-3xl">🤟</span>
+          <span className="pr-3 text-base font-medium">Support & Inquiries</span>
         </button>
       </div>
       
@@ -200,9 +200,9 @@ export default function MainframeLayout({
             </div>
             
             <div className="flex items-center gap-3">
-              <div className="flex items-center text-purple-400 cursor-pointer text-sm">
-                <span className="text-lg mr-1">🤟</span>
-                <span className="hidden sm:inline">Sign In</span>
+              <div className="flex items-center text-purple-400 cursor-pointer bg-purple-900/30 rounded-full px-3 py-1.5 hover:bg-purple-900/50 transition-colors">
+                <span className="text-2xl mr-2">🤟</span>
+                <span className="hidden sm:inline font-medium">Sign In</span>
               </div>
             </div>
           </div>
