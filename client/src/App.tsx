@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
+import MainframeDashboard from "@/pages/MainframeDashboard";
 import WebhookManagement from "@/pages/WebhookManagement";
 
 function MainNav() {
@@ -17,6 +18,9 @@ function MainNav() {
           <div className="flex items-center space-x-6">
             <Link href="/">
               <span className="text-sm font-medium hover:underline cursor-pointer">Dashboard</span>
+            </Link>
+            <Link href="/mainframe">
+              <span className="text-sm font-medium hover:underline cursor-pointer">Deaf-First Platform</span>
             </Link>
             <Link href="/demo">
               <span className="text-sm font-medium hover:underline cursor-pointer">Demo</span>
@@ -67,6 +71,9 @@ function Router({ initialUserId }: { initialUserId: number }) {
         <Switch>
           <Route path="/">
             <Dashboard userId={initialUserId} />
+          </Route>
+          <Route path="/mainframe">
+            <MainframeDashboard userId={initialUserId} />
           </Route>
           <Route path="/webhooks">
             <WebhookManagement />
