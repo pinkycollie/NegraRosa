@@ -180,25 +180,27 @@ export default function RiskManagementWidget({ userId }: RiskManagementWidgetPro
             {isLoadingLimits ? (
               <p>Loading limits...</p>
             ) : (
-              <div className="space-y-4">
-                {limits.map((limit, index) => (
-                  <div key={index}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium">{limit.name}</span>
-                      <span className="text-sm">{formatCurrency(limit.current)}</span>
+              <div className="scroll-container scrollbar-hide pb-2">
+                <div className="space-y-4 min-w-max">
+                  {limits.map((limit, index) => (
+                    <div key={index} className="pr-4">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium">{limit.name}</span>
+                        <span className="text-sm">{formatCurrency(limit.current)}</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2.5">
+                        <div 
+                          className="bg-primary h-2.5 rounded-full" 
+                          style={{ width: `${limit.percentUsed}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                        <span>{formatCurrency(0)}</span>
+                        <span>{formatCurrency(limit.max)}</span>
+                      </div>
                     </div>
-                    <div className="w-full bg-muted rounded-full h-2.5">
-                      <div 
-                        className="bg-primary h-2.5 rounded-full" 
-                        style={{ width: `${limit.percentUsed}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>{formatCurrency(0)}</span>
-                      <span>{formatCurrency(limit.max)}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
             
