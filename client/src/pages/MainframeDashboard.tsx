@@ -4,11 +4,13 @@ import { User } from "@/lib/types";
 import { AuthTab } from "@/lib/types";
 import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
-import { Shield, Users, Wifi, HandMetal, Building } from "lucide-react";
+import { Shield, Users, Wifi, HandMetal, Building, Code, GitFork, Github } from "lucide-react";
 import MainframeLayout, { MainframeBlock } from "@/components/MainframeLayout";
 import VerificationDashboard from "@/components/verification/VerificationDashboard";
 import SecurityFramework from "@/components/framework/SecurityFramework";
+import SignLanguageAuth from "@/components/auth/SignLanguageAuth";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface MainframeDashboardProps {
   userId: number;
@@ -16,6 +18,7 @@ interface MainframeDashboardProps {
 
 export default function MainframeDashboard({ userId }: MainframeDashboardProps) {
   const [activeTab, setActiveTab] = useState<AuthTab>(AuthTab.AUTHENTICATION);
+  const [showOpenSourceBlock, setShowOpenSourceBlock] = useState(false);
 
   const { data: user, isLoading: isLoadingUser } = useQuery<User>({
     queryKey: [`/api/users/${userId}`],
@@ -23,6 +26,10 @@ export default function MainframeDashboard({ userId }: MainframeDashboardProps) 
 
   const handleTabChange = (tab: AuthTab) => {
     setActiveTab(tab);
+  };
+  
+  const toggleOpenSourceBlock = () => {
+    setShowOpenSourceBlock(!showOpenSourceBlock);
   };
 
   // Sidebar content for mainframe layout
@@ -120,6 +127,109 @@ export default function MainframeDashboard({ userId }: MainframeDashboardProps) 
       <AppHeader user={user} />
 
       <MainframeLayout sidebarContent={sidebarContent}>
+        {/* Open Source Blocks Banner - Expandable */}
+        <div className="mb-6">
+          <div 
+            className="border border-blue-700 rounded-lg bg-gradient-to-r from-blue-950/50 to-purple-950/50 p-4 cursor-pointer"
+            onClick={toggleOpenSourceBlock}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Code className="h-6 w-6 text-blue-400 mr-3" />
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center">
+                    Open Source Gesture Verification 
+                    <Badge className="ml-3 bg-blue-700 text-white hover:bg-blue-600">New</Badge>
+                  </h2>
+                  <p className="text-sm text-blue-300">First-of-its-kind technology for deaf users who struggle with text-based security</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <GitFork className="h-5 w-5 text-blue-400" />
+                <span className="text-sm text-blue-300">{showOpenSourceBlock ? 'Hide' : 'Explore'}</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Expanded Open Source Block */}
+          {showOpenSourceBlock && (
+            <div className="mt-4 border border-blue-700 rounded-lg bg-gradient-to-b from-blue-950/30 to-black p-6">
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-blue-400 flex items-center">
+                    <Github className="h-5 w-5 mr-2" />
+                    Open Source Authentication Block
+                  </h3>
+                  <Badge variant="outline" className="border-blue-600 text-blue-400">MIT License</Badge>
+                </div>
+                
+                <p className="text-gray-300 mb-4">
+                  This authentication component can be freely integrated into any security solution. It uses computer vision and gesture recognition to allow deaf users to authenticate without traditional text-based passwords.
+                </p>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <SignLanguageAuth />
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="bg-black/70 border border-blue-900 rounded-lg p-4">
+                      <h4 className="text-base font-medium text-blue-400 mb-3">Integration Details</h4>
+                      <ul className="space-y-2 text-sm text-gray-300">
+                        <li className="flex items-start">
+                          <div className="h-5 w-5 rounded-full bg-blue-900/50 border border-blue-700 flex items-center justify-center mr-2 mt-0.5">
+                            <span className="text-xs">1</span>
+                          </div>
+                          <span>Self-contained React component with no external dependencies</span>
+                        </li>
+                        <li className="flex items-start">
+                          <div className="h-5 w-5 rounded-full bg-blue-900/50 border border-blue-700 flex items-center justify-center mr-2 mt-0.5">
+                            <span className="text-xs">2</span>
+                          </div>
+                          <span>Connects to any authentication backend with minimal code</span>
+                        </li>
+                        <li className="flex items-start">
+                          <div className="h-5 w-5 rounded-full bg-blue-900/50 border border-blue-700 flex items-center justify-center mr-2 mt-0.5">
+                            <span className="text-xs">3</span>
+                          </div>
+                          <span>Visual first design with no text requirements</span>
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    <div className="bg-black/70 border border-blue-900 rounded-lg p-4">
+                      <h4 className="text-base font-medium text-blue-400 mb-3">Benefits for Deaf Users</h4>
+                      <ul className="space-y-1 text-sm text-gray-300">
+                        <li className="flex items-center">
+                          <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
+                          <span>No text passwords to forget</span>
+                        </li>
+                        <li className="flex items-center">
+                          <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
+                          <span>Natural sign language gestures</span>
+                        </li>
+                        <li className="flex items-center">
+                          <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
+                          <span>Visual feedback during process</span>
+                        </li>
+                        <li className="flex items-center">
+                          <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
+                          <span>Accessible error resolution</span>
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    <Button className="w-full bg-blue-700 hover:bg-blue-600">
+                      <Github className="h-4 w-4 mr-2" />
+                      Get the Code
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        
         {/* Main content based on active tab */}
         {activeTab === AuthTab.AUTHENTICATION && (
           <VerificationDashboard userId={userId} />
