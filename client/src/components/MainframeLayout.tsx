@@ -144,8 +144,8 @@ export default function MainframeLayout({
         </div>
       </div>
       
-      {/* B-roll component - Top sticky menu */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-black/90 backdrop-blur-md border-b border-purple-800/50">
+      {/* B-roll component - Top sticky menu with extended scrollable items */}
+      <div className="sticky top-0 left-0 right-0 z-40 bg-black/90 backdrop-blur-md border-b border-purple-800/50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             {/* Main title and logo */}
@@ -176,41 +176,70 @@ export default function MainframeLayout({
               </div>
             </div>
             
-            {/* Navigation links */}
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-              <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30 bg-purple-900/20">
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                </svg>
-                <span className="text-sm whitespace-nowrap">Home</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30">
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
-                  <path d="m9 12 2 2 4-4"></path>
-                </svg>
-                <span className="text-sm whitespace-nowrap">Verification</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30">
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-                <span className="text-sm whitespace-nowrap">Community</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30">
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                  <path d="m21 15-5-5L5 21"></path>
-                </svg>
-                <span className="text-sm whitespace-nowrap">Visual Security</span>
+            {/* Navigation links - Now a scrollable strip */}
+            <div className="flex items-center overflow-x-auto py-1 scrollbar-hide w-full sm:w-auto max-w-full">
+              <div className="flex items-center gap-2 min-w-max">
+                <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30 bg-purple-900/20">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                  </svg>
+                  <span className="text-sm whitespace-nowrap">Home</span>
+                </div>
+                
+                <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
+                    <path d="m9 12 2 2 4-4"></path>
+                  </svg>
+                  <span className="text-sm whitespace-nowrap">Verification</span>
+                </div>
+                
+                <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                  <span className="text-sm whitespace-nowrap">Community</span>
+                </div>
+                
+                <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <path d="m21 15-5-5L5 21"></path>
+                  </svg>
+                  <span className="text-sm whitespace-nowrap">Visual Security</span>
+                </div>
+                
+                <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M16 16s-1.5-2-4-2-4 2-4 2"></path>
+                    <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                    <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                  </svg>
+                  <span className="text-sm whitespace-nowrap">About</span>
+                </div>
+                
+                <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                  </svg>
+                  <span className="text-sm whitespace-nowrap">Devices</span>
+                </div>
+                
+                <div className="flex items-center gap-2 text-purple-400 cursor-pointer px-3 py-1.5 rounded-full hover:bg-purple-900/30">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline>
+                    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
+                  </svg>
+                  <span className="text-sm whitespace-nowrap">Resources</span>
+                </div>
               </div>
             </div>
             

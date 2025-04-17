@@ -4,12 +4,13 @@ import { User } from "@/lib/types";
 import { AuthTab } from "@/lib/types";
 import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
-import { Shield, Users, Wifi, HandMetal, Building, Code, GitFork, Github } from "lucide-react";
+import { Shield, Users, Wifi, HandMetal, Building, Code, GitFork, Github, Award } from "lucide-react";
 import MainframeLayout, { MainframeBlock } from "@/components/MainframeLayout";
 import VerificationDashboard from "@/components/verification/VerificationDashboard";
 import SecurityFramework from "@/components/framework/SecurityFramework";
 import SignLanguageAuth from "@/components/auth/SignLanguageAuth";
 import DeafFirstAuth from "@/components/auth/DeafFirstAuth";
+import SecurityAchievementBadges from "@/components/badges/SecurityAchievementBadges";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
