@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Shield, Award, Lock, Eye, Fingerprint, Users, Code, Zap, Badge, Star, Check, Clock, Upload, FileCheck, ThumbsUp } from "lucide-react";
+import { Shield, Award, Lock, Eye, Fingerprint, Users, Code, Zap, Badge, Star, Check, Clock, Upload, FileCheck, ThumbsUp, Search, Scan, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -14,7 +14,7 @@ export interface SecurityBadge {
   level: 1 | 2 | 3 | 4 | 5;
   isUnlocked: boolean;
   progress: number; // 0-100 for partially completed badges
-  category: "verification" | "authentication" | "community" | "education" | "contribution";
+  category: "verification" | "authentication" | "community" | "education" | "contribution" | "discovery" | "scanning" | "implementation" | "advanced";
   colorClass: string;
   rewards: string[];
   dateEarned?: string;
@@ -153,6 +153,66 @@ export default function SecurityAchievementBadges({ userId }: SecurityAchievemen
       category: "contribution",
       colorClass: "text-emerald-500 border-emerald-500 bg-emerald-500/10",
       rewards: ["Featured content creator tag", "Content distribution priority"]
+    },
+    {
+      id: "asset-discovery-pioneer",
+      name: "Asset Discovery Pioneer",
+      description: "Successfully identified and cataloged security risks in the network",
+      icon: <Search className="h-6 w-6" />,
+      level: 3,
+      isUnlocked: false,
+      progress: 45,
+      category: "discovery",
+      colorClass: "text-amber-500 border-amber-500 bg-amber-500/10",
+      rewards: ["Access to advanced discovery tools", "Security asset mapping privileges"]
+    },
+    {
+      id: "vulnerability-hunter",
+      name: "Vulnerability Hunter",
+      description: "Located critical vulnerabilities during routine scanning sessions",
+      icon: <Scan className="h-6 w-6" />,
+      level: 4,
+      isUnlocked: false,
+      progress: 35,
+      category: "scanning",
+      colorClass: "text-teal-500 border-teal-500 bg-teal-500/10",
+      rewards: ["Priority vulnerability reporting", "Scanner optimization access"]
+    },
+    {
+      id: "oauth-implementer",
+      name: "OAuth Implementer",
+      description: "Successfully integrated secure OAuth flows into applications",
+      icon: <Key className="h-6 w-6" />,
+      level: 5,
+      isUnlocked: false,
+      progress: 15,
+      category: "implementation",
+      colorClass: "text-cyan-500 border-cyan-500 bg-cyan-500/10",
+      rewards: ["Identity Provider certification", "API security champion badge"]
+    },
+    {
+      id: "jwt-specialist",
+      name: "JWT Specialist",
+      description: "Demonstrated expertise in secure JWT implementation best practices",
+      icon: <Key className="h-6 w-6" />,
+      level: 4,
+      isUnlocked: false,
+      progress: 10,
+      category: "implementation",
+      colorClass: "text-cyan-500 border-cyan-500 bg-cyan-500/10",
+      rewards: ["Token security review privileges", "Access to advanced token rotations methods"]
+    },
+    {
+      id: "security-protector",
+      name: "Security Protector",
+      description: "Achieved excellence in implementing multiple security measures for deaf users",
+      icon: <Star className="h-6 w-6" />,
+      level: 5,
+      isUnlocked: false,
+      progress: 5,
+      category: "advanced",
+      colorClass: "text-pink-500 border-pink-500 bg-pink-500/10",
+      rewards: ["NegraRosa security advisory board consideration", "Advanced security clearance level"]
     }
   ];
   
@@ -174,7 +234,7 @@ export default function SecurityAchievementBadges({ userId }: SecurityAchievemen
   const securityScore = Math.round((currentScore / totalPossibleScore) * 100);
   
   // Calculate category percentages
-  const categories = ["verification", "authentication", "community", "education", "contribution"];
+  const categories = ["verification", "authentication", "community", "education", "contribution", "discovery", "scanning", "implementation", "advanced"];
   const categoryStats = categories.map(cat => {
     const catBadges = badges.filter(b => b.category === cat);
     const catTotal = catBadges.length * 100;
@@ -196,6 +256,10 @@ export default function SecurityAchievementBadges({ userId }: SecurityAchievemen
       case "community": return "text-purple-500";
       case "education": return "text-indigo-500";
       case "contribution": return "text-rose-500";
+      case "discovery": return "text-amber-500";
+      case "scanning": return "text-teal-500";
+      case "implementation": return "text-cyan-500";
+      case "advanced": return "text-pink-500";
       default: return "text-gray-500";
     }
   };
@@ -207,6 +271,10 @@ export default function SecurityAchievementBadges({ userId }: SecurityAchievemen
       case "community": return <Users className="h-4 w-4" />;
       case "education": return <Award className="h-4 w-4" />;
       case "contribution": return <Code className="h-4 w-4" />;
+      case "discovery": return <Search className="h-4 w-4" />;
+      case "scanning": return <Scan className="h-4 w-4" />;
+      case "implementation": return <Key className="h-4 w-4" />;
+      case "advanced": return <Star className="h-4 w-4" />;
       default: return <Badge className="h-4 w-4" />;
     }
   };
