@@ -512,6 +512,21 @@ export default function DeafFirstAuth() {
             </ul>
             
             <p>Data is stored in compliance with SOC 2 Type II standards and handled in dedicated secure enclaves with hardware-level isolation from other systems.</p>
+            
+            <div className="mt-3 flex justify-end">
+              <Button 
+                variant="link" 
+                size="sm" 
+                className="h-6 p-0 text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1"
+                onClick={() => window.open('/security-transparency', '_blank')}
+              >
+                Learn More
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M7 7h10v10"></path>
+                  <path d="M7 17 17 7"></path>
+                </svg>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -521,10 +536,31 @@ export default function DeafFirstAuth() {
         <div className="flex justify-between items-center">
           <span className="text-xs text-purple-400">Need help?</span>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-purple-400 flex items-center cursor-pointer">
-              <span className="text-lg mr-1">🤟</span>
-              <span>Video Support</span>
-            </span>
+            <div className="flex items-center gap-2">
+              <div 
+                className="h-7 w-7 rounded-full bg-purple-900/50 border border-purple-600 flex items-center justify-center cursor-pointer hover:bg-purple-800/50 transition-colors"
+                title="ASL Connect"
+                onClick={() => window.open('/asl-connect', '_blank')}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-300">
+                  <path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/>
+                  <path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>
+                </svg>
+              </div>
+              
+              <div 
+                className="h-7 w-7 rounded-full bg-purple-900/50 border border-purple-600 flex items-center justify-center cursor-pointer hover:bg-purple-800/50 transition-colors"
+                title="Q&A Support"
+                onClick={() => window.open('/support', '_blank')}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-300">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  <path d="M12 17h.01"/>
+                </svg>
+              </div>
+            </div>
+            
             <Button variant="outline" size="sm" className="text-xs h-7 gap-1 border-purple-800/50">
               <Shuffle className="h-3 w-3" />
               <span>Switch Method</span>

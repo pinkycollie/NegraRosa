@@ -161,8 +161,17 @@ export default function MainframeLayout({
               </div>
               
               <div className="sm:hidden">
-                <div className="flex items-center text-purple-400 cursor-pointer bg-purple-900/30 rounded-full px-3 py-1.5 hover:bg-purple-900/50 transition-colors">
-                  <span className="text-xl">🤟</span>
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="h-8 w-8 rounded-full bg-purple-900/50 border border-purple-600 flex items-center justify-center cursor-pointer hover:bg-purple-800/50 transition-colors"
+                    title="ASL Connect"
+                    onClick={() => window.open('/asl-connect', '_blank')}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-300">
+                      <path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/>
+                      <path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
@@ -205,11 +214,35 @@ export default function MainframeLayout({
               </div>
             </div>
             
-            {/* Sign in button */}
+            {/* Help & Connect buttons */}
             <div className="hidden sm:flex items-center gap-3">
-              <div className="flex items-center text-purple-400 cursor-pointer bg-purple-900/30 rounded-full px-3 py-1.5 hover:bg-purple-900/50 transition-colors">
-                <span className="text-xl mr-2">🤟</span>
-                <span className="font-medium">Sign In</span>
+              <div className="flex items-center gap-2">
+                <div 
+                  className="h-8 w-8 rounded-full bg-purple-900/50 border border-purple-600 flex items-center justify-center cursor-pointer hover:bg-purple-800/50 transition-colors"
+                  title="ASL Connect"
+                  onClick={() => window.open('/asl-connect', '_blank')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-300">
+                    <path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/>
+                    <path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>
+                  </svg>
+                </div>
+                
+                <div 
+                  className="h-8 w-8 rounded-full bg-purple-900/50 border border-purple-600 flex items-center justify-center cursor-pointer hover:bg-purple-800/50 transition-colors"
+                  title="Q&A Support"
+                  onClick={() => window.open('/support', '_blank')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-300">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <path d="M12 17h.01"/>
+                  </svg>
+                </div>
+                
+                <div className="flex items-center text-purple-400 cursor-pointer bg-purple-900/30 rounded-full px-3 py-1.5 hover:bg-purple-900/50 transition-colors">
+                  <span className="font-medium">Sign In</span>
+                </div>
               </div>
             </div>
           </div>

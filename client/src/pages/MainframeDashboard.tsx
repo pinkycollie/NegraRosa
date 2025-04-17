@@ -165,7 +165,7 @@ export default function MainframeDashboard({ userId }: MainframeDashboardProps) 
                 </div>
                 
                 <p className="text-gray-300 mb-4">
-                  This authentication component can be freely integrated into any security solution. It uses computer vision and gesture recognition to allow deaf users to authenticate without traditional text-based passwords.
+                  This authentication component can be freely integrated into any security solution. It provides multiple authentication methods for deaf users including gesture recognition, voice pattern analysis, visual tracking, and tactile interaction. Our transparent approach shows exactly how your biometric data is stored and protected.
                 </p>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
