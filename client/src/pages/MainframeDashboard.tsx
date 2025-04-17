@@ -529,6 +529,15 @@ export default function MainframeDashboard({ userId }: MainframeDashboardProps) 
                 </div>
               </div>
             </MainframeBlock>
+            
+            {/* Security Achievement Badges */}
+            <MainframeBlock 
+              title="Security Achievements" 
+              variant="security"
+              icon={<Award className="h-5 w-5 text-purple-500" />}
+            >
+              <SecurityAchievementBadges userId={userId} />
+            </MainframeBlock>
           </div>
         )}
       </MainframeLayout>
