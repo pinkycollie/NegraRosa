@@ -285,6 +285,18 @@ export default function SecurityAchievementBadges({ userId }: SecurityAchievemen
       category: "entrepreneur",
       colorClass: "text-orange-500 border-orange-500 bg-orange-500/10",
       rewards: ["Cold storage wallet setup guide", "Crypto transaction safety toolkit"]
+    },
+    {
+      id: "auth-protector",
+      name: "Auth Protector",
+      description: "Implemented secure authentication systems with password hashing and HTTPS for deaf businesses",
+      icon: <Key className="h-6 w-6" />,
+      level: 3,
+      isUnlocked: false,
+      progress: 35,
+      category: "entrepreneur",
+      colorClass: "text-orange-500 border-orange-500 bg-orange-500/10",
+      rewards: ["Authentication security audit", "Secure credential management guide"]
     }
   ];
   
