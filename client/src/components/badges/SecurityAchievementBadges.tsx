@@ -297,6 +297,18 @@ export default function SecurityAchievementBadges({ userId }: SecurityAchievemen
       category: "entrepreneur",
       colorClass: "text-orange-500 border-orange-500 bg-orange-500/10",
       rewards: ["Authentication security audit", "Secure credential management guide"]
+    },
+    {
+      id: "decentralized-identity",
+      name: "Identity Innovator",
+      description: "Implemented decentralized identity verification systems for deaf users with neural processing",
+      icon: <Fingerprint className="h-6 w-6" />,
+      level: 5,
+      isUnlocked: false,
+      progress: 10,
+      category: "entrepreneur",
+      colorClass: "text-orange-500 border-orange-500 bg-orange-500/10",
+      rewards: ["Decentralized identity audit", "Neural verification consultation"]
     }
   ];
   
