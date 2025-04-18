@@ -9,6 +9,7 @@ import MainframeDashboard from "@/pages/MainframeDashboard";
 import WebhookManagement from "@/pages/WebhookManagement";
 import AccessibilityPage from "@/pages/AccessibilityPage";
 import PricingPage from "@/pages/PricingPage";
+import IndividualIdPage from "@/pages/IndividualIdPage";
 import SupportBubble from "@/components/SupportBubble";
 import SmoothScrollLink from "@/components/SmoothScrollLink";
 import ScrollToTop from "@/components/ScrollToTop";
