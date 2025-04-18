@@ -6,32 +6,51 @@ import { Check, Info, AlertCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import MainframeLayout from "@/components/MainframeLayout";
 
-// Define pricing tiers based on organization size
+// Define pricing tiers based on organization type and size
 const pricingTiers = [
   {
-    name: "Small Organization",
-    staffSize: "30-75",
-    price: 149,
+    name: "Startup",
+    staffSize: "1-10",
+    price: 79,
     interval: "month",
-    description: "For deaf-run organizations with 30-75 staff members.",
+    description: "For deaf-led startups just beginning their security journey.",
     features: [
-      "Basic security assessment",
+      "Essential security assessment",
       "Multi-factor authentication",
       "Visual security guidance",
       "Email support",
       "Deaf-first interface",
-      "Security badges for up to 10 managers"
+      "Basic security monitoring"
     ],
     cta: "Get Started",
     popular: false,
     badge: null
   },
   {
-    name: "Mid-Size Organization",
-    staffSize: "76-200",
-    price: 299,
+    name: "Small Business",
+    staffSize: "11-50",
+    price: 149,
     interval: "month",
-    description: "For growing deaf-run organizations with 76-200 staff members.",
+    description: "For small deaf-run businesses and organizations.",
+    features: [
+      "Comprehensive security assessment",
+      "Multi-factor authentication",
+      "End-to-end encryption basics",
+      "Visual security guidance",
+      "Email & chat support",
+      "Deaf-first interface",
+      "Security badges for managers"
+    ],
+    cta: "Start Free Trial",
+    popular: true,
+    badge: "Most Popular"
+  },
+  {
+    name: "Medium Organization",
+    staffSize: "51-200",
+    price: 349,
+    interval: "month",
+    description: "For growing deaf-run organizations with complex needs.",
     features: [
       "Advanced security assessment",
       "End-to-end encryption",
@@ -43,15 +62,15 @@ const pricingTiers = [
       "Department-level security zones"
     ],
     cta: "Start Free Trial",
-    popular: true,
-    badge: "Most Popular"
+    popular: false,
+    badge: null
   },
   {
-    name: "Large Organization",
+    name: "Enterprise",
     staffSize: "201-400+",
-    price: 599,
+    price: 749,
     interval: "month",
-    description: "For larger deaf-run organizations with 201-400+ staff members.",
+    description: "For large organizations with enterprise-grade security needs.",
     features: [
       "Complete security suite",
       "Custom security policies",
@@ -66,6 +85,58 @@ const pricingTiers = [
     cta: "Contact Sales",
     popular: false,
     badge: "Enterprise"
+  }
+];
+
+// Define special pricing tiers
+const specialPricingTiers = [
+  {
+    name: "Non-Profit",
+    price: 99,
+    interval: "month",
+    discount: "35% off regular pricing",
+    description: "Special pricing for deaf-focused non-profit organizations.",
+    features: [
+      "Tailored to non-profit needs",
+      "All features of Small Business plan",
+      "Grant compliance features",
+      "Donor data protection",
+      "Additional seats at no cost"
+    ],
+    cta: "Apply Now",
+    badge: "Discounted"
+  },
+  {
+    name: "Chamber of Commerce",
+    price: 129,
+    interval: "month",
+    discount: "25% off regular pricing",
+    description: "For deaf-community chambers and business associations.",
+    features: [
+      "Multi-organization dashboard",
+      "Member business monitoring",
+      "Community security alerts",
+      "Group training sessions",
+      "Security newsletters"
+    ],
+    cta: "Learn More",
+    badge: "Specialized"
+  },
+  {
+    name: "Educational Institution",
+    price: 199,
+    interval: "month",
+    discount: "45% off enterprise pricing",
+    description: "For deaf schools, colleges and educational programs.",
+    features: [
+      "Student data protection",
+      "Classroom security tools",
+      "Visual learning materials",
+      "Faculty & staff training",
+      "Campus-wide protection"
+    ],
+    cta: "Apply Now",
+    badge: "Education"
   }
 ];
 
@@ -89,8 +160,11 @@ export default function PricingPage() {
           </p>
         </div>
 
-        {/* Pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        {/* Organization Size Pricing Tiers */}
+        <h2 className="text-2xl font-bold mb-6 text-center">Business & Organization Pricing</h2>
+        <p className="text-gray-600 mb-8 text-center">Choose the plan that fits your organization's size and security needs</p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           {pricingTiers.map((tier, index) => (
             <Card 
               key={index} 
@@ -101,6 +175,9 @@ export default function PricingPage() {
               )}
               <CardHeader>
                 <CardTitle>{tier.name}</CardTitle>
+                <div className="text-sm font-medium text-gray-500 mt-1">
+                  {tier.staffSize} staff members
+                </div>
                 <div className="mt-4">
                   <span className="text-4xl font-bold">${tier.price}</span>
                   <span className="text-gray-500">/{tier.interval}</span>
@@ -119,6 +196,49 @@ export default function PricingPage() {
               </CardContent>
               <CardFooter>
                 <Button className={`w-full ${tier.popular ? 'bg-purple-600 hover:bg-purple-700' : ''}`}>
+                  {tier.cta}
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+        
+        {/* Special Pricing Tiers */}
+        <h2 className="text-2xl font-bold my-8 text-center">Special Organization Pricing</h2>
+        <p className="text-gray-600 mb-8 text-center">Specialized pricing for non-profits, chambers, and educational institutions</p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+          {specialPricingTiers.map((tier, index) => (
+            <Card 
+              key={index} 
+              className="border border-purple-300 relative"
+            >
+              {tier.badge && (
+                <Badge className="absolute top-4 right-4 bg-purple-500">{tier.badge}</Badge>
+              )}
+              <CardHeader className="bg-purple-50">
+                <CardTitle>{tier.name}</CardTitle>
+                <div className="text-sm font-medium text-purple-700 mt-1">
+                  {tier.discount}
+                </div>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold">${tier.price}</span>
+                  <span className="text-gray-500">/{tier.interval}</span>
+                </div>
+                <CardDescription className="mt-4">{tier.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3">
+                  {tier.features.map((feature, i) => (
+                    <li key={i} className="flex items-start">
+                      <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <Button className="w-full bg-purple-600 hover:bg-purple-700">
                   {tier.cta}
                 </Button>
               </CardFooter>

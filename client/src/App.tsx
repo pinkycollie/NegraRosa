@@ -8,16 +8,19 @@ import MainframeDashboard from "@/pages/MainframeDashboard";
 import WebhookManagement from "@/pages/WebhookManagement";
 import AccessibilityPage from "@/pages/AccessibilityPage";
 import PricingPage from "@/pages/PricingPage";
+import SupportBubble from "@/components/SupportBubble";
 
 function MainNav() {
   return (
-    <nav className="bg-background border-b border-border">
+    <nav className="bg-background border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between">
           <div className="flex items-center">
             <span className="text-lg font-semibold">NegraRosa Security</span>
           </div>
-          <div className="flex items-center space-x-4">
+          
+          {/* Desktop Menu */}
+          <div className="hidden lg:flex items-center overflow-x-auto whitespace-nowrap space-x-6 py-2 px-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
             <Link href="/">
               <span className="text-sm font-medium hover:underline cursor-pointer">Home</span>
             </Link>
@@ -55,6 +58,9 @@ function MainNav() {
                 </Link>
               </div>
             </div>
+            <Link href="/pricing">
+              <span className="text-sm font-medium hover:underline cursor-pointer">Pricing</span>
+            </Link>
             <div className="relative group">
               <span className="text-sm font-medium cursor-pointer">Community</span>
               <div className="absolute hidden group-hover:block bg-background border border-border rounded shadow-lg p-2 z-10 w-48">
@@ -75,6 +81,61 @@ function MainNav() {
             <Link href="/login">
               <span className="text-sm font-medium hover:underline cursor-pointer">Login / Register</span>
             </Link>
+          </div>
+          
+          {/* Mobile Menu Button */}
+          <div className="lg:hidden flex items-center">
+            <button className="text-gray-500 hover:text-gray-700 focus:outline-none">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+          
+          {/* Mobile Menu (hidden by default) */}
+          <div className="lg:hidden hidden w-full mt-2 pt-2 border-t">
+            <div className="flex flex-col space-y-3 pb-3">
+              <Link href="/">
+                <span className="text-sm font-medium hover:underline cursor-pointer">Home</span>
+              </Link>
+              <Link href="/mainframe">
+                <span className="text-sm font-medium hover:underline cursor-pointer">For Organizations</span>
+              </Link>
+              <Link href="/pricing">
+                <span className="text-sm font-medium hover:underline cursor-pointer">Pricing</span>
+              </Link>
+              <Link href="/webhooks">
+                <span className="text-sm font-medium hover:underline cursor-pointer">Integration</span>
+              </Link>
+              <Link href="/login">
+                <span className="text-sm font-medium hover:underline cursor-pointer">Login / Register</span>
+              </Link>
+              <details className="cursor-pointer">
+                <summary className="text-sm font-medium">Security Features</summary>
+                <div className="ml-4 mt-2 space-y-2">
+                  <Link href="/demo">
+                    <span className="block text-sm hover:underline">Demo</span>
+                  </Link>
+                  <Link href="#">
+                    <span className="block text-sm hover:underline">Authentication</span>
+                  </Link>
+                  <Link href="#">
+                    <span className="block text-sm hover:underline">Data Protection</span>
+                  </Link>
+                </div>
+              </details>
+              <details className="cursor-pointer">
+                <summary className="text-sm font-medium">Accessibility</summary>
+                <div className="ml-4 mt-2 space-y-2">
+                  <Link href="/accessibility">
+                    <span className="block text-sm hover:underline">Voice & Visual Guidance</span>
+                  </Link>
+                  <Link href="#">
+                    <span className="block text-sm hover:underline">Settings</span>
+                  </Link>
+                </div>
+              </details>
+            </div>
           </div>
         </div>
       </div>
@@ -171,6 +232,9 @@ function Router({ initialUserId }: { initialUserId: number }) {
           </Route>
           <Route path="/accessibility">
             <AccessibilityPage />
+          </Route>
+          <Route path="/pricing">
+            <PricingPage />
           </Route>
           <Route path="/demo">
             <div className="container mx-auto py-8">
@@ -311,6 +375,20 @@ function App({ initialUserId }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <Router initialUserId={initialUserId} />
+      <SupportBubble 
+        onASLRequest={() => {
+          console.log("ASL support requested");
+          // TODO: Implement ASL support request functionality
+        }}
+        onVideoChat={() => {
+          console.log("Video chat requested");
+          // TODO: Implement video chat functionality
+        }}
+        onTextChat={() => {
+          console.log("Text chat requested");
+          // TODO: Implement text chat functionality
+        }}
+      />
       <Toaster />
     </QueryClientProvider>
   );
