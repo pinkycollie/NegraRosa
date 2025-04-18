@@ -17,6 +17,7 @@ import { csvImportService } from "./services/CSVImportService";
 import { xanoService } from "./services/XanoService";
 import { z } from "zod";
 import apiV1Router from "./api/v1"; // Import MBTQ Core Services API
+import accessibilityRouter from "./api/accessibility"; // Import Accessibility API
 import { 
   insertUserSchema, 
   insertVerificationSchema, 
@@ -58,6 +59,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Mount the MBTQ Core Services API v1 router
   apiRouter.use("/v1", apiV1Router);
+  
+  // Mount the Accessibility API router
+  apiRouter.use("/accessibility", accessibilityRouter);
   
   // Apply JSON middleware
   apiRouter.use(json());
