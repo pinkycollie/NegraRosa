@@ -249,6 +249,42 @@ export default function SecurityAchievementBadges({ userId }: SecurityAchievemen
       category: "entrepreneur",
       colorClass: "text-orange-500 border-orange-500 bg-orange-500/10",
       rewards: ["Data encryption toolkit", "Privacy compliance certification"]
+    },
+    {
+      id: "blockchain-guardian",
+      name: "Blockchain Guardian",
+      description: "Implemented secure smart contracts and Web3 protocols for deaf entrepreneurs",
+      icon: <Code className="h-6 w-6" />,
+      level: 5,
+      isUnlocked: false,
+      progress: 15,
+      category: "entrepreneur",
+      colorClass: "text-orange-500 border-orange-500 bg-orange-500/10",
+      rewards: ["Smart contract security audit", "Decentralized identity toolkit"]
+    },
+    {
+      id: "web3-innovator",
+      name: "Web3 Innovator",
+      description: "Created secure decentralized applications that enhance accessibility for deaf users",
+      icon: <ThumbsUp className="h-6 w-6" />,
+      level: 4,
+      isUnlocked: false, 
+      progress: 20,
+      category: "entrepreneur",
+      colorClass: "text-orange-500 border-orange-500 bg-orange-500/10",
+      rewards: ["Token-gated community access", "Blockchain security workshop"]
+    },
+    {
+      id: "wallet-defender",
+      name: "Wallet Defender",
+      description: "Protected cryptocurrency wallets with enhanced security measures for deaf business owners",
+      icon: <Lock className="h-6 w-6" />,
+      level: 3,
+      isUnlocked: false,
+      progress: 25,
+      category: "entrepreneur",
+      colorClass: "text-orange-500 border-orange-500 bg-orange-500/10",
+      rewards: ["Cold storage wallet setup guide", "Crypto transaction safety toolkit"]
     }
   ];
   
