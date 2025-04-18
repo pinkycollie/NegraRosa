@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import MainframeDashboard from "@/pages/MainframeDashboard";
 import WebhookManagement from "@/pages/WebhookManagement";
+import AccessibilityPage from "@/pages/AccessibilityPage";
 
 function MainNav() {
   return (
@@ -27,6 +28,9 @@ function MainNav() {
             </Link>
             <Link href="/webhooks">
               <span className="text-sm font-medium hover:underline cursor-pointer">Integration Hooks</span>
+            </Link>
+            <Link href="/accessibility">
+              <span className="text-sm font-medium hover:underline cursor-pointer">Accessibility</span>
             </Link>
             <Link href="/login">
               <span className="text-sm font-medium hover:underline cursor-pointer">Login / Register</span>
@@ -78,6 +82,9 @@ function Router({ initialUserId }: { initialUserId: number }) {
           <Route path="/webhooks">
             <WebhookManagement />
           </Route>
+          <Route path="/accessibility">
+            <AccessibilityPage />
+          </Route>
           <Route path="/demo">
             <div className="container mx-auto py-8">
               <h1 className="text-3xl font-bold mb-6">Interactive Demo</h1>
@@ -118,6 +125,7 @@ function Router({ initialUserId }: { initialUserId: number }) {
                     <li><a href="#" className="text-primary hover:underline">Risk Rates</a></li>
                     <li><a href="#" className="text-primary hover:underline">Fraud Detection</a></li>
                     <li><a href="#" className="text-primary hover:underline">E&O Protection</a></li>
+                    <li><a href="/accessibility" className="text-primary hover:underline">Accessibility Voice Guidance</a></li>
                   </ul>
                 </div>
                 <div>

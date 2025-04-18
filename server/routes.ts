@@ -17,7 +17,7 @@ import { csvImportService } from "./services/CSVImportService";
 import { xanoService } from "./services/XanoService";
 import { z } from "zod";
 import apiV1Router from "./api/v1"; // Import MBTQ Core Services API
-import accessibilityRouter from "./api/accessibility"; // Import Accessibility API
+import { accessibilityRouter } from "./api/accessibility"; // Import Accessibility API
 import { 
   insertUserSchema, 
   insertVerificationSchema, 
