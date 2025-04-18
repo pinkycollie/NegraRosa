@@ -1,4 +1,5 @@
 import { Switch, Route, useLocation, Link } from "wouter";
+import { useState, useEffect, useRef } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -9,132 +10,310 @@ import WebhookManagement from "@/pages/WebhookManagement";
 import AccessibilityPage from "@/pages/AccessibilityPage";
 import PricingPage from "@/pages/PricingPage";
 import SupportBubble from "@/components/SupportBubble";
+import SmoothScrollLink from "@/components/SmoothScrollLink";
+import ScrollToTop from "@/components/ScrollToTop";
+import { Menu, X, ChevronRight, ChevronDown } from "lucide-react";
+import "@/styles/ScrollStyles.css";
 
 function MainNav() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [location] = useLocation();
+
+  // Track dropdown states for mobile accordions
+  const [dropdowns, setDropdowns] = useState({
+    security: false,
+    accessibility: false,
+    community: false
+  });
+
+  // Toggle a specific dropdown
+  const toggleDropdown = (dropdown: keyof typeof dropdowns) => {
+    setDropdowns(prev => ({
+      ...prev,
+      [dropdown]: !prev[dropdown]
+    }));
+  };
+
+  // Handle scroll events
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Scroll to section when clicking on smooth scroll links
+  const scrollToSection = (sectionId: string) => {
+    setIsMenuOpen(false);
+    setActiveSection(sectionId);
+    
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Reset menu state when route changes
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location]);
+
   return (
-    <nav className="bg-background border-b border-border sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-3">
+    <nav 
+      className={`bg-background border-b border-border sticky top-0 z-50 transition-all duration-200 ${
+        scrolled ? 'shadow-md py-2' : 'py-4'
+      }`}
+      ref={menuRef}
+    >
+      <div className="container mx-auto px-4">
         <div className="flex flex-wrap items-center justify-between">
           <div className="flex items-center">
-            <span className="text-lg font-semibold">NegraRosa Security</span>
+            <Link href="/">
+              <span className="text-lg font-semibold cursor-pointer">NegraRosa Security</span>
+            </Link>
           </div>
           
           {/* Desktop Menu */}
-          <div className="hidden lg:flex items-center overflow-x-auto whitespace-nowrap space-x-6 py-2 px-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-            <Link href="/">
-              <span className="text-sm font-medium hover:underline cursor-pointer">Home</span>
-            </Link>
-            <Link href="/mainframe">
-              <span className="text-sm font-medium hover:underline cursor-pointer">For Organizations</span>
-            </Link>
-            <div className="relative group">
-              <span className="text-sm font-medium cursor-pointer">Security Features</span>
-              <div className="absolute hidden group-hover:block bg-background border border-border rounded shadow-lg p-2 z-10 w-48">
-                <Link href="/demo">
-                  <span className="block px-2 py-1 text-sm hover:bg-gray-100 rounded">Demo</span>
-                </Link>
-                <Link href="#">
-                  <span className="block px-2 py-1 text-sm hover:bg-gray-100 rounded">Authentication</span>
-                </Link>
-                <Link href="#">
-                  <span className="block px-2 py-1 text-sm hover:bg-gray-100 rounded">Data Protection</span>
-                </Link>
-                <Link href="#">
-                  <span className="block px-2 py-1 text-sm hover:bg-gray-100 rounded">Risk Management</span>
-                </Link>
+          <div className="hidden lg:flex items-center overflow-x-auto scrollbar-thin scrollbar-thumb-purple-300 scrollbar-track-transparent">
+            <div className="flex space-x-6 py-2 px-4 whitespace-nowrap">
+              <SmoothScrollLink href="/" className="text-sm font-medium hover:text-purple-600 transition-colors">
+                Home
+              </SmoothScrollLink>
+              
+              <SmoothScrollLink href="/mainframe" className="text-sm font-medium hover:text-purple-600 transition-colors">
+                For Organizations
+              </SmoothScrollLink>
+              
+              <div className="relative group">
+                <button className="text-sm font-medium hover:text-purple-600 transition-colors flex items-center">
+                  Security Features
+                  <ChevronDown className="ml-1 h-4 w-4 transform group-hover:rotate-180 transition-transform" />
+                </button>
+                <div className="absolute left-0 mt-2 hidden group-hover:block bg-white border border-border rounded-md shadow-lg p-2 z-10 w-48 transition-all">
+                  <SmoothScrollLink href="/demo" className="block px-3 py-2 text-sm hover:bg-purple-50 rounded-md">
+                    Demo
+                  </SmoothScrollLink>
+                  <SmoothScrollLink href="#" className="block px-3 py-2 text-sm hover:bg-purple-50 rounded-md">
+                    Authentication
+                  </SmoothScrollLink>
+                  <SmoothScrollLink href="#" className="block px-3 py-2 text-sm hover:bg-purple-50 rounded-md">
+                    Data Protection
+                  </SmoothScrollLink>
+                  <SmoothScrollLink href="#" className="block px-3 py-2 text-sm hover:bg-purple-50 rounded-md">
+                    Risk Management
+                  </SmoothScrollLink>
+                </div>
               </div>
-            </div>
-            <div className="relative group">
-              <span className="text-sm font-medium cursor-pointer">Accessibility</span>
-              <div className="absolute hidden group-hover:block bg-background border border-border rounded shadow-lg p-2 z-10 w-48">
-                <Link href="/accessibility">
-                  <span className="block px-2 py-1 text-sm hover:bg-gray-100 rounded">Voice & Visual Guidance</span>
-                </Link>
-                <Link href="#">
-                  <span className="block px-2 py-1 text-sm hover:bg-gray-100 rounded">Accessibility Settings</span>
-                </Link>
-                <Link href="#">
-                  <span className="block px-2 py-1 text-sm hover:bg-gray-100 rounded">Resources</span>
-                </Link>
+              
+              <div className="relative group">
+                <button className="text-sm font-medium hover:text-purple-600 transition-colors flex items-center">
+                  Accessibility
+                  <ChevronDown className="ml-1 h-4 w-4 transform group-hover:rotate-180 transition-transform" />
+                </button>
+                <div className="absolute left-0 mt-2 hidden group-hover:block bg-white border border-border rounded-md shadow-lg p-2 z-10 w-48 transition-all">
+                  <SmoothScrollLink href="/accessibility" className="block px-3 py-2 text-sm hover:bg-purple-50 rounded-md">
+                    Voice & Visual Guidance
+                  </SmoothScrollLink>
+                  <SmoothScrollLink href="#" className="block px-3 py-2 text-sm hover:bg-purple-50 rounded-md">
+                    Accessibility Settings
+                  </SmoothScrollLink>
+                  <SmoothScrollLink href="#" className="block px-3 py-2 text-sm hover:bg-purple-50 rounded-md">
+                    Resources
+                  </SmoothScrollLink>
+                </div>
               </div>
-            </div>
-            <Link href="/pricing">
-              <span className="text-sm font-medium hover:underline cursor-pointer">Pricing</span>
-            </Link>
-            <div className="relative group">
-              <span className="text-sm font-medium cursor-pointer">Community</span>
-              <div className="absolute hidden group-hover:block bg-background border border-border rounded shadow-lg p-2 z-10 w-48">
-                <Link href="#">
-                  <span className="block px-2 py-1 text-sm hover:bg-gray-100 rounded">Directory</span>
-                </Link>
-                <Link href="#">
-                  <span className="block px-2 py-1 text-sm hover:bg-gray-100 rounded">Events</span>
-                </Link>
-                <Link href="#">
-                  <span className="block px-2 py-1 text-sm hover:bg-gray-100 rounded">Resources</span>
-                </Link>
+              
+              <SmoothScrollLink href="/pricing" className="text-sm font-medium hover:text-purple-600 transition-colors">
+                Pricing
+              </SmoothScrollLink>
+              
+              <div className="relative group">
+                <button className="text-sm font-medium hover:text-purple-600 transition-colors flex items-center">
+                  Community
+                  <ChevronDown className="ml-1 h-4 w-4 transform group-hover:rotate-180 transition-transform" />
+                </button>
+                <div className="absolute left-0 mt-2 hidden group-hover:block bg-white border border-border rounded-md shadow-lg p-2 z-10 w-48 transition-all">
+                  <SmoothScrollLink href="#" className="block px-3 py-2 text-sm hover:bg-purple-50 rounded-md">
+                    Directory
+                  </SmoothScrollLink>
+                  <SmoothScrollLink href="#" className="block px-3 py-2 text-sm hover:bg-purple-50 rounded-md">
+                    Events
+                  </SmoothScrollLink>
+                  <SmoothScrollLink href="#" className="block px-3 py-2 text-sm hover:bg-purple-50 rounded-md">
+                    Resources
+                  </SmoothScrollLink>
+                </div>
               </div>
+              
+              <SmoothScrollLink href="/webhooks" className="text-sm font-medium hover:text-purple-600 transition-colors">
+                Integration
+              </SmoothScrollLink>
             </div>
-            <Link href="/webhooks">
-              <span className="text-sm font-medium hover:underline cursor-pointer">Integration</span>
-            </Link>
-            <Link href="/login">
-              <span className="text-sm font-medium hover:underline cursor-pointer">Login / Register</span>
-            </Link>
+            
+            <div className="ml-6 pl-6 border-l">
+              <SmoothScrollLink 
+                href="/login" 
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+              >
+                Login / Register
+              </SmoothScrollLink>
+            </div>
           </div>
           
           {/* Mobile Menu Button */}
           <div className="lg:hidden flex items-center">
-            <button className="text-gray-500 hover:text-gray-700 focus:outline-none">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)} 
+              className="text-gray-700 hover:text-purple-600 focus:outline-none transition-colors"
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            >
+              {isMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </button>
           </div>
-          
-          {/* Mobile Menu (hidden by default) */}
-          <div className="lg:hidden hidden w-full mt-2 pt-2 border-t">
-            <div className="flex flex-col space-y-3 pb-3">
-              <Link href="/">
-                <span className="text-sm font-medium hover:underline cursor-pointer">Home</span>
-              </Link>
-              <Link href="/mainframe">
-                <span className="text-sm font-medium hover:underline cursor-pointer">For Organizations</span>
-              </Link>
-              <Link href="/pricing">
-                <span className="text-sm font-medium hover:underline cursor-pointer">Pricing</span>
-              </Link>
-              <Link href="/webhooks">
-                <span className="text-sm font-medium hover:underline cursor-pointer">Integration</span>
-              </Link>
-              <Link href="/login">
-                <span className="text-sm font-medium hover:underline cursor-pointer">Login / Register</span>
-              </Link>
-              <details className="cursor-pointer">
-                <summary className="text-sm font-medium">Security Features</summary>
-                <div className="ml-4 mt-2 space-y-2">
-                  <Link href="/demo">
-                    <span className="block text-sm hover:underline">Demo</span>
-                  </Link>
-                  <Link href="#">
-                    <span className="block text-sm hover:underline">Authentication</span>
-                  </Link>
-                  <Link href="#">
-                    <span className="block text-sm hover:underline">Data Protection</span>
-                  </Link>
-                </div>
-              </details>
-              <details className="cursor-pointer">
-                <summary className="text-sm font-medium">Accessibility</summary>
-                <div className="ml-4 mt-2 space-y-2">
-                  <Link href="/accessibility">
-                    <span className="block text-sm hover:underline">Voice & Visual Guidance</span>
-                  </Link>
-                  <Link href="#">
-                    <span className="block text-sm hover:underline">Settings</span>
-                  </Link>
-                </div>
-              </details>
+        </div>
+        
+        {/* Mobile Menu */}
+        <div 
+          className={`lg:hidden overflow-hidden transition-all duration-300 ease-in-out ${
+            isMenuOpen ? 'max-h-screen opacity-100 mt-4 border-t pt-4' : 'max-h-0 opacity-0'
+          }`}
+        >
+          <div className="flex flex-col space-y-4 pb-5">
+            <SmoothScrollLink 
+              href="/" 
+              className="text-sm font-medium py-2 hover:text-purple-600 transition-colors"
+            >
+              Home
+            </SmoothScrollLink>
+            
+            <SmoothScrollLink 
+              href="/mainframe" 
+              className="text-sm font-medium py-2 hover:text-purple-600 transition-colors"
+            >
+              For Organizations
+            </SmoothScrollLink>
+            
+            <div className="border-b border-gray-100 py-1">
+              <button 
+                onClick={() => toggleDropdown('security')}
+                className="flex items-center justify-between w-full text-sm font-medium py-2 hover:text-purple-600 transition-colors"
+              >
+                <span>Security Features</span>
+                <ChevronDown className={`h-4 w-4 transform transition-transform ${dropdowns.security ? 'rotate-180' : ''}`} />
+              </button>
+              
+              <div className={`pl-4 space-y-2 overflow-hidden transition-all duration-200 ${
+                dropdowns.security ? 'max-h-56 mt-2 mb-3' : 'max-h-0'
+              }`}>
+                <SmoothScrollLink href="/demo" className="block py-1 text-sm hover:text-purple-600 transition-colors">
+                  Demo
+                </SmoothScrollLink>
+                <SmoothScrollLink href="#" className="block py-1 text-sm hover:text-purple-600 transition-colors">
+                  Authentication
+                </SmoothScrollLink>
+                <SmoothScrollLink href="#" className="block py-1 text-sm hover:text-purple-600 transition-colors">
+                  Data Protection
+                </SmoothScrollLink>
+                <SmoothScrollLink href="#" className="block py-1 text-sm hover:text-purple-600 transition-colors">
+                  Risk Management
+                </SmoothScrollLink>
+              </div>
+            </div>
+            
+            <div className="border-b border-gray-100 py-1">
+              <button 
+                onClick={() => toggleDropdown('accessibility')}
+                className="flex items-center justify-between w-full text-sm font-medium py-2 hover:text-purple-600 transition-colors"
+              >
+                <span>Accessibility</span>
+                <ChevronDown className={`h-4 w-4 transform transition-transform ${dropdowns.accessibility ? 'rotate-180' : ''}`} />
+              </button>
+              
+              <div className={`pl-4 space-y-2 overflow-hidden transition-all duration-200 ${
+                dropdowns.accessibility ? 'max-h-56 mt-2 mb-3' : 'max-h-0'
+              }`}>
+                <SmoothScrollLink href="/accessibility" className="block py-1 text-sm hover:text-purple-600 transition-colors">
+                  Voice & Visual Guidance
+                </SmoothScrollLink>
+                <SmoothScrollLink href="#" className="block py-1 text-sm hover:text-purple-600 transition-colors">
+                  Accessibility Settings
+                </SmoothScrollLink>
+                <SmoothScrollLink href="#" className="block py-1 text-sm hover:text-purple-600 transition-colors">
+                  Resources
+                </SmoothScrollLink>
+              </div>
+            </div>
+            
+            <SmoothScrollLink 
+              href="/pricing" 
+              className="text-sm font-medium py-2 hover:text-purple-600 transition-colors"
+            >
+              Pricing
+            </SmoothScrollLink>
+            
+            <div className="border-b border-gray-100 py-1">
+              <button 
+                onClick={() => toggleDropdown('community')}
+                className="flex items-center justify-between w-full text-sm font-medium py-2 hover:text-purple-600 transition-colors"
+              >
+                <span>Community</span>
+                <ChevronDown className={`h-4 w-4 transform transition-transform ${dropdowns.community ? 'rotate-180' : ''}`} />
+              </button>
+              
+              <div className={`pl-4 space-y-2 overflow-hidden transition-all duration-200 ${
+                dropdowns.community ? 'max-h-56 mt-2 mb-3' : 'max-h-0'
+              }`}>
+                <SmoothScrollLink href="#" className="block py-1 text-sm hover:text-purple-600 transition-colors">
+                  Directory
+                </SmoothScrollLink>
+                <SmoothScrollLink href="#" className="block py-1 text-sm hover:text-purple-600 transition-colors">
+                  Events
+                </SmoothScrollLink>
+                <SmoothScrollLink href="#" className="block py-1 text-sm hover:text-purple-600 transition-colors">
+                  Resources
+                </SmoothScrollLink>
+              </div>
+            </div>
+            
+            <SmoothScrollLink 
+              href="/webhooks" 
+              className="text-sm font-medium py-2 hover:text-purple-600 transition-colors"
+            >
+              Integration
+            </SmoothScrollLink>
+            
+            <div className="pt-4">
+              <SmoothScrollLink 
+                href="/login" 
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+              >
+                Login / Register
+              </SmoothScrollLink>
             </div>
           </div>
         </div>
@@ -375,6 +554,7 @@ function App({ initialUserId }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <Router initialUserId={initialUserId} />
+      <ScrollToTop showBelow={250} />
       <SupportBubble 
         onASLRequest={() => {
           console.log("ASL support requested");
