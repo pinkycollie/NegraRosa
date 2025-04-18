@@ -116,6 +116,9 @@ function MainNav() {
                   <SmoothScrollLink href="/demo" className="block px-3 py-2 text-sm hover:bg-purple-50 rounded-md">
                     Demo
                   </SmoothScrollLink>
+                  <SmoothScrollLink href="/individual-id" className="block px-3 py-2 text-sm hover:bg-purple-50 rounded-md">
+                    Individual ID
+                  </SmoothScrollLink>
                   <SmoothScrollLink href="#" className="block px-3 py-2 text-sm hover:bg-purple-50 rounded-md">
                     Authentication
                   </SmoothScrollLink>
@@ -234,6 +237,9 @@ function MainNav() {
               }`}>
                 <SmoothScrollLink href="/demo" className="block py-1 text-sm hover:text-purple-600 transition-colors">
                   Demo
+                </SmoothScrollLink>
+                <SmoothScrollLink href="/individual-id" className="block py-1 text-sm hover:text-purple-600 transition-colors">
+                  Individual ID
                 </SmoothScrollLink>
                 <SmoothScrollLink href="#" className="block py-1 text-sm hover:text-purple-600 transition-colors">
                   Authentication
@@ -354,6 +360,7 @@ function Footer() {
             <ul className="space-y-2">
               <li><Link href="/"><span className="text-sm text-gray-300 hover:text-white">Home</span></Link></li>
               <li><Link href="/accessibility"><span className="text-sm text-gray-300 hover:text-white">Accessibility</span></Link></li>
+              <li><Link href="/individual-id"><span className="text-sm text-gray-300 hover:text-white">Individual ID</span></Link></li>
               <li><Link href="/demo"><span className="text-sm text-gray-300 hover:text-white">Demo</span></Link></li>
               <li><Link href="/login"><span className="text-sm text-gray-300 hover:text-white">Login/Register</span></Link></li>
               <li><Link href="/sitemap"><span className="text-sm text-gray-300 hover:text-white">Sitemap</span></Link></li>
@@ -417,6 +424,9 @@ function Router({ initialUserId }: { initialUserId: number }) {
           <Route path="/pricing">
             <PricingPage />
           </Route>
+          <Route path="/individual-id">
+            <IndividualIdPage />
+          </Route>
           <Route path="/demo">
             <div className="container mx-auto py-8">
               <h1 className="text-3xl font-bold mb-6">Interactive Demo</h1>
@@ -468,6 +478,7 @@ function Router({ initialUserId }: { initialUserId: number }) {
                 <div>
                   <h3 className="text-lg font-medium mb-3 border-b pb-2">Security Features</h3>
                   <ul className="space-y-2">
+                    <li><a href="/individual-id" className="text-primary hover:underline">Individual ID System</a></li>
                     <li><a href="#" className="text-primary hover:underline">Authentication</a></li>
                     <li><a href="#" className="text-primary hover:underline">Data Protection</a></li>
                     <li><a href="#" className="text-primary hover:underline">Risk Management</a></li>
