@@ -12,6 +12,7 @@ import PricingPage from "@/pages/PricingPage";
 import SupportBubble from "@/components/SupportBubble";
 import SmoothScrollLink from "@/components/SmoothScrollLink";
 import ScrollToTop from "@/components/ScrollToTop";
+import PinkSyncWidget from "@/components/PinkSyncWidget";
 import { Menu, X, ChevronRight, ChevronDown } from "lucide-react";
 import "@/styles/ScrollStyles.css";
 
@@ -555,6 +556,7 @@ function App({ initialUserId }: AppProps) {
     <QueryClientProvider client={queryClient}>
       <Router initialUserId={initialUserId} />
       <ScrollToTop showBelow={250} />
+      <PinkSyncWidget />
       <SupportBubble 
         onASLRequest={() => {
           console.log("ASL support requested");

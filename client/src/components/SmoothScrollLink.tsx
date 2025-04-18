@@ -1,59 +1,52 @@
-import { Link, useLocation } from "wouter";
-import { ReactNode } from "react";
+import { Link } from 'wouter';
+import { ReactNode, MouseEvent } from 'react';
 
 interface SmoothScrollLinkProps {
   href: string;
-  children: ReactNode;
   className?: string;
-  activeClassName?: string;
-  scrollToTop?: boolean;
+  children: ReactNode;
   onClick?: () => void;
 }
 
-export default function SmoothScrollLink({ 
-  href, 
-  children, 
-  className = "", 
-  activeClassName = "text-purple-600 font-medium",
-  scrollToTop = true,
-  onClick
-}: SmoothScrollLinkProps) {
-  const [location] = useLocation();
-  const isActive = location === href;
-  
-  const handleClick = (e: React.MouseEvent) => {
-    // If this is an anchor link, handle smooth scrolling
-    if (href.startsWith('#') && document.querySelector(href)) {
+const SmoothScrollLink = ({ href, className, children, onClick }: SmoothScrollLinkProps) => {
+  const handleClick = (e: MouseEvent<HTMLAnchorElement>) => {
+    // If it's a hash link (in-page navigation)
+    if (href.startsWith('#')) {
       e.preventDefault();
-      const target = document.querySelector(href);
-      if (target) {
-        target.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
+      
+      const targetId = href.substring(1);
+      const targetElement = document.getElementById(targetId);
+      
+      if (targetElement) {
+        targetElement.scrollIntoView({
+          behavior: 'smooth'
         });
       }
-    } else if (scrollToTop) {
-      // Otherwise, if it's a different page, scroll to top after a small delay
-      setTimeout(() => {
-        window.scrollTo({
-          top: 0,
-          behavior: 'smooth',
-        });
-      }, 100);
+      
+      if (onClick) onClick();
     }
-    
-    // Call any additional onClick handler
-    if (onClick) onClick();
+    // If it's a normal page link but we're already on that page
+    else if (href === window.location.pathname || href === '/') {
+      e.preventDefault();
+      
+      // Smooth scroll to the top of the page
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      
+      if (onClick) onClick();
+    }
+    // Otherwise, let wouter's Link handle the navigation
   };
 
   return (
     <Link href={href}>
-      <a 
-        className={`${className} ${isActive ? activeClassName : ''} transition-colors`}
-        onClick={handleClick}
-      >
+      <a className={className} onClick={handleClick}>
         {children}
       </a>
     </Link>
   );
-}
+};
+
+export default SmoothScrollLink;

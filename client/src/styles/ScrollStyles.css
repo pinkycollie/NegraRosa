@@ -1,6 +1,4 @@
-/* ScrollStyles.css - For smooth scrolling effects */
-
-/* Custom scrollbar for the menu */
+/* Scrollbar customization */
 .scrollbar-thin::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -11,84 +9,62 @@
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 9999px;
+  background-color: rgb(216, 180, 254);
+  border-radius: 10px;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: #9333ea;
+/* Scroll progress indicator */
+.scroll-progress-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.1);
+  z-index: 100;
 }
 
-/* Smooth scrolling for the whole page */
-html {
-  scroll-behavior: smooth;
+.scroll-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #c026d3);
+  width: 0%;
+  transition: width 0.1s;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
+/* ScrollToTop button animation */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(124, 58, 237, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0);
   }
 }
 
-/* Animation for the menu on scroll */
-.nav-scrolled {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(5px);
+.scroll-to-top-button {
+  animation: pulse 2s infinite;
 }
 
-/* Animations for dropdown menus */
-.dropdown-enter {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-.dropdown-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 200ms, transform 200ms;
-}
-
-.dropdown-exit {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.dropdown-exit-active {
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: opacity 200ms, transform 200ms;
-}
-
-/* Section transitions */
-.section-fade-in {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-}
-
-.section-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Floating elements hover effect */
+/* Hover float animation for widgets */
 .hover-float {
   transition: transform 0.3s ease;
 }
 
 .hover-float:hover {
-  transform: translateY(-5px);
+  transform: translateY(-4px);
 }
 
-/* Scroll indicator */
-.scroll-indicator {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 3px;
-  background: linear-gradient(to right, #9333ea, #c084fc);
-  z-index: 1000;
+/* Smooth transitions for scroll-based UI changes */
+.scroll-fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.scroll-fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
