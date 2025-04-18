@@ -1,4 +1,4 @@
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { ReactNode, MouseEvent } from 'react';
 
 interface SmoothScrollLinkProps {
@@ -9,7 +9,9 @@ interface SmoothScrollLinkProps {
 }
 
 const SmoothScrollLink = ({ href, className, children, onClick }: SmoothScrollLinkProps) => {
-  const handleClick = (e: MouseEvent<HTMLAnchorElement>) => {
+  const [location] = useLocation();
+  
+  const handleClick = (e: MouseEvent<HTMLDivElement>) => {
     // If it's a hash link (in-page navigation)
     if (href.startsWith('#')) {
       e.preventDefault();
@@ -26,7 +28,7 @@ const SmoothScrollLink = ({ href, className, children, onClick }: SmoothScrollLi
       if (onClick) onClick();
     }
     // If it's a normal page link but we're already on that page
-    else if (href === window.location.pathname || href === '/') {
+    else if (href === location || href === '/') {
       e.preventDefault();
       
       // Smooth scroll to the top of the page
@@ -40,11 +42,32 @@ const SmoothScrollLink = ({ href, className, children, onClick }: SmoothScrollLi
     // Otherwise, let wouter's Link handle the navigation
   };
 
+  // Use a div with a role="link" for accessibility when this is just smooth scrolling on the current page
+  if (href.startsWith('#') || href === location || href === '/') {
+    return (
+      <div 
+        role="link"
+        tabIndex={0}
+        className={className} 
+        onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick(e as any);
+          }
+        }}
+      >
+        {children}
+      </div>
+    );
+  }
+  
+  // Otherwise use wouter's Link for actual page navigation
   return (
     <Link href={href}>
-      <a className={className} onClick={handleClick}>
+      <div className={className}>
         {children}
-      </a>
+      </div>
     </Link>
   );
 };
