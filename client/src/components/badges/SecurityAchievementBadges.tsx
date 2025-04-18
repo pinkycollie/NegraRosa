@@ -14,7 +14,7 @@ export interface SecurityBadge {
   level: 1 | 2 | 3 | 4 | 5;
   isUnlocked: boolean;
   progress: number; // 0-100 for partially completed badges
-  category: "verification" | "authentication" | "community" | "education" | "contribution" | "discovery" | "scanning" | "implementation" | "advanced";
+  category: "verification" | "authentication" | "community" | "education" | "contribution" | "discovery" | "scanning" | "implementation" | "advanced" | "entrepreneur";
   colorClass: string;
   rewards: string[];
   dateEarned?: string;
@@ -213,6 +213,42 @@ export default function SecurityAchievementBadges({ userId }: SecurityAchievemen
       category: "advanced",
       colorClass: "text-pink-500 border-pink-500 bg-pink-500/10",
       rewards: ["NegraRosa security advisory board consideration", "Advanced security clearance level"]
+    },
+    {
+      id: "business-defender",
+      name: "Business Defender",
+      description: "Successfully implemented comprehensive security measures for a deaf-owned business",
+      icon: <ThumbsUp className="h-6 w-6" />,
+      level: 3,
+      isUnlocked: false,
+      progress: 40,
+      category: "entrepreneur",
+      colorClass: "text-orange-500 border-orange-500 bg-orange-500/10",
+      rewards: ["Business security assessment", "Risk mitigation consultation"]
+    },
+    {
+      id: "payment-guardian",
+      name: "Payment Guardian",
+      description: "Secured payment systems for deaf entrepreneurs with enhanced verification protocols",
+      icon: <ThumbsUp className="h-6 w-6" />,
+      level: 4,
+      isUnlocked: false,
+      progress: 25,
+      category: "entrepreneur",
+      colorClass: "text-orange-500 border-orange-500 bg-orange-500/10",
+      rewards: ["Payment verification toolkit", "Financial security monitoring access"]
+    },
+    {
+      id: "data-protector",
+      name: "Data Protector",
+      description: "Implemented data protection measures for deaf-owned businesses' sensitive information",
+      icon: <FileCheck className="h-6 w-6" />,
+      level: 4,
+      isUnlocked: false,
+      progress: 30,
+      category: "entrepreneur",
+      colorClass: "text-orange-500 border-orange-500 bg-orange-500/10",
+      rewards: ["Data encryption toolkit", "Privacy compliance certification"]
     }
   ];
   
@@ -234,7 +270,7 @@ export default function SecurityAchievementBadges({ userId }: SecurityAchievemen
   const securityScore = Math.round((currentScore / totalPossibleScore) * 100);
   
   // Calculate category percentages
-  const categories = ["verification", "authentication", "community", "education", "contribution", "discovery", "scanning", "implementation", "advanced"];
+  const categories = ["verification", "authentication", "community", "education", "contribution", "discovery", "scanning", "implementation", "advanced", "entrepreneur"];
   const categoryStats = categories.map(cat => {
     const catBadges = badges.filter(b => b.category === cat);
     const catTotal = catBadges.length * 100;
@@ -260,6 +296,7 @@ export default function SecurityAchievementBadges({ userId }: SecurityAchievemen
       case "scanning": return "text-teal-500";
       case "implementation": return "text-cyan-500";
       case "advanced": return "text-pink-500";
+      case "entrepreneur": return "text-orange-500";
       default: return "text-gray-500";
     }
   };
@@ -275,6 +312,7 @@ export default function SecurityAchievementBadges({ userId }: SecurityAchievemen
       case "scanning": return <Scan className="h-4 w-4" />;
       case "implementation": return <Key className="h-4 w-4" />;
       case "advanced": return <Star className="h-4 w-4" />;
+      case "entrepreneur": return <ThumbsUp className="h-4 w-4" />;
       default: return <Badge className="h-4 w-4" />;
     }
   };
