@@ -242,7 +242,7 @@ export default function IndividualIdPage() {
                             <div>
                               <h4 className="font-medium text-sm">Secure NFT-Based Identity</h4>
                               <p className="text-sm text-muted-foreground">
-                                Your identity is encoded as a unique NFT on a secure blockchain
+                                Your identity is encoded as a unique NFT on a secure blockchain with 256-bit encryption and immutable audit logs
                               </p>
                             </div>
                           </div>
@@ -254,7 +254,7 @@ export default function IndividualIdPage() {
                             <div>
                               <h4 className="font-medium text-sm">Multi-Factor Authentication</h4>
                               <p className="text-sm text-muted-foreground">
-                                Verify your identity through multiple methods designed for deaf accessibility
+                                Verify using ASL video patterns, facial recognition, and gesture recognition optimized for deaf users
                               </p>
                             </div>
                           </div>
@@ -266,7 +266,7 @@ export default function IndividualIdPage() {
                             <div>
                               <h4 className="font-medium text-sm">Emergency Services Integration</h4>
                               <p className="text-sm text-muted-foreground">
-                                In emergencies, authorized services can access your critical information
+                                Secure API integrations allow authorized emergency services to access your critical information through end-to-end encrypted channels
                               </p>
                             </div>
                           </div>
@@ -278,7 +278,7 @@ export default function IndividualIdPage() {
                             <div>
                               <h4 className="font-medium text-sm">Life Event Documentation</h4>
                               <p className="text-sm text-muted-foreground">
-                                Securely document important life events like employment changes or benefits status
+                                Blockchain-based FibonroseTRUST system for immutable records with smart contracts and ASL video confirmations
                               </p>
                             </div>
                           </div>
@@ -461,9 +461,9 @@ export default function IndividualIdPage() {
                           <div>
                             <h3 className="font-medium mb-1">FibonroseTRUST System</h3>
                             <p className="text-sm text-muted-foreground">
-                              Our immutable life event documentation system helps you record and verify
-                              important changes in your life, providing proof for government agencies,
-                              employers, and emergency services.
+                              Our blockchain-based life event documentation system with 256-bit encryption helps you record and verify
+                              important changes in your life through smart contracts with ASL video confirmations,
+                              providing immutable proof for government agencies, employers, and emergency services.
                             </p>
                           </div>
                         </div>
@@ -621,7 +621,7 @@ export default function IndividualIdPage() {
                   Emergency Services Access
                 </CardTitle>
                 <CardDescription className="text-red-600/70 dark:text-red-300/70">
-                  Provides critical information to first responders and law enforcement
+                  Secure API channels provide critical information to first responders and law enforcement
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
