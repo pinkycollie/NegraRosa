@@ -14,6 +14,8 @@ import SupportBubble from "@/components/SupportBubble";
 import SmoothScrollLink from "@/components/SmoothScrollLink";
 import ScrollToTop from "@/components/ScrollToTop";
 import PinkSyncWidget from "@/components/PinkSyncWidget";
+import { GestureEasterEgg } from "@/components/GestureEasterEgg";
+import { EasterEggHints } from "@/components/EasterEggHints";
 import { Menu, X, ChevronRight, ChevronDown } from "lucide-react";
 import "@/styles/ScrollStyles.css";
 
@@ -92,7 +94,7 @@ function MainNav() {
         <div className="flex flex-wrap items-center justify-between">
           <div className="flex items-center">
             <Link href="/">
-              <span className="text-lg font-semibold cursor-pointer">NegraRosa Security</span>
+              <span className="text-lg font-semibold cursor-pointer" data-logo>NegraRosa Security</span>
             </Link>
           </div>
           
@@ -584,6 +586,8 @@ function App({ initialUserId }: AppProps) {
         }}
       />
       <Toaster />
+      <GestureEasterEgg />
+      <EasterEggHints />
     </QueryClientProvider>
   );
 }
