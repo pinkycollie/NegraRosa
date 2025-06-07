@@ -227,6 +227,11 @@ export function GestureEasterEgg() {
         setActiveReward(sequence);
         setIsVisible(true);
         setCurrentSequence([]);
+        
+        // Dispatch custom event for hints component
+        window.dispatchEvent(new CustomEvent('easterEggDiscovered', {
+          detail: { easterEggId: sequence.id }
+        }));
       }
     });
   }, [currentSequence, unlockedSecrets]);
