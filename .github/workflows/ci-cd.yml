@@ -161,3 +161,50 @@ jobs:
         run: |
           echo "Deploying to production environment..."
           echo "Build artifacts ready for deployment"
+
+  # ==================== Self-Hosted Runner Deployment ====================
+  deploy-self-hosted:
+    name: Deploy to Self-Hosted (MBTQ)
+    runs-on: [self-hosted, mbtq]
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: mbtq-production
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --production
+
+      - name: Build application
+        run: npm run build
+
+      - name: Deploy to MBTQ server
+        run: |
+          echo "Deploying NegraRosa to MBTQ ecosystem..."
+          # Copy built files
+          cp -r dist/* /var/www/negrarosa/dist/
+          
+          # Restart with PM2
+          pm2 restart negrarosa || pm2 start /var/www/negrarosa/dist/index.js --name negrarosa
+          
+          echo "Deployment complete!"
+
+      - name: Verify deployment
+        run: |
+          # Wait for service to start
+          sleep 5
+          
+          # Health check
+          curl -f http://localhost:5000/api/v1/deafauth/status || exit 1
+          curl -f http://localhost:5000/api/v1/fibonacci/status || exit 1
+          
+          echo "Health checks passed!"
