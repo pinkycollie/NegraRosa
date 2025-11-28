@@ -83,7 +83,6 @@ sudo ln -s /etc/nginx/sites-available/mbtq.dev.conf /etc/nginx/sites-enabled/
 sudo ln -s /etc/nginx/sites-available/pinksync.io.conf /etc/nginx/sites-enabled/
 sudo ln -s /etc/nginx/sites-available/360magicians.com.conf /etc/nginx/sites-enabled/
 sudo ln -s /etc/nginx/sites-available/vr4deaf.org.conf /etc/nginx/sites-enabled/
-sudo ln -s /etc/nginx/sites-available/vr4deaf.org.conf /etc/nginx/sites-enabled/
 
 # Test and reload
 sudo nginx -t && sudo systemctl reload nginx

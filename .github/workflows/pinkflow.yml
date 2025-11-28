@@ -287,6 +287,8 @@ jobs:
           retention-days: 30
 
   # ==================== Deploy to VR4Deaf ====================
+  # NOTE: Requires self-hosted runner with 'mbtq' label
+  # Setup: See deployment/runner/setup-runner.sh
   deploy-vr4deaf:
     name: Deploy to VR4Deaf
     runs-on: [self-hosted, mbtq]
@@ -295,6 +297,8 @@ jobs:
     environment: vr4deaf-production
     permissions:
       contents: read
+    env:
+      API_BASE_URL: ${{ vars.API_BASE_URL || 'http://localhost:5000' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -320,7 +324,7 @@ jobs:
           echo "Notifying 360Magicians of new model..."
           
           # Trigger Creative Magician update
-          curl -X POST "http://localhost:5000/api/v1/ai/notify" \
+          curl -X POST "${API_BASE_URL}/api/v1/ai/notify" \
             -H "Content-Type: application/json" \
             -d '{"event": "model_update", "model": "sign-language", "source": "pinkflow"}' \
             || true
