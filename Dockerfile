@@ -31,6 +31,9 @@ LABEL org.opencontainers.image.description="MBTQ Security Platform with DeafAUTH
 LABEL org.opencontainers.image.source="https://github.com/pinkycollie/NegraRosa"
 LABEL org.opencontainers.image.licenses="MIT"
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
@@ -65,7 +68,7 @@ EXPOSE 5000
 
 # Health check for container orchestration
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:5000/api/v1/supabase/status || exit 1
+    CMD curl -f http://localhost:5000/api/v1/deafauth/status || exit 1
 
 # Start the application
 CMD ["node", "dist/index.js"]
