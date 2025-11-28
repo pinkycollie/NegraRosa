@@ -9,6 +9,8 @@ import tenantsRouter from './tenants';
 import securityRouter from './security';
 import partnersRouter from './partners';
 import opensourceRouter from './opensource';
+import supabaseRouter from './supabase';
+import fibonacciRouter from './fibonacci';
 
 const router = Router();
 
@@ -25,5 +27,11 @@ router.use('/tenants', tenantsRouter);
 router.use('/security', securityRouter);
 router.use('/partners', partnersRouter);
 router.use('/opensource', opensourceRouter);
+
+// Mount Supabase OAuth, DeafAUTH, and PinkSync routes
+router.use('/supabase', supabaseRouter);
+
+// Mount Fibonacci Security Service routes
+router.use('/fibonacci', fibonacciRouter);
 
 export default router;

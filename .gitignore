@@ -1,6 +1,50 @@
-node_modules
-dist
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+client/dist/
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Keep example environment file
+!.env.example
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# Build artifacts
 server/public
 vite.config.ts.*
 *.tar.gz
+*.tgz
+
+# Docker
+.docker/
+
+# Temp files
+tmp/
+temp/
+*.tmp
+
+# Lock files (keep package-lock.json)
+yarn.lock
+pnpm-lock.yaml

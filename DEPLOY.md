@@ -1,56 +1,245 @@
-# Deploying to Vercel
+# NegraRosa Deployment Guide
 
-This document outlines the steps needed to deploy the NegraRosa Inclusive Security Framework to Vercel.
+MBTQ Security Platform with DeafAUTH Accessibility Support
 
-## Prerequisites
+## Deployment Options
 
-1. A Vercel account
-2. Access to the GitHub repository or the project files
-3. Environment variables (API keys, database credentials, etc.)
+This project supports multiple deployment methods:
 
-## Deployment Steps
+1. **Docker (Recommended)** - Simple, portable deployment
+2. **Local Node.js** - Direct Node.js deployment
+3. **Cloud Platforms** - GCP, AWS, or any container platform
 
-### 1. Connect to Vercel
+## Quick Start with Docker
 
-- Go to https://vercel.com and log in to your account
-- Click "New Project" and select the repository or upload the project files
-- Select the NegraRosa Security Framework repository 
+### Prerequisites
 
-### 2. Configure Environment Variables
+- Docker and Docker Compose installed
+- Git (for cloning the repository)
 
-In the Vercel project settings, add the following environment variables:
+### Step 1: Clone and Configure
 
-- `DATABASE_URL`: Your PostgreSQL database connection string
-- `XANO_API_BASE_URL`: Your Xano API base URL
-- `XANO_API_KEY`: Your Xano API key
-- `NOTION_API_KEY`: Your Notion API key (if using Notion integration)
-- `NOTION_DATABASE_ID`: Your Notion database ID (if using Notion integration)
-- `AUTH0_DOMAIN`: Your Auth0 domain (if using Auth0)
-- `AUTH0_CLIENT_ID`: Your Auth0 client ID (if using Auth0)
-- `AUTH0_CLIENT_SECRET`: Your Auth0 client secret (if using Auth0)
-- `NODE_ENV`: Set to `production`
+```bash
+# Clone the repository
+git clone https://github.com/pinkycollie/NegraRosa.git
+cd NegraRosa
 
-### 3. Deploy
+# Copy environment configuration
+cp .env.example .env
 
-- Click "Deploy" to start the deployment process
-- Vercel will automatically build and deploy the application
+# Edit .env with your configuration
+nano .env  # or use your preferred editor
+```
 
-### 4. Verify Deployment
+### Step 2: Start the Application
 
-- Once deployment is complete, Vercel will provide a URL to access your application
-- Visit the URL to verify that the application is working correctly
-- Check the logs for any errors or issues
+```bash
+# Start all services (app, database, redis)
+docker compose up -d
+
+# Check logs
+docker compose logs -f app
+
+# Verify the application is running
+curl http://localhost:5000/api/v1/supabase/status
+```
+
+### Step 3: Access the Application
+
+- Application: http://localhost:5000
+- API Documentation: http://localhost:5000/api/v1
+
+## Environment Configuration
+
+### Required Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
+| `JWT_SECRET` | Secret for JWT tokens | Generate a random 64-char string |
+
+### Supabase OAuth (Recommended)
+
+| Variable | Description |
+|----------|-------------|
+| `SUPABASE_URL` | Your Supabase project URL |
+| `SUPABASE_ANON_KEY` | Supabase anonymous key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
+
+### Optional Integrations
+
+| Variable | Description |
+|----------|-------------|
+| `CIVIC_APP_ID` | Civic ID app identifier |
+| `OPENAI_API_KEY` | OpenAI API for accessibility guidance |
+| `STRIPE_SECRET_KEY` | Stripe for payments |
+
+## Local Development
+
+### Prerequisites
+
+- Node.js 20+
+- PostgreSQL 15+
+
+### Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Type check
+npm run check
+
+# Build for production
+npm run build
+```
+
+## DeafAUTH Accessibility Features
+
+The platform includes comprehensive accessibility support:
+
+### Available Authentication Methods
+
+1. **Visual Pattern** - Draw patterns on a grid
+2. **QR Code Scan** - Scan QR codes for authentication
+3. **Biometric** - Face or fingerprint recognition
+4. **Sign Language Video** - ASL/BSL/ISL verification
+5. **Visual OTP** - Color-coded or icon-based codes
+6. **NFC Tap** - Contactless card authentication
+
+### API Endpoints
+
+```bash
+# Get available methods
+GET /api/v1/supabase/deafauth/methods
+
+# Initialize session
+POST /api/v1/supabase/deafauth/session
+{
+  "userId": 123,
+  "method": "visual_pattern",
+  "preferences": {
+    "highContrast": true,
+    "largeText": true
+  }
+}
+
+# Verify authentication
+POST /api/v1/supabase/deafauth/verify
+{
+  "sessionId": "...",
+  "response": { "pattern": [1, 2, 5, 8, 9] }
+}
+```
+
+## PinkSync Offline Support
+
+Enable seamless offline/online synchronization:
+
+```bash
+# Register device
+POST /api/v1/supabase/pinksync/device
+{
+  "userId": 123,
+  "deviceName": "iPhone",
+  "deviceType": "mobile"
+}
+
+# Queue operation for sync
+POST /api/v1/supabase/pinksync/operation
+{
+  "deviceId": "...",
+  "type": "update",
+  "entity": "preferences",
+  "entityId": "123",
+  "data": { ... }
+}
+
+# Sync device
+POST /api/v1/supabase/pinksync/sync/{deviceId}
+```
+
+## CI/CD with GitHub Actions
+
+The repository includes automated workflows:
+
+### Workflows
+
+1. **ci-cd.yml** - Main CI/CD pipeline
+   - Lint and type check
+   - Build application
+   - Security scanning
+   - Docker image build
+   - Deployment
+
+2. **autodevops.yml** - Extended DevOps
+   - Code quality checks
+   - Accessibility validation
+   - Container builds
+   - Attestation generation
+   - Automated releases
+
+### Triggering Deployments
+
+- **Push to `main`**: Production deployment
+- **Push to `develop`**: Staging deployment
+- **Pull requests**: Build and test only
+
+## Security Considerations
+
+1. **Never commit `.env` files** - Use `.env.example` as a template
+2. **Rotate secrets regularly** - Update JWT_SECRET periodically
+3. **Use HTTPS** - Always use TLS in production
+4. **Enable rate limiting** - Protect against abuse
+5. **Keep dependencies updated** - Run `npm audit` regularly
+
+## Monitoring
+
+### Health Check Endpoints
+
+```bash
+# Service status
+GET /api/v1/supabase/status
+
+# DeafAUTH status
+GET /api/v1/supabase/deafauth/status
+
+# PinkSync status
+GET /api/v1/supabase/pinksync/status
+```
+
+### Docker Health Checks
+
+```bash
+# Check container health
+docker compose ps
+
+# View container logs
+docker compose logs -f app
+```
 
 ## Troubleshooting
 
-If you encounter any issues during deployment:
+### Common Issues
 
-1. Check the build logs for errors
-2. Verify that all environment variables are set correctly
-3. Ensure that the PostgreSQL database is accessible from Vercel
-4. Check the Vercel function logs for runtime errors
+1. **Database connection fails**
+   - Check DATABASE_URL format
+   - Ensure PostgreSQL is running
+   - Verify network connectivity
 
-## Additional Resources
+2. **Build fails**
+   - Clear node_modules: `rm -rf node_modules && npm install`
+   - Check Node.js version: `node --version`
 
-- [Vercel Documentation](https://vercel.com/docs)
-- [Vercel CLI](https://vercel.com/docs/cli) for advanced deployment options
+3. **Authentication errors**
+   - Verify JWT_SECRET is set
+   - Check Supabase configuration
+   - Ensure tokens haven't expired
+
+## Support
+
+- **Issues**: https://github.com/pinkycollie/NegraRosa/issues
+- **Documentation**: See `/docs` folder
