@@ -10,6 +10,10 @@ on:
     - cron: '0 2 * * 1'
   workflow_dispatch:
 
+# Minimal permissions for security
+permissions:
+  contents: read
+
 env:
   NODE_VERSION: '20'
 
@@ -18,6 +22,8 @@ jobs:
   wcag-audit:
     name: WCAG 2.1 AA Compliance
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -78,6 +84,8 @@ jobs:
   deaf-first-audit:
     name: Deaf-First Design Compliance
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -126,6 +134,8 @@ jobs:
   security-headers:
     name: Security Headers Audit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -157,6 +167,8 @@ jobs:
   fibonacci-security:
     name: Fibonacci Security Model Verification
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -209,6 +221,8 @@ jobs:
   ecosystem-integration:
     name: MBTQ Ecosystem Integration Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -219,7 +233,7 @@ jobs:
           echo ""
           
           # Check core services
-          SERVICES=("DeafAuthService" "PinkSyncService" "FibonacciSecurityService" "SupabaseAuthService")
+          SERVICES=("DeafAuthService" "PinkSyncService" "FibonacciSecurityService")
           
           for service in "${SERVICES[@]}"; do
             if [ -f "./server/services/${service}.ts" ]; then
@@ -232,7 +246,7 @@ jobs:
           # Check API routes
           echo ""
           echo "Checking API routes..."
-          ROUTES=("supabase" "fibonacci")
+          ROUTES=("deafauth" "pinksync" "fibonacci")
           
           for route in "${ROUTES[@]}"; do
             if [ -f "./server/api/v1/${route}.ts" ]; then
@@ -260,6 +274,8 @@ jobs:
     name: Generate Certification Report
     runs-on: ubuntu-latest
     needs: [wcag-audit, deaf-first-audit, security-headers, fibonacci-security, ecosystem-integration]
+    permissions:
+      contents: read
     steps:
       - name: Generate certification report
         run: |

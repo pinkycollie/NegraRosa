@@ -114,10 +114,10 @@ The platform includes comprehensive accessibility support:
 
 ```bash
 # Get available methods
-GET /api/v1/supabase/deafauth/methods
+GET /api/v1/deafauth/methods
 
 # Initialize session
-POST /api/v1/supabase/deafauth/session
+POST /api/v1/deafauth/session
 {
   "userId": 123,
   "method": "visual_pattern",
@@ -128,7 +128,7 @@ POST /api/v1/supabase/deafauth/session
 }
 
 # Verify authentication
-POST /api/v1/supabase/deafauth/verify
+POST /api/v1/deafauth/verify
 {
   "sessionId": "...",
   "response": { "pattern": [1, 2, 5, 8, 9] }
@@ -141,7 +141,7 @@ Enable seamless offline/online synchronization:
 
 ```bash
 # Register device
-POST /api/v1/supabase/pinksync/device
+POST /api/v1/pinksync/device
 {
   "userId": 123,
   "deviceName": "iPhone",
@@ -149,7 +149,7 @@ POST /api/v1/supabase/pinksync/device
 }
 
 # Queue operation for sync
-POST /api/v1/supabase/pinksync/operation
+POST /api/v1/pinksync/operation
 {
   "deviceId": "...",
   "type": "update",
@@ -159,7 +159,7 @@ POST /api/v1/supabase/pinksync/operation
 }
 
 # Sync device
-POST /api/v1/supabase/pinksync/sync/{deviceId}
+POST /api/v1/pinksync/sync/{deviceId}
 ```
 
 ## CI/CD with GitHub Actions
@@ -201,14 +201,14 @@ The repository includes automated workflows:
 ### Health Check Endpoints
 
 ```bash
-# Service status
-GET /api/v1/supabase/status
-
 # DeafAUTH status
-GET /api/v1/supabase/deafauth/status
+GET /api/v1/deafauth/status
 
 # PinkSync status
-GET /api/v1/supabase/pinksync/status
+GET /api/v1/pinksync/status
+
+# Fibonacci Security status
+GET /api/v1/fibonacci/status
 ```
 
 ### Docker Health Checks
