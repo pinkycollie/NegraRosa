@@ -12,6 +12,9 @@ import opensourceRouter from './opensource';
 import deafauthRouter from './deafauth';
 import pinksyncRouter from './pinksync';
 import fibonacciRouter from './fibonacci';
+import aiRouter from './ai';
+import vrRouter from './vr';
+import cacheRouter from './cache';
 
 const router = Router();
 
@@ -37,5 +40,14 @@ router.use('/pinksync', pinksyncRouter);
 
 // Mount Fibonacci Security Service routes
 router.use('/fibonacci', fibonacciRouter);
+
+// Mount AI Proxy - Pathway-based AI magicians
+router.use('/ai', aiRouter);
+
+// Mount VR Compliance - vr4deaf.org
+router.use('/vr', vrRouter);
+
+// Mount Cache service
+router.use('/cache', cacheRouter);
 
 export default router;

@@ -6,8 +6,9 @@
 mbtq.dev (Parent Platform)
 ├── api.mbtq.dev           → NegraRosa Backend API
 ├── pinksync.io            → Offline/Online Synchronization
-├── 360magicians.com       → Creative Platform
-└── vr4deaf.org            → VR Accessibility
+├── 360magicians.com       → Creative Platform (Pathway Magicians)
+└── vr4deaf.org            → VR Vocational Rehabilitation Vendor
+    └── portal.vr4deaf.org → Case Worker Portal
 ```
 
 ## Server Requirements
@@ -47,6 +48,7 @@ sudo cp deployment/nginx/sites-available/*.conf /etc/nginx/sites-available/
 sudo ln -s /etc/nginx/sites-available/mbtq.dev.conf /etc/nginx/sites-enabled/
 sudo ln -s /etc/nginx/sites-available/pinksync.io.conf /etc/nginx/sites-enabled/
 sudo ln -s /etc/nginx/sites-available/360magicians.com.conf /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/vr4deaf.org.conf /etc/nginx/sites-enabled/
 
 # Test and reload
 sudo nginx -t && sudo systemctl reload nginx
