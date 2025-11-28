@@ -1,0 +1,266 @@
+# Security Hardening Workflow - MBTQ Ecosystem
+# Automated security hardening checks and recommendations
+#
+# Checks:
+# - HTTP security headers
+# - SSL/TLS configuration
+# - CORS policy
+# - Content Security Policy
+# - Rate limiting configuration
+# - Authentication security
+
+name: Security Hardening
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deployment/nginx/**'
+      - 'server/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ==================== Header Security Check ====================
+  header-security:
+    name: Security Headers Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check nginx security headers
+        run: |
+          echo "## 🔒 Security Headers Audit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for required headers in nginx configs
+          NGINX_FILES=$(find deployment/nginx -name "*.conf" 2>/dev/null || echo "")
+          
+          if [ -z "$NGINX_FILES" ]; then
+            echo "No nginx config files found" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          HEADERS=(
+            "X-Frame-Options"
+            "X-Content-Type-Options"
+            "X-XSS-Protection"
+            "Referrer-Policy"
+            "Content-Security-Policy"
+          )
+          
+          echo "| Header | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          for header in "${HEADERS[@]}"; do
+            if grep -rq "$header" deployment/nginx/; then
+              echo "| $header | ✅ Present |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| $header | ⚠️ Missing |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+      - name: Check for SSL/TLS configuration
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### SSL/TLS Configuration" >> $GITHUB_STEP_SUMMARY
+          
+          if grep -rq "ssl_protocols TLSv1.2 TLSv1.3" deployment/nginx/; then
+            echo "✅ TLS 1.2+ enforced" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Check TLS version configuration" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if grep -rq "ssl_prefer_server_ciphers" deployment/nginx/; then
+            echo "✅ Server cipher preference enabled" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Consider enabling ssl_prefer_server_ciphers" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ==================== Rate Limiting Check ====================
+  rate-limiting:
+    name: Rate Limiting Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check rate limiting configuration
+        run: |
+          echo "## ⏱️ Rate Limiting Audit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for rate limiting zones
+          ZONES=(
+            "api_limit"
+            "auth_limit"
+            "ai_limit"
+          )
+          
+          echo "| Zone | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          for zone in "${ZONES[@]}"; do
+            if grep -rq "zone=$zone" deployment/nginx/; then
+              echo "| $zone | ✅ Configured |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| $zone | ⚠️ Not found |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+  # ==================== Authentication Security ====================
+  auth-security:
+    name: Authentication Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check DeafAUTH implementation
+        run: |
+          echo "## 🔐 Authentication Security Audit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### DeafAUTH (Deaf-First Authentication)" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for visual auth methods
+          if grep -rq "VISUAL_PATTERN\|QR_CODE\|BIOMETRIC" server/services/DeafAuthService.ts 2>/dev/null; then
+            echo "✅ Visual authentication methods implemented" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Check visual authentication implementation" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check for no audio dependency
+          if ! grep -rq "AUDIO\|VOICE\|PHONE_CALL" server/services/DeafAuthService.ts 2>/dev/null; then
+            echo "✅ No audio-dependent authentication" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Audio-dependent auth detected - review for accessibility" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### HTTP Basic Auth" >> $GITHUB_STEP_SUMMARY
+          
+          if grep -rq "auth_basic" deployment/nginx/; then
+            echo "✅ HTTP Basic Auth configured for admin routes" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ HTTP Basic Auth not found in nginx config" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ==================== Container Security Check ====================
+  container-hardening:
+    name: Container Hardening Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Dockerfile security
+        run: |
+          echo "## 🐳 Container Hardening Audit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ ! -f Dockerfile ]; then
+            echo "No Dockerfile found" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for non-root user
+          if grep -q "USER\s" Dockerfile && ! grep -q "USER root" Dockerfile; then
+            echo "| Non-root user | ✅ |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Non-root user | ⚠️ Review |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check for multi-stage build
+          if grep -c "^FROM" Dockerfile | grep -q "[2-9]"; then
+            echo "| Multi-stage build | ✅ |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Multi-stage build | ⚠️ Consider |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check for health check
+          if grep -q "HEALTHCHECK" Dockerfile; then
+            echo "| Health check | ✅ |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Health check | ⚠️ Add |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check for specific base image version
+          if grep -q "FROM.*:" Dockerfile && ! grep -q "FROM.*:latest" Dockerfile; then
+            echo "| Pinned base image | ✅ |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Pinned base image | ⚠️ Avoid :latest |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ==================== CORS Policy Check ====================
+  cors-policy:
+    name: CORS Policy Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check CORS configuration
+        run: |
+          echo "## 🌐 CORS Policy Audit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for CORS in nginx
+          if grep -rq "Access-Control-Allow-Origin" deployment/nginx/ 2>/dev/null; then
+            echo "✅ CORS headers configured in nginx" >> $GITHUB_STEP_SUMMARY
+            
+            # Check for wildcard
+            if grep -rq "Access-Control-Allow-Origin.*\*" deployment/nginx/ 2>/dev/null; then
+              echo "⚠️ Wildcard CORS detected - review for production" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "ℹ️ CORS not configured in nginx (may be handled by app)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check for CORS in server code
+          if grep -rq "cors\|CORS" server/ 2>/dev/null; then
+            echo "✅ CORS handling found in server code" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ==================== Security Summary ====================
+  security-hardening-summary:
+    name: Security Hardening Summary
+    runs-on: ubuntu-latest
+    needs: [header-security, rate-limiting, auth-security, container-hardening, cors-policy]
+    if: always()
+    
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "# 🛡️ Security Hardening Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All security hardening checks completed." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Headers | ${{ needs.header-security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Rate Limiting | ${{ needs.rate-limiting.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Authentication | ${{ needs.auth-security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Container | ${{ needs.container-hardening.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CORS Policy | ${{ needs.cors-policy.result }} |" >> $GITHUB_STEP_SUMMARY
