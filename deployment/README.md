@@ -3,13 +3,26 @@
 ## Architecture
 
 ```
-mbtq.dev (Parent Platform)
+mbtq.dev (Parent Platform - Automated Generative Dev with Video)
 ├── api.mbtq.dev           → NegraRosa Backend API
 ├── pinksync.io            → Offline/Online Synchronization
-├── 360magicians.com       → Creative Platform (Pathway Magicians)
+├── 360magicians.com       → Pathway Magicians (AI Full-Stack)
+│   ├── Job Magician       → Career development
+│   ├── Business Magician  → Automation, Taskade
+│   ├── Developer Magician → Code generation, SDK integration
+│   └── Creative Magician  → VR design, visual content
 └── vr4deaf.org            → VR Vocational Rehabilitation Vendor
     └── portal.vr4deaf.org → Case Worker Portal
 ```
+
+## Visual Protocol Philosophy
+
+```
+Client Lifecycle: IDEA → BUILD → GROW → MANAGED
+Server Lifecycle: BUILD → SERVE → EVENT
+```
+
+DeafAUTH Philosophy: Making invisible systems visible through real-time annotation.
 
 ## Server Requirements
 
@@ -19,6 +32,7 @@ mbtq.dev (Parent Platform)
 - Node.js 20+
 - Docker & Docker Compose
 - Certbot (Let's Encrypt)
+- FFmpeg (for video processing)
 
 ## Quick Start
 
@@ -131,7 +145,31 @@ All sites proxy to the NegraRosa backend at `127.0.0.1:5000`:
 | `/api/v1/deafauth/` | 5 req/s | DeafAUTH authentication |
 | `/api/v1/pinksync/` | 10 req/s | PinkSync operations |
 | `/api/v1/fibonacci/` | 10 req/s | Fibonacci Security |
+| `/api/v1/ai/` | 2 req/s | AI Proxy (Pathway Magicians) |
+| `/api/v1/automl/` | 2 req/s | AutoML/Codex (Protected) |
+| `/api/v1/visual/` | 10 req/s | Visual Protocol |
+| `/api/v1/video/` | 5 req/s | Video Processing (FFmpeg) |
+| `/api/v1/proxy/` | 10 req/s | HTTPS Proxy |
+| `/api/v1/vr/` | 5 req/s | VR Compliance |
 | `/ws/` | - | WebSocket connections |
+| `/ws/visual/` | - | Visual Protocol WebSocket |
+
+## HTTP Basic Auth (360magicians.com)
+
+For protected admin routes:
+
+```bash
+# Create password file
+sudo htpasswd -c /etc/nginx/conf.d/.htpasswd admin
+
+# Add more users
+sudo htpasswd /etc/nginx/conf.d/.htpasswd username
+```
+
+Protected routes:
+- `/admin/` - Admin portal
+- `/automl/` - AutoML dashboard
+- `/api/v1/automl/` - AutoML API
 
 ## GitHub Actions Self-Hosted Runner
 

@@ -15,6 +15,10 @@ import fibonacciRouter from './fibonacci';
 import aiRouter from './ai';
 import vrRouter from './vr';
 import cacheRouter from './cache';
+import automlRouter from './automl';
+import visualRouter from './visual';
+import videoRouter from './video';
+import proxyRouter from './proxy';
 
 const router = Router();
 
@@ -49,5 +53,17 @@ router.use('/vr', vrRouter);
 
 // Mount Cache service
 router.use('/cache', cacheRouter);
+
+// Mount AutoML - AI-powered code generation and full-stack maintenance
+router.use('/automl', automlRouter);
+
+// Mount Visual Protocol - IDEA→BUILD→GROW→MANAGED / BUILD→SERVE→EVENT
+router.use('/visual', visualRouter);
+
+// Mount Video Processing - FFmpeg, captions, sign language overlay
+router.use('/video', videoRouter);
+
+// Mount HTTPS Proxy - Tunneled connections through proxy servers
+router.use('/proxy', proxyRouter);
 
 export default router;
