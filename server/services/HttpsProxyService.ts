@@ -438,6 +438,276 @@ export class HttpsProxyService {
   }
 }
 
+// ==================== Multi-Repo Sync ====================
+
+export interface RepoConfig {
+  name: string;
+  url: string;
+  branch: string;
+  type: 'github' | 'gitlab' | 'bitbucket' | 'custom';
+  apiEndpoint?: string;
+  webhookSecret?: string;
+}
+
+export interface IncomingRequest {
+  id: string;
+  source: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  url: string;
+  headers: Record<string, string>;
+  body?: unknown;
+  timestamp: Date;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  response?: unknown;
+}
+
+export interface SyncResult {
+  repoName: string;
+  success: boolean;
+  timestamp: Date;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+// MBTQ Ecosystem Repos Configuration
+export const MBTQ_REPOS: RepoConfig[] = [
+  {
+    name: 'negrarosa',
+    url: 'https://github.com/pinkycollie/NegraRosa',
+    branch: 'main',
+    type: 'github',
+    apiEndpoint: 'https://api.mbtq.dev',
+  },
+  {
+    name: 'mbtq-dev',
+    url: 'https://github.com/pinkycollie/mbtq.dev',
+    branch: 'main',
+    type: 'github',
+    apiEndpoint: 'https://mbtq.dev/api',
+  },
+  {
+    name: 'pinksync',
+    url: 'https://github.com/pinkycollie/pinksync',
+    branch: 'main',
+    type: 'github',
+    apiEndpoint: 'https://pinksync.io/api',
+  },
+  {
+    name: '360magicians',
+    url: 'https://github.com/pinkycollie/360magicians',
+    branch: 'main',
+    type: 'github',
+    apiEndpoint: 'https://360magicians.com/api',
+  },
+  {
+    name: 'vr4deaf',
+    url: 'https://github.com/pinkycollie/vr4deaf',
+    branch: 'main',
+    type: 'github',
+    apiEndpoint: 'https://vr4deaf.org/api',
+  },
+  {
+    name: 'fibonrose-trust',
+    url: 'https://github.com/fibonroseTrust',
+    branch: 'main',
+    type: 'github',
+  },
+  {
+    name: 'deafauth',
+    url: 'https://github.com/pinkycollie/deafauth',
+    branch: 'main',
+    type: 'github',
+  },
+  {
+    name: 'mbtquniverse',
+    url: 'https://github.com/pinkycollie/mbtquniverse',
+    branch: 'main',
+    type: 'github',
+  },
+];
+
+// ==================== Multi-Repo Proxy Service ====================
+
+export class MultiRepoProxyService {
+  private repos: Map<string, RepoConfig> = new Map();
+  private incomingQueue: IncomingRequest[] = [];
+  private proxyService: HttpsProxyService;
+  private maxQueueSize = 89; // Fibonacci F(11)
+
+  constructor(proxyService: HttpsProxyService) {
+    this.proxyService = proxyService;
+    
+    // Initialize with MBTQ repos
+    MBTQ_REPOS.forEach(repo => {
+      this.repos.set(repo.name, repo);
+    });
+  }
+
+  /**
+   * Add a repo to sync
+   */
+  addRepo(config: RepoConfig): void {
+    this.repos.set(config.name, config);
+  }
+
+  /**
+   * Get all configured repos
+   */
+  getRepos(): RepoConfig[] {
+    return Array.from(this.repos.values());
+  }
+
+  /**
+   * Queue an incoming request for processing
+   */
+  async queueIncoming(request: Omit<IncomingRequest, 'id' | 'timestamp' | 'status'>): Promise<IncomingRequest> {
+    const incoming: IncomingRequest = {
+      ...request,
+      id: `incoming_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+      timestamp: new Date(),
+      status: 'pending',
+    };
+
+    this.incomingQueue.push(incoming);
+
+    // Trim queue if exceeds Fibonacci limit
+    if (this.incomingQueue.length > this.maxQueueSize) {
+      this.incomingQueue = this.incomingQueue.slice(-55); // F(10)
+    }
+
+    return incoming;
+  }
+
+  /**
+   * Process incoming request with async/await
+   */
+  async processIncoming(requestId: string): Promise<IncomingRequest> {
+    const request = this.incomingQueue.find(r => r.id === requestId);
+    
+    if (!request) {
+      throw new Error(`Request ${requestId} not found`);
+    }
+
+    request.status = 'processing';
+
+    try {
+      const result = await this.proxyService.request(request.url, {
+        method: request.method,
+        headers: request.headers as any,
+        body: request.body ? JSON.stringify(request.body) : undefined,
+      } as any);
+
+      request.status = 'completed';
+      request.response = result;
+    } catch (error) {
+      request.status = 'failed';
+      request.response = { error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+
+    return request;
+  }
+
+  /**
+   * POST to multiple repos with Promise.all
+   */
+  async postToRepos(
+    repoNames: string[],
+    path: string,
+    body: unknown,
+    headers?: Record<string, string>
+  ): Promise<SyncResult[]> {
+    const promises = repoNames.map(async (repoName): Promise<SyncResult> => {
+      const repo = this.repos.get(repoName);
+      
+      if (!repo) {
+        return {
+          repoName,
+          success: false,
+          timestamp: new Date(),
+          message: `Repo ${repoName} not found`,
+        };
+      }
+
+      if (!repo.apiEndpoint) {
+        return {
+          repoName,
+          success: false,
+          timestamp: new Date(),
+          message: `Repo ${repoName} has no API endpoint configured`,
+        };
+      }
+
+      try {
+        const url = `${repo.apiEndpoint}${path}`;
+        const result = await this.proxyService.request(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...headers,
+          },
+          body: JSON.stringify(body),
+        } as any);
+
+        return {
+          repoName,
+          success: result.statusCode >= 200 && result.statusCode < 300,
+          timestamp: new Date(),
+          message: `POST ${url}: ${result.statusCode}`,
+          details: {
+            statusCode: result.statusCode,
+            headers: result.headers,
+          },
+        };
+      } catch (error) {
+        return {
+          repoName,
+          success: false,
+          timestamp: new Date(),
+          message: error instanceof Error ? error.message : 'Unknown error',
+        };
+      }
+    });
+
+    return Promise.all(promises);
+  }
+
+  /**
+   * Sync across all MBTQ repos
+   */
+  async syncAll(path: string, body: unknown): Promise<SyncResult[]> {
+    const repoNames = Array.from(this.repos.keys()).filter(
+      name => this.repos.get(name)?.apiEndpoint
+    );
+    return this.postToRepos(repoNames, path, body);
+  }
+
+  /**
+   * Get incoming queue
+   */
+  getIncomingQueue(): IncomingRequest[] {
+    return [...this.incomingQueue];
+  }
+
+  /**
+   * Get pending requests
+   */
+  getPendingRequests(): IncomingRequest[] {
+    return this.incomingQueue.filter(r => r.status === 'pending');
+  }
+
+  /**
+   * Process all pending requests
+   */
+  async processAllPending(): Promise<IncomingRequest[]> {
+    const pending = this.getPendingRequests();
+    const results = await Promise.all(
+      pending.map(r => this.processIncoming(r.id))
+    );
+    return results;
+  }
+}
+
 // ==================== Export Singleton ====================
 
 export const httpsProxyService = new HttpsProxyService();
+export const multiRepoProxyService = new MultiRepoProxyService(httpsProxyService);
