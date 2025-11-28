@@ -11,9 +11,25 @@ mbtq.dev (Parent Platform - Automated Generative Dev with Video)
 │   ├── Business Magician  → Automation, Taskade
 │   ├── Developer Magician → Code generation, SDK integration
 │   └── Creative Magician  → VR design, visual content
-└── vr4deaf.org            → VR Vocational Rehabilitation Vendor
-    └── portal.vr4deaf.org → Case Worker Portal
+├── vr4deaf.org            → VR Vocational Rehabilitation Vendor
+│   └── portal.vr4deaf.org → Case Worker Portal
+└── github.com/pinkflow    → Sign Language Model CI/CD
+    ├── Model validation
+    ├── Accessibility testing
+    └── Deployment pipeline
 ```
+
+## HTTP/HTTPS Dispatch
+
+| Layer | Protocol | Purpose |
+|-------|----------|---------|
+| External | HTTPS (443) | Client-facing, SSL terminated at nginx |
+| Internal | HTTP (5000) | Backend services on localhost |
+| Redirect | HTTP (80) → HTTPS | All HTTP redirected to HTTPS (301) |
+
+**SSL/TLS Requirements:**
+- mbtq.dev, pinksync.io, 360magicians.com: TLS 1.2+
+- vr4deaf.org: TLS 1.3 only (VR compliance)
 
 ## Visual Protocol Philosophy
 
@@ -55,6 +71,10 @@ This will:
 # Copy main nginx config
 sudo cp deployment/nginx/nginx.conf /etc/nginx/nginx.conf
 
+# Copy nginx snippets (shared configurations)
+sudo mkdir -p /etc/nginx/snippets
+sudo cp deployment/nginx/snippets/*.conf /etc/nginx/snippets/
+
 # Copy site configs
 sudo cp deployment/nginx/sites-available/*.conf /etc/nginx/sites-available/
 
@@ -62,6 +82,7 @@ sudo cp deployment/nginx/sites-available/*.conf /etc/nginx/sites-available/
 sudo ln -s /etc/nginx/sites-available/mbtq.dev.conf /etc/nginx/sites-enabled/
 sudo ln -s /etc/nginx/sites-available/pinksync.io.conf /etc/nginx/sites-enabled/
 sudo ln -s /etc/nginx/sites-available/360magicians.com.conf /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/vr4deaf.org.conf /etc/nginx/sites-enabled/
 sudo ln -s /etc/nginx/sites-available/vr4deaf.org.conf /etc/nginx/sites-enabled/
 
 # Test and reload
