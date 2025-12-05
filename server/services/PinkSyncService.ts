@@ -547,29 +547,47 @@ export class PinkSyncService {
   }
   
   /**
-   * Create encrypted sync data
+   * Create encrypted sync data using symmetric encryption
+   * 
+   * NOTE: For production, consider using a dedicated encryption library like
+   * node:crypto with AES-256-GCM. This implementation uses a simple approach
+   * that demonstrates the concept but may need enhancement for sensitive data.
    */
   async encryptSyncData(
     data: any,
     fieldsToEncrypt: string[]
   ): Promise<{ success: boolean; data?: any; encryptedFields?: string[]; error?: string }> {
     try {
-      // In a real implementation, this would use proper encryption
-      // For now, we'll use PASETO local tokens for field encryption
       const encryptedData = { ...data };
       const encryptedFields: string[] = [];
       
+      // Use crypto for field-level encryption
+      const encryptionKey = process.env.PINKSYNC_ENCRYPTION_KEY || 
+        crypto.randomBytes(32).toString('hex');
+      
       for (const field of fieldsToEncrypt) {
         if (encryptedData[field] !== undefined) {
-          const tokenResult = await pasetoService.createLocalToken(
-            { value: encryptedData[field] },
-            86400 * 365 // 1 year for stored data
+          // Use AES-256-GCM for authenticated encryption
+          const iv = crypto.randomBytes(16);
+          const cipher = crypto.createCipheriv(
+            'aes-256-gcm',
+            Buffer.from(encryptionKey.slice(0, 32).padEnd(32, '0')),
+            iv
           );
           
-          if (tokenResult.success && tokenResult.token) {
-            encryptedData[field] = tokenResult.token;
-            encryptedFields.push(field);
-          }
+          const value = JSON.stringify(encryptedData[field]);
+          let encrypted = cipher.update(value, 'utf8', 'hex');
+          encrypted += cipher.final('hex');
+          const authTag = cipher.getAuthTag();
+          
+          // Store as base64 encoded object with iv and authTag
+          encryptedData[field] = JSON.stringify({
+            encrypted: true,
+            iv: iv.toString('hex'),
+            authTag: authTag.toString('hex'),
+            data: encrypted,
+          });
+          encryptedFields.push(field);
         }
       }
       
@@ -596,13 +614,31 @@ export class PinkSyncService {
   ): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
       const decryptedData = { ...data };
+      const encryptionKey = process.env.PINKSYNC_ENCRYPTION_KEY || 
+        crypto.randomBytes(32).toString('hex');
       
       for (const field of encryptedFields) {
         if (decryptedData[field] !== undefined) {
-          const tokenResult = await pasetoService.verifyLocalToken(decryptedData[field]);
-          
-          if (tokenResult.success && tokenResult.payload?.value !== undefined) {
-            decryptedData[field] = tokenResult.payload.value;
+          try {
+            const encryptedObj = JSON.parse(decryptedData[field]);
+            
+            if (encryptedObj.encrypted) {
+              // Decrypt using AES-256-GCM
+              const decipher = crypto.createDecipheriv(
+                'aes-256-gcm',
+                Buffer.from(encryptionKey.slice(0, 32).padEnd(32, '0')),
+                Buffer.from(encryptedObj.iv, 'hex')
+              );
+              decipher.setAuthTag(Buffer.from(encryptedObj.authTag, 'hex'));
+              
+              let decrypted = decipher.update(encryptedObj.data, 'hex', 'utf8');
+              decrypted += decipher.final('utf8');
+              
+              decryptedData[field] = JSON.parse(decrypted);
+            }
+          } catch (parseError) {
+            // If parsing fails, leave the field as-is
+            console.warn(`Could not decrypt field ${field}:`, parseError);
           }
         }
       }

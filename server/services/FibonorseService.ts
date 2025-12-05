@@ -29,7 +29,13 @@ export enum NorseRealm {
   ASGARD = 9,       // Maximum trust - fully verified
 }
 
-// Fibonacci sequence positions for challenge generation
+/**
+ * Fibonacci sequence used for challenge generation and trust calculations.
+ * Contains first 12 numbers (F(1) to F(12)) covering values 1 to 144.
+ * This range provides:
+ * - F(1)-F(9): Match the 9 Norse realms for realm-based calculations
+ * - F(10)-F(12): Extended values for high-trust users and advanced challenges
+ */
 const FIBONACCI_SEQUENCE = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144];
 
 // Fibonorse user trust profile

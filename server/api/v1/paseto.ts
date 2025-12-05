@@ -10,6 +10,18 @@ import { z } from 'zod';
  * 
  * Foundation authentication endpoints for DeafAuth (github.com/deafauth/deafauth),
  * PinkSync, and Fibonorse using PASETO tokens.
+ * 
+ * SECURITY NOTE: In production, implement rate limiting on all authentication
+ * endpoints to prevent brute force attacks. Consider using express-rate-limit
+ * or similar middleware. Example configuration:
+ * 
+ * const rateLimit = require('express-rate-limit');
+ * const authLimiter = rateLimit({
+ *   windowMs: 15 * 60 * 1000, // 15 minutes
+ *   max: 100, // limit each IP to 100 requests per windowMs
+ *   message: 'Too many authentication attempts, please try again later'
+ * });
+ * router.use('/authenticate', authLimiter);
  */
 
 const router = Router();

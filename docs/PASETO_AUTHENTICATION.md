@@ -253,7 +253,29 @@ Response:
 2. **Token Expiry**: Access tokens expire in 1 hour, refresh tokens in 7 days
 3. **Secure Storage**: Store PASETO_LOCAL_KEY securely in environment variables
 4. **HTTPS Only**: Always use HTTPS in production
-5. **Rate Limiting**: Implement rate limiting on authentication endpoints
+5. **Rate Limiting**: Implement rate limiting on authentication endpoints to prevent brute force attacks
+
+### Rate Limiting (Required for Production)
+
+All authentication endpoints should be protected with rate limiting. Example using `express-rate-limit`:
+
+```javascript
+const rateLimit = require('express-rate-limit');
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { 
+    success: false, 
+    error: 'Too many authentication attempts, please try again later' 
+  }
+});
+
+// Apply to authentication routes
+router.use('/deafauth/authenticate', authLimiter);
+router.use('/pinksync/session', authLimiter);
+router.use('/fibonorse/authenticate', authLimiter);
+```
 
 ## Integration with Existing Auth
 

@@ -391,20 +391,36 @@ export class DeafAuthService {
   
   /**
    * Verify biometric authentication
+   * 
+   * SECURITY NOTE: This is a placeholder implementation for development/testing.
+   * In production, this must integrate with actual biometric verification APIs
+   * (e.g., WebAuthn, device biometrics, or third-party biometric services).
+   * 
+   * DO NOT USE IN PRODUCTION without implementing proper biometric verification.
    */
   private async verifyBiometric(userId: number, authData: any): Promise<boolean> {
-    // Placeholder for biometric verification
-    // Would integrate with device biometric APIs
-    return authData && authData.verified === true;
+    // PLACEHOLDER: In production, integrate with actual biometric APIs
+    // This currently only checks for a test flag - NOT SECURE
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('Biometric verification not fully implemented for production use');
+      return false; // Fail-safe in production until properly implemented
+    }
+    return authData && authData.verified === true && authData.testMode === true;
   }
   
   /**
    * Verify sign language authentication
+   * 
+   * SECURITY NOTE: This is a placeholder implementation for development/testing.
+   * In production, this must integrate with computer vision APIs for sign language recognition.
    */
   private async verifySignLanguage(userId: number, authData: any): Promise<boolean> {
-    // Placeholder for sign language verification
-    // Would integrate with computer vision APIs for sign language recognition
-    return authData && authData.signatureMatch === true;
+    // PLACEHOLDER: Would integrate with computer vision APIs for sign language recognition
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('Sign language verification not fully implemented for production use');
+      return false; // Fail-safe in production until properly implemented
+    }
+    return authData && authData.signatureMatch === true && authData.testMode === true;
   }
   
   /**

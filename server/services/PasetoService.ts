@@ -106,9 +106,15 @@ export class PasetoService {
       if (localKeyEnv) {
         this.localKey = Buffer.from(localKeyEnv, 'base64');
       } else {
-        // Generate a new key for local tokens
-        this.localKey = crypto.randomBytes(32);
-        console.log('Generated new PASETO local key - store this securely');
+        // In production, require the key to be set
+        if (process.env.NODE_ENV === 'production') {
+          console.error('PASETO_LOCAL_KEY environment variable is required in production');
+          console.error('Generate a key with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'base64\'))"');
+        } else {
+          // Generate a new key for development/testing only
+          this.localKey = crypto.randomBytes(32);
+          console.log('Generated new PASETO local key for development - set PASETO_LOCAL_KEY in production');
+        }
       }
       
       // For public tokens (asymmetric signatures)
@@ -130,8 +136,18 @@ export class PasetoService {
     const keyId = crypto.randomBytes(8).toString('hex');
     const keyPair = await V4.generateKey('public');
     
+    // Export public key as DER format for external sharing
+    let publicKeyBuffer: Buffer;
+    try {
+      const exported = keyPair.export({ type: 'spki', format: 'der' });
+      publicKeyBuffer = Buffer.isBuffer(exported) ? exported : Buffer.from(exported);
+    } catch {
+      // Fallback if export fails
+      publicKeyBuffer = Buffer.alloc(0);
+    }
+    
     const pair: PasetoKeyPair = {
-      publicKey: keyPair.export({ type: 'spki', format: 'der' }) as unknown as Buffer,
+      publicKey: publicKeyBuffer,
       secretKey: keyPair,
       keyId,
     };
