@@ -4,3 +4,26 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Environment variables (never commit secrets)
+.env
+.env.local
+.env.development
+.env.staging
+# .env.production is kept as template (no real secrets)
+# .env.example is kept as template (no real secrets)
+
+# Temporary files
+/tmp
+*.log
+*.swp
+*.swo
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# OS files
+Thumbs.db
+.DS_Store
