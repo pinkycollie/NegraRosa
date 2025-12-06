@@ -109,9 +109,9 @@ jobs:
       - name: Check API routes for content-type enforcement
         run: |
           echo "Checking API routes for proper content-type handling..."
-          # This is a basic check - enhance based on your routing structure
-          if grep -r "res.send\|res.write" ./server/routes.ts ./server/api/ 2>/dev/null | grep -v "json" | grep -v ".md:"; then
-            echo "WARNING: Non-JSON responses detected - verify content-type is set correctly"
+          # Check for HTML responses in API routes (potential security issue)
+          if grep -r "text/html\|<html\|<body" ./server/routes.ts ./server/api/ --exclude="*.test.*" 2>/dev/null; then
+            echo "WARNING: HTML content detected in API routes - API should return JSON only"
           fi
           echo "✓ API content-type check complete"
       
