@@ -16,9 +16,7 @@
 
 <!-- If this PR involves agent code or API changes, complete this checklist -->
 
-- [ ] Spectral OpenAPI checks passed (`npm run spectral`)
-- [ ] No DB imports in `/api/*` (import ban enforced)
-- [ ] PII output tests passed (if applicable)
+- [ ] No DB imports in `/api/*` (import ban enforced in CI)
 - [ ] SCA (npm audit) has no high/critical CVEs
 - [ ] `SECURITY.md` reviewed and up-to-date
 - [ ] Agent code has corresponding unit tests
@@ -26,6 +24,10 @@
 - [ ] Secrets stored in KMS (not in repo or env files)
 - [ ] Preview deployment tested and verified
 - [ ] security@mbtq.dev notified if introducing new capabilities
+
+### Planned Future Checks
+- [ ] Spectral OpenAPI checks (to be configured)
+- [ ] PII output tests (to be implemented)
 
 ## Testing Checklist
 

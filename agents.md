@@ -267,15 +267,15 @@ if (!valid) return res.status(401).json({ error: "Invalid signature" });
 
 - **Unit tests**: Jest tests for all service classes (`server/services/*.test.ts`)
 - **Integration tests**: Test API endpoints with supertest and Hardhat testnet for smart contract interactions
-- **Spectral tests**: Run `npm run spectral` to lint OpenAPI specs in `docs/openapi/`
-- **PII tests**: Automated tests in `tests/security/pii.test.ts` assert no PII in responses
+- **Spectral tests**: OpenAPI linting with Spectral (to be configured - see roadmap)
+- **PII tests**: Automated tests to assert no PII in responses (to be implemented)
 
 **Run tests**:
 ```bash
 npm test                  # All tests
-npm run test:unit         # Unit tests only
-npm run test:integration  # Integration tests
-npm run spectral          # OpenAPI linting
+npm run test:unit         # Unit tests only (if configured)
+npm run test:integration  # Integration tests (if configured)
+# Note: Spectral and PII tests are planned enhancements
 ```
 
 ### PR template checklist
@@ -285,9 +285,7 @@ When agents open PRs (or when humans open PRs affecting agent code), include:
 ```markdown
 ## Agent PR Checklist
 
-- [ ] Spectral OpenAPI checks passed (`npm run spectral`)
-- [ ] No DB imports in `/api/*` (import ban enforced)
-- [ ] PII output tests passed (`npm run test:pii`)
+- [ ] No DB imports in `/api/*` (import ban enforced in CI)
 - [ ] SCA (npm audit) has no high/critical CVEs
 - [ ] `SECURITY.md` is present and up-to-date
 - [ ] Agent code has corresponding unit tests
@@ -295,6 +293,10 @@ When agents open PRs (or when humans open PRs affecting agent code), include:
 - [ ] Secrets are stored in KMS (not in repo or env files)
 - [ ] Preview deployment tested and verified
 - [ ] security@mbtq.dev notified if introducing new capabilities
+
+## Planned Future Checks
+- [ ] Spectral OpenAPI checks (to be configured)
+- [ ] PII output tests (to be implemented)
 ```
 
 ### Auto-PRs by agents
@@ -392,7 +394,7 @@ Set up alerts (via Datadog, PagerDuty, or equivalent) for:
 ```javascript
 import crypto from 'crypto';
 
-function verifyWebhookToken(secret, url, nonce, expTs, providedToken) {
+async function verifyWebhookToken(secret, url, nonce, expTs, providedToken) {
   const now = Date.now() / 1000;
   if (now > expTs) return false; // Expired
   
