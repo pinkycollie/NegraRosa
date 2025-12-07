@@ -139,8 +139,7 @@ No additional configuration or secrets are required - the workflow uses the stan
 For questions, issues, or security concerns about the Agent Merge Policy:
 
 - Open an issue in the NegraRosa repository
-- Contact the NegraRosa Security Council
-- Email: security@negrarosa.org (if configured)
+- Contact the NegraRosa Security Council via repository maintainers
 
 ## Examples
 

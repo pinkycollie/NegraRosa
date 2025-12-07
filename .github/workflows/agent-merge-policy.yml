@@ -260,8 +260,6 @@ jobs:
                   repo,
                   pull_number: pullNumber,
                   merge_method: strategy,
-                  commit_title: strategy === 'squash' ? `${prDetails.title} (#${pullNumber})` : undefined,
-                  commit_message: strategy === 'squash' ? prDetails.body || '' : undefined,
                 });
 
                 comment += `✅ **Merged successfully** using **${strategy}** strategy!\n\n`;
@@ -297,7 +295,7 @@ jobs:
             comment += '\n---\n' +
               '**Override Labels**: Add `force-squash`, `force-rebase`, or `force-merge` to override the suggested strategy.\n' +
               '**Block Auto-merge**: Add `do-not-merge` label to prevent automatic merging.\n\n' +
-              '_For more information, see [docs/agent-merge-policy.md](../blob/main/docs/agent-merge-policy.md)_';
+              '_For more information, see [docs/agent-merge-policy.md](https://github.com/' + owner + '/' + repo + '/blob/main/docs/agent-merge-policy.md)_';
 
             await github.rest.issues.createComment({
               owner,

@@ -40,7 +40,6 @@ For security concerns or questions about the NegraRosa framework:
 
 - **GitHub Issues**: [Open an issue](https://github.com/pinkycollie/NegraRosa/issues)
 - **Security Council**: Contact via repository maintainers
-- **Email**: security@negrarosa.org (when configured)
 
 ## Contributing
 
