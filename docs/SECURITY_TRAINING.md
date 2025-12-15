@@ -410,12 +410,12 @@ Test your knowledge:
    - B) MD5 hashed
    - C) bcrypt hashed with salt
 
-3. What's wrong with: `res.json({ error: err.stack })`?
+3. What's wrong with: `res.json({ error: err.stack })` in production?
    - A) Nothing
-   - B) Leaks internal implementation details
-   - C) Should use err.message only
+   - B) Leaks internal implementation details (could help attackers)
+   - C) Both B and should use generic error messages
 
-**Answers:** 1-B, 2-C, 3-B
+**Answers:** 1-B, 2-C, 3-C (or B, both are concerns)
 
 ---
 

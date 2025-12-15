@@ -124,5 +124,7 @@ If you discover a security vulnerability:
 
 ---
 
-**Last Updated:** $(date -u +%Y-%m-%dT%H:%M:%SZ)  
-**Next Review:** Quarterly
+**Last Updated:** 2025-12-15  
+**Next Review:** Quarterly (March 2026)
+
+*This dashboard is automatically updated by the security workflows. Check the [Actions page](https://github.com/pinkycollie/NegraRosa/actions) for real-time status.*
