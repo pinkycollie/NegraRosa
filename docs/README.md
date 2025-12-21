@@ -20,6 +20,12 @@ Welcome to the NegraRosa documentation. This directory contains comprehensive gu
 ### 📦 Deployment
 
 - **[Deployment Guide](../DEPLOY.md)** - Instructions for deploying to Vercel and GitHub Pages
+- **[GitHub Pages Setup](GITHUB_PAGES_SETUP.md)** - Detailed GitHub Pages configuration guide
+
+### 📋 Repository Management
+
+- **[Audit Report](AUDIT_REPORT.md)** - Comprehensive repository audit and optimization report
+- **[File Structure](FILE_STRUCTURE.md)** - Complete documentation of repository organization and file structure
 
 ## 🛡️ Security First Approach
 
