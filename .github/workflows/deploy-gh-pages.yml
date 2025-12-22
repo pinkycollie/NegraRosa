@@ -31,9 +31,15 @@ jobs:
         run: npm ci
 
       - name: Build application
-        run: npm run build
+        run: npm run build:client
         env:
           NODE_ENV: production
+
+      - name: Copy static files for GitHub Pages
+        run: |
+          cp client/public/404.html dist/public/404.html
+          cp client/public/.nojekyll dist/public/.nojekyll
+          cp generated-icon.png dist/public/generated-icon.png
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

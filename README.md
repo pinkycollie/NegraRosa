@@ -54,10 +54,10 @@ This repository uses an intelligent merge agent that:
 ## 🚀 Deployment
 
 The application is automatically deployed to GitHub Pages on every push to `main`:
-- **Production URL:** [GitHub Pages deployment]
+- **Live URL:** [https://pinkycollie.github.io/NegraRosa/](https://pinkycollie.github.io/NegraRosa/)
 - **Deployment Status:** [![Deploy to GitHub Pages](https://github.com/pinkycollie/NegraRosa/actions/workflows/deploy-gh-pages.yml/badge.svg)](https://github.com/pinkycollie/NegraRosa/actions/workflows/deploy-gh-pages.yml)
 
-For manual deployment instructions, see [DEPLOY.md](DEPLOY.md).
+For manual deployment instructions and other platforms, see [DEPLOY.md](DEPLOY.md).
 
 ---
 
