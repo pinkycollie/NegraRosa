@@ -79,7 +79,7 @@
 ---
 
 **By submitting this PR, I confirm that:**
-- I have read and followed the [agents.md](../agents.md) guidelines
-- I have reviewed the [SECURITY.md](../SECURITY.md) policy
+- I have read and followed the [agents.md](../../agents.md) guidelines
+- I have reviewed the [SECURITY.md](../../SECURITY.md) policy
 - I understand that agent PRs require security council approval
 - I will address all review comments before merge
