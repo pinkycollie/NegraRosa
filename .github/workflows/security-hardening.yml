@@ -58,7 +58,7 @@ jobs:
             echo "ERROR: Stripe live secret key found in repository"
             exit 1
           fi
-          if grep -r "sk_test_" . --exclude-dir=node_modules --exclude-dir=.git 2>/dev/null; then
+          if grep -r "sk_test_" . --exclude-dir=node_modules --exclude-dir=.git --exclude=".env.example" 2>/dev/null; then
             echo "WARNING: Stripe test secret key found - should be in environment variables"
           fi
           if grep -r "PRIVATE_KEY" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.md" 2>/dev/null | grep -v "PRIVATE_KEY_PATH"; then
