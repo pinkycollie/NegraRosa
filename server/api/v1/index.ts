@@ -9,6 +9,7 @@ import tenantsRouter from './tenants';
 import securityRouter from './security';
 import partnersRouter from './partners';
 import opensourceRouter from './opensource';
+import pasetoRouter from './paseto';
 
 const router = Router();
 
@@ -25,5 +26,8 @@ router.use('/tenants', tenantsRouter);
 router.use('/security', securityRouter);
 router.use('/partners', partnersRouter);
 router.use('/opensource', opensourceRouter);
+
+// Mount PASETO authentication routes (DeafAuth, PinkSync, Fibonorse)
+router.use('/paseto', pasetoRouter);
 
 export default router;
