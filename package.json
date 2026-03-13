@@ -74,7 +74,7 @@
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "firebase": "^11.6.0",
-    "framer-motion": "^11.13.1",
+    "framer-motion": "^12.36.0",
     "input-otp": "^1.4.2",
     "jsdom": "^26.1.0",
     "jsonwebtoken": "^9.0.3",
