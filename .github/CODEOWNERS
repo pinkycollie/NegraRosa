@@ -1,0 +1,31 @@
+# CODEOWNERS for NegraRosa
+# 
+# Each line is a file pattern followed by one or more owners.
+# These owners will be requested for review when someone opens a PR.
+# More info: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @pinkycollie
+
+# Security and agent documentation
+/agents.md @security-council
+/SECURITY.md @security-council
+
+# Security-critical directories
+/server/api/ @security-council
+/server/services/integrations/ @security-council
+
+# CI/CD workflows
+/.github/workflows/ @security-council
+
+# Infrastructure and deployment
+/vercel.json @security-council
+/vercel-build.sh @security-council
+/DEPLOY.md @security-council
+
+# Database schemas
+/shared/schemas/ @security-council
+/drizzle.config.ts @security-council
+
+# Environment configuration
+/.env.example @security-council
