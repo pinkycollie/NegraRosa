@@ -1,0 +1,307 @@
+name: Agent Merge Policy
+
+on:
+  pull_request_target:
+    types: [opened, labeled, unlabeled, ready_for_review, synchronize, reopened, edited]
+
+permissions:
+  pull-requests: write
+  contents: write
+  issues: write
+  checks: read
+
+jobs:
+  decide-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Agent Merge Decision
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pullNumber = pr.number;
+
+            console.log(`Evaluating PR #${pullNumber}`);
+
+            // Fetch PR details
+            const { data: prDetails } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: pullNumber,
+            });
+
+            // Check if PR is draft
+            if (prDetails.draft) {
+              const comment = '🤖 **Agent Merge Policy**\n\n' +
+                '**Decision**: ❌ No merge (PR is in draft)\n\n' +
+                'This PR is currently in draft status. Please mark it as ready for review when you\'re ready for it to be merged.\n\n' +
+                '---\n' +
+                '**Status Summary**:\n' +
+                '- Draft: ✅ Yes\n' +
+                `- Mergeable State: ${prDetails.mergeable_state || 'unknown'}\n` +
+                '- Auto-merge: Not evaluated (draft)';
+
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: pullNumber,
+                body: comment,
+              });
+              return;
+            }
+
+            // Get labels
+            const labels = prDetails.labels.map(l => l.name);
+            console.log('Labels:', labels);
+
+            // Check for do-not-merge label
+            if (labels.includes('do-not-merge')) {
+              const comment = '🤖 **Agent Merge Policy**\n\n' +
+                '**Decision**: ❌ No merge (do-not-merge label present)\n\n' +
+                'This PR has the `do-not-merge` label. Remove the label when you\'re ready for this PR to be merged.\n\n' +
+                '---\n' +
+                '**Status Summary**:\n' +
+                '- do-not-merge label: ✅ Present\n' +
+                `- Mergeable State: ${prDetails.mergeable_state || 'unknown'}\n` +
+                '- Auto-merge: Not evaluated (blocked by label)';
+
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: pullNumber,
+                body: comment,
+              });
+              return;
+            }
+
+            // Fetch files changed
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner,
+              repo,
+              pull_number: pullNumber,
+            });
+
+            console.log(`Files changed: ${files.length}`);
+
+            // Fetch commits
+            const { data: commits } = await github.rest.pulls.listCommits({
+              owner,
+              repo,
+              pull_number: pullNumber,
+            });
+
+            console.log(`Commits: ${commits.length}`);
+
+            // Get unique commit authors
+            const authors = new Set();
+            commits.forEach(commit => {
+              if (commit.author && commit.author.login) {
+                authors.add(commit.author.login);
+              } else if (commit.commit.author && commit.commit.author.email) {
+                authors.add(commit.commit.author.email);
+              }
+            });
+
+            console.log(`Unique authors: ${authors.size}`);
+
+            // Fetch reviews
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner,
+              repo,
+              pull_number: pullNumber,
+            });
+
+            // Count approved reviews (latest per reviewer)
+            const reviewsByUser = {};
+            reviews.forEach(review => {
+              const user = review.user.login;
+              if (!reviewsByUser[user] || new Date(review.submitted_at) > new Date(reviewsByUser[user].submitted_at)) {
+                reviewsByUser[user] = review;
+              }
+            });
+
+            const approvedCount = Object.values(reviewsByUser).filter(r => r.state === 'APPROVED').length;
+            console.log(`Approved reviews: ${approvedCount}`);
+
+            // Fetch combined status for the head commit
+            let checksStatus = 'unknown';
+            try {
+              const { data: statusData } = await github.rest.repos.getCombinedStatusForRef({
+                owner,
+                repo,
+                ref: prDetails.head.sha,
+              });
+              checksStatus = statusData.state;
+              console.log(`Combined checks status: ${checksStatus}`);
+            } catch (error) {
+              console.log('Could not fetch combined status:', error.message);
+            }
+
+            // Also check check runs (for Actions workflows)
+            let checkRunsStatus = 'unknown';
+            try {
+              const { data: checkRuns } = await github.rest.checks.listForRef({
+                owner,
+                repo,
+                ref: prDetails.head.sha,
+              });
+              
+              if (checkRuns.total_count > 0) {
+                const allSuccess = checkRuns.check_runs.every(run => 
+                  run.status === 'completed' && run.conclusion === 'success'
+                );
+                const anyFailure = checkRuns.check_runs.some(run => 
+                  run.status === 'completed' && (run.conclusion === 'failure' || run.conclusion === 'cancelled')
+                );
+                
+                if (allSuccess) {
+                  checkRunsStatus = 'success';
+                } else if (anyFailure) {
+                  checkRunsStatus = 'failure';
+                } else {
+                  checkRunsStatus = 'pending';
+                }
+              }
+              console.log(`Check runs status: ${checkRunsStatus}`);
+            } catch (error) {
+              console.log('Could not fetch check runs:', error.message);
+            }
+
+            // Determine overall CI status (prefer check runs over combined status)
+            const ciStatus = checkRunsStatus !== 'unknown' ? checkRunsStatus : checksStatus;
+
+            // Determine merge strategy based on rubric
+            let strategy = 'rebase'; // default
+            let reason = '';
+
+            // Check for override labels
+            if (labels.includes('force-squash')) {
+              strategy = 'squash';
+              reason = 'Override label `force-squash` present';
+            } else if (labels.includes('force-rebase')) {
+              strategy = 'rebase';
+              reason = 'Override label `force-rebase` present';
+            } else if (labels.includes('force-merge')) {
+              strategy = 'merge';
+              reason = 'Override label `force-merge` present';
+            } else {
+              // Check if author is a bot
+              const isBot = prDetails.user.type === 'Bot' || 
+                           prDetails.user.login.endsWith('[bot]') || 
+                           prDetails.user.login.toLowerCase().includes('bot');
+
+              // Check if all files are docs-only
+              const docsOnlyPaths = files.every(file => {
+                const path = file.filename;
+                return path.startsWith('docs/') || 
+                       path.startsWith('.github/') || 
+                       path.endsWith('.md') || 
+                       path === 'SECURITY.md' || 
+                       path === '.env.example';
+              });
+
+              if (isBot || docsOnlyPaths) {
+                strategy = 'squash';
+                if (isBot && docsOnlyPaths) {
+                  reason = 'Bot PR with docs-only changes';
+                } else if (isBot) {
+                  reason = 'Bot PR';
+                } else {
+                  reason = 'Docs-only changes';
+                }
+              } else if (authors.size > 1 && commits.length >= 5) {
+                strategy = 'merge';
+                reason = `Multiple authors (${authors.size}) with ${commits.length} commits`;
+              } else {
+                strategy = 'rebase';
+                reason = `Single author or few commits (${commits.length} commit${commits.length !== 1 ? 's' : ''})`;
+              }
+            }
+
+            console.log(`Strategy: ${strategy}, Reason: ${reason}`);
+
+            // Check auto-merge conditions
+            const mergeableStates = ['clean', 'unstable', 'has_hooks'];
+            const isMergeable = mergeableStates.includes(prDetails.mergeable_state);
+            const ciPassed = ciStatus === 'success';
+            const hasApproval = approvedCount > 0;
+            const canAutoMerge = isMergeable && ciPassed && hasApproval && !prDetails.draft && !labels.includes('do-not-merge');
+
+            console.log(`Can auto-merge: ${canAutoMerge} (mergeable: ${isMergeable}, CI: ${ciPassed}, approval: ${hasApproval})`);
+
+            // Prepare comment
+            const strategyEmoji = strategy === 'squash' ? '📦 Squash' : strategy === 'rebase' ? '📝 Rebase' : '🔀 Merge';
+            const ciEmoji = ciStatus === 'success' ? '✅ Pass' : ciStatus === 'failure' ? '❌ Fail' : '⏳ ' + ciStatus;
+            
+            let comment = '🤖 **Agent Merge Policy**\n\n' +
+              `**Suggested Strategy**: ${strategyEmoji}\n` +
+              `**Reason**: ${reason}\n\n` +
+              '---\n' +
+              '**Status Summary**:\n' +
+              `- Mergeable State: ${prDetails.mergeable_state || 'unknown'}\n` +
+              `- CI Status: ${ciEmoji}\n` +
+              `- Approved Reviews: ${approvedCount}\n` +
+              `- Commits: ${commits.length}\n` +
+              `- Authors: ${authors.size}\n` +
+              `- Draft: ${prDetails.draft ? '✅' : '❌'}\n\n` +
+              '---\n' +
+              '**Auto-merge Evaluation**:\n';
+
+            if (canAutoMerge) {
+              comment += `✅ All conditions met - attempting to merge using **${strategy}** strategy...\n\n`;
+              
+              try {
+                // Attempt to merge
+                await github.rest.pulls.merge({
+                  owner,
+                  repo,
+                  pull_number: pullNumber,
+                  merge_method: strategy,
+                });
+
+                comment += `✅ **Merged successfully** using **${strategy}** strategy!\n\n`;
+
+                // Delete the source branch
+                try {
+                  await github.rest.git.deleteRef({
+                    owner,
+                    repo,
+                    ref: `heads/${prDetails.head.ref}`,
+                  });
+                  comment += `🗑️ Source branch \`${prDetails.head.ref}\` deleted.\n`;
+                } catch (deleteError) {
+                  console.log('Could not delete branch:', deleteError.message);
+                  comment += `⚠️ Could not delete source branch \`${prDetails.head.ref}\`: ${deleteError.message}\n`;
+                }
+              } catch (mergeError) {
+                console.log('Merge failed:', mergeError.message);
+                comment += `❌ **Merge failed**: ${mergeError.message}\n\n`;
+                comment += 'Please merge manually or check for conflicts.\n';
+              }
+            } else {
+              comment += '❌ Not all conditions met for auto-merge:\n\n';
+              if (!isMergeable) comment += `- Mergeable state is \`${prDetails.mergeable_state}\` (expected: clean, unstable, or has_hooks)\n`;
+              if (!ciPassed) comment += `- CI status is \`${ciStatus}\` (expected: success)\n`;
+              if (!hasApproval) comment += '- No approved reviews (at least 1 required)\n';
+              if (prDetails.draft) comment += '- PR is in draft\n';
+              if (labels.includes('do-not-merge')) comment += '- `do-not-merge` label present\n';
+              
+              comment += '\n**To enable auto-merge**: Ensure CI passes, get at least one approval, and verify the PR is not in draft and has no `do-not-merge` label.\n';
+            }
+
+            comment += '\n---\n' +
+              '**Override Labels**: Add `force-squash`, `force-rebase`, or `force-merge` to override the suggested strategy.\n' +
+              '**Block Auto-merge**: Add `do-not-merge` label to prevent automatic merging.\n\n' +
+              '_For more information, see [docs/agent-merge-policy.md](https://github.com/' + owner + '/' + repo + '/blob/main/docs/agent-merge-policy.md)_';
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: pullNumber,
+              body: comment,
+            });
+
+            console.log('Comment posted successfully');
