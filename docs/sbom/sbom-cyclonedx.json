@@ -3,9 +3,9 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
   "version": 1,
-  "serialNumber": "urn:uuid:e150a671-6c09-441f-87bf-dfda8bfdc425",
+  "serialNumber": "urn:uuid:7e5d2629-3d33-4d88-978f-551a8918614a",
   "metadata": {
-    "timestamp": "2026-05-02T18:06:08.380Z",
+    "timestamp": "2026-05-02T18:06:53.906Z",
     "tools": {
       "components": [
         {
@@ -124,8 +124,8 @@
       "type": "library",
       "name": "sdk",
       "group": "@anthropic-ai",
-      "version": "0.80.0",
-      "bom-ref": "negrarosa-security-framework@1.0.0|@anthropic-ai/sdk@0.80.0",
+      "version": "0.91.1",
+      "bom-ref": "negrarosa-security-framework@1.0.0|@anthropic-ai/sdk@0.91.1",
       "author": "Anthropic",
       "description": "The official TypeScript library for the Anthropic API",
       "licenses": [
@@ -136,7 +136,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40anthropic-ai/sdk@0.80.0",
+      "purl": "pkg:npm/%40anthropic-ai/sdk@0.91.1",
       "externalReferences": [
         {
           "url": "git+https://github.com/anthropics/anthropic-sdk-typescript.git",
@@ -154,12 +154,12 @@
           "comment": "as detected from PackageJson property \"bugs.url\""
         },
         {
-          "url": "https://registry.npmjs.org/@anthropic-ai/sdk/-/sdk-0.80.0.tgz",
+          "url": "https://registry.npmjs.org/@anthropic-ai/sdk/-/sdk-0.91.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "59e5cb9fbccd564df28deb219fec591ef95de80a0550e47749ea7aa52a07868e586d28ba1f0722aea80f03971c16e5bc41354900053b37cb90402e966bd4c6fa"
+              "content": "2c09aeefad6d48df6beba8b1be6722b30523fd90bed50e2201fa5e7537d254b7acc11c276379f635be93b24f9c2cf3f6f1a2ce3d678c808b93b8270c0ba5bf8b"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -34085,7 +34085,7 @@
     {
       "ref": "negrarosa-security-framework@1.0.0",
       "dependsOn": [
-        "negrarosa-security-framework@1.0.0|@anthropic-ai/sdk@0.80.0",
+        "negrarosa-security-framework@1.0.0|@anthropic-ai/sdk@0.91.1",
         "negrarosa-security-framework@1.0.0|@hookform/resolvers@3.9.1",
         "negrarosa-security-framework@1.0.0|@jridgewell/trace-mapping@0.3.31",
         "negrarosa-security-framework@1.0.0|@neondatabase/serverless@1.0.2",
@@ -34194,7 +34194,7 @@
       ]
     },
     {
-      "ref": "negrarosa-security-framework@1.0.0|@anthropic-ai/sdk@0.80.0",
+      "ref": "negrarosa-security-framework@1.0.0|@anthropic-ai/sdk@0.91.1",
       "dependsOn": [
         "negrarosa-security-framework@1.0.0|json-schema-to-ts@3.1.1",
         "negrarosa-security-framework@1.0.0|zod@3.25.76"
