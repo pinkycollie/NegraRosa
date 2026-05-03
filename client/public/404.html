@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NegraRosa - Page Not Found</title>
+    <script>
+      // GitHub Pages SPA redirect handler
+      // This script stores the current path and redirects to the root
+      // The root page will then read this and navigate to the correct route
+      sessionStorage.setItem('redirectPath', location.pathname + location.search + location.hash);
+      location.replace(location.origin + location.pathname.split('/').slice(0, -1).join('/') + '/');
+    </script>
+  </head>
+  <body>
+    <!-- This page is a fallback for GitHub Pages SPA routing -->
+  </body>
+</html>
