@@ -3,9 +3,9 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
   "version": 1,
-  "serialNumber": "urn:uuid:aba2c8ae-68a2-48cf-b31d-addc89306900",
+  "serialNumber": "urn:uuid:7c2a1ef0-5cc2-421b-81df-732905ebeb2e",
   "metadata": {
-    "timestamp": "2026-05-10T00:18:52.612Z",
+    "timestamp": "2026-05-14T14:00:38.850Z",
     "tools": {
       "components": [
         {
@@ -3664,8 +3664,8 @@
     {
       "type": "library",
       "name": "axios",
-      "version": "1.14.0",
-      "bom-ref": "negrarosa-security-framework@1.0.0|axios@1.14.0",
+      "version": "1.16.1",
+      "bom-ref": "negrarosa-security-framework@1.0.0|axios@1.16.1",
       "author": "Matt Zabriskie",
       "description": "Promise based HTTP client for the browser and node.js",
       "licenses": [
@@ -3676,7 +3676,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/axios@1.14.0",
+      "purl": "pkg:npm/axios@1.16.1",
       "externalReferences": [
         {
           "url": "git+https://github.com/axios/axios.git",
@@ -3694,12 +3694,12 @@
           "comment": "as detected from PackageJson property \"bugs.url\""
         },
         {
-          "url": "https://registry.npmjs.org/axios/-/axios-1.14.0.tgz",
+          "url": "https://registry.npmjs.org/axios/-/axios-1.16.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "dd8f32aea2d2c23bb3a57b99d2821867f5c680bc14201537b8bbdb7296f4a62743f5cb694a125de3729294412455083a0d2d06f4d2b2ccebc17d4b43284c87bd"
+              "content": "71a624ba4beba153cef0aaf3b8911be741e6d3b2b07c164f102dd57851d3b2a587bca4eccb9e218c9cfd052fdc75aca944e136ac7eb1be6f661d7e1f81692bdc"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -3709,6 +3709,110 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/axios"
+        }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "https-proxy-agent",
+          "version": "5.0.1",
+          "bom-ref": "negrarosa-security-framework@1.0.0|axios@1.16.1|https-proxy-agent@5.0.1",
+          "author": "Nathan Rajlich",
+          "description": "An HTTP(s) proxy `http.Agent` implementation for HTTPS",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT",
+                "acknowledgement": "declared"
+              }
+            }
+          ],
+          "purl": "pkg:npm/https-proxy-agent@5.0.1",
+          "externalReferences": [
+            {
+              "url": "git://github.com/TooTallNate/node-https-proxy-agent.git",
+              "type": "vcs",
+              "comment": "as detected from PackageJson property \"repository.url\""
+            },
+            {
+              "url": "https://github.com/TooTallNate/node-https-proxy-agent#readme",
+              "type": "website",
+              "comment": "as detected from PackageJson property \"homepage\""
+            },
+            {
+              "url": "https://github.com/TooTallNate/node-https-proxy-agent/issues",
+              "type": "issue-tracker",
+              "comment": "as detected from PackageJson property \"bugs.url\""
+            },
+            {
+              "url": "https://registry.npmjs.org/https-proxy-agent/-/https-proxy-agent-5.0.1.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "7457008e94d0160a0b3330b657053e0bf09b4bbb912f49569b10c84e6aa6ec2fbb17439d9a3eacf65e9a95973a0042d786b9e080cd827964971c639d5f662dc0"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/axios/node_modules/https-proxy-agent"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "agent-base",
+          "version": "6.0.2",
+          "bom-ref": "negrarosa-security-framework@1.0.0|axios@1.16.1|agent-base@6.0.2",
+          "author": "Nathan Rajlich",
+          "description": "Turn a function into an `http.Agent` instance",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT",
+                "acknowledgement": "declared"
+              }
+            }
+          ],
+          "purl": "pkg:npm/agent-base@6.0.2",
+          "externalReferences": [
+            {
+              "url": "git://github.com/TooTallNate/node-agent-base.git",
+              "type": "vcs",
+              "comment": "as detected from PackageJson property \"repository.url\""
+            },
+            {
+              "url": "https://github.com/TooTallNate/node-agent-base#readme",
+              "type": "website",
+              "comment": "as detected from PackageJson property \"homepage\""
+            },
+            {
+              "url": "https://github.com/TooTallNate/node-agent-base/issues",
+              "type": "issue-tracker",
+              "comment": "as detected from PackageJson property \"bugs.url\""
+            },
+            {
+              "url": "https://registry.npmjs.org/agent-base/-/agent-base-6.0.2.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "45937035c945efe312ffc6c383bd1a9a0df6772799199c620ee42667128b025423af78c6c8bc7ee0a924e7c50eec3d90760148402a2fb92b991129dee911ba5d"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/axios/node_modules/agent-base"
+            }
+          ]
         }
       ]
     },
@@ -34140,7 +34244,7 @@
         "negrarosa-security-framework@1.0.0|@types/ws@8.18.1",
         "negrarosa-security-framework@1.0.0|@vitejs/plugin-react@6.0.1",
         "negrarosa-security-framework@1.0.0|autoprefixer@10.4.27",
-        "negrarosa-security-framework@1.0.0|axios@1.14.0",
+        "negrarosa-security-framework@1.0.0|axios@1.16.1",
         "negrarosa-security-framework@1.0.0|body-parser@2.2.2",
         "negrarosa-security-framework@1.0.0|bufferutil@4.1.0",
         "negrarosa-security-framework@1.0.0|class-variance-authority@0.7.1",
@@ -34966,11 +35070,25 @@
       ]
     },
     {
-      "ref": "negrarosa-security-framework@1.0.0|axios@1.14.0",
+      "ref": "negrarosa-security-framework@1.0.0|axios@1.16.1",
       "dependsOn": [
         "negrarosa-security-framework@1.0.0|follow-redirects@1.16.0",
         "negrarosa-security-framework@1.0.0|form-data@4.0.5",
+        "negrarosa-security-framework@1.0.0|axios@1.16.1|https-proxy-agent@5.0.1",
         "negrarosa-security-framework@1.0.0|proxy-from-env@2.1.0"
+      ]
+    },
+    {
+      "ref": "negrarosa-security-framework@1.0.0|axios@1.16.1|https-proxy-agent@5.0.1",
+      "dependsOn": [
+        "negrarosa-security-framework@1.0.0|axios@1.16.1|agent-base@6.0.2",
+        "negrarosa-security-framework@1.0.0|debug@4.4.3"
+      ]
+    },
+    {
+      "ref": "negrarosa-security-framework@1.0.0|axios@1.16.1|agent-base@6.0.2",
+      "dependsOn": [
+        "negrarosa-security-framework@1.0.0|debug@4.4.3"
       ]
     },
     {
@@ -35380,7 +35498,7 @@
     {
       "ref": "negrarosa-security-framework@1.0.0|plaid@31.1.0",
       "dependsOn": [
-        "negrarosa-security-framework@1.0.0|axios@1.14.0"
+        "negrarosa-security-framework@1.0.0|axios@1.16.1"
       ]
     },
     {
@@ -35907,7 +36025,7 @@
       "ref": "negrarosa-security-framework@1.0.0|@sendgrid/client@8.1.5",
       "dependsOn": [
         "negrarosa-security-framework@1.0.0|@sendgrid/helpers@8.0.0",
-        "negrarosa-security-framework@1.0.0|axios@1.14.0"
+        "negrarosa-security-framework@1.0.0|axios@1.16.1"
       ]
     },
     {
