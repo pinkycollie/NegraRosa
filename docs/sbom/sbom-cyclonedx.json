@@ -3,9 +3,9 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
   "version": 1,
-  "serialNumber": "urn:uuid:010d1ce2-a5da-4f1f-8d91-7e95c7f744de",
+  "serialNumber": "urn:uuid:43010d93-f739-4a0b-acf9-1f335a5b9f11",
   "metadata": {
-    "timestamp": "2026-05-17T00:20:11.597Z",
+    "timestamp": "2026-05-18T22:49:50.273Z",
     "tools": {
       "components": [
         {
@@ -19169,8 +19169,8 @@
     {
       "type": "library",
       "name": "yaml",
-      "version": "2.6.0",
-      "bom-ref": "negrarosa-security-framework@1.0.0|yaml@2.6.0",
+      "version": "2.9.0",
+      "bom-ref": "negrarosa-security-framework@1.0.0|yaml@2.9.0",
       "author": "Eemeli Aro",
       "description": "JavaScript parser and stringifier for YAML",
       "licenses": [
@@ -19181,7 +19181,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/yaml@2.6.0",
+      "purl": "pkg:npm/yaml@2.9.0",
       "externalReferences": [
         {
           "url": "git+https://github.com/eemeli/yaml.git",
@@ -19199,12 +19199,12 @@
           "comment": "as detected from PackageJson property \"bugs.url\""
         },
         {
-          "url": "https://registry.npmjs.org/yaml/-/yaml-2.6.0.tgz",
+          "url": "https://registry.npmjs.org/yaml/-/yaml-2.9.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "6ba69efff26f28312b6b691d8b5ab30b2ac95bf5990a0162f3274357e79713197de6dfb947e8a39ea1c96f3f6d98c87c1548f1de2bf67c243875c9404253b651"
+              "content": "d80be1357de66fccdde99cbb20d4ed4a9975175e475ba5a7aa3d2cad696428b729625fe03083098b2b86ab629e236605c543e376507edcb735d2c78c2ed2f870"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -31475,8 +31475,8 @@
       "type": "library",
       "name": "utf8",
       "group": "@protobufjs",
-      "version": "1.1.0",
-      "bom-ref": "negrarosa-security-framework@1.0.0|@protobufjs/utf8@1.1.0",
+      "version": "1.1.1",
+      "bom-ref": "negrarosa-security-framework@1.0.0|@protobufjs/utf8@1.1.1",
       "author": "Daniel Wirtz",
       "description": "A minimal UTF8 implementation for number arrays.",
       "licenses": [
@@ -31487,7 +31487,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40protobufjs/utf8@1.1.0",
+      "purl": "pkg:npm/%40protobufjs/utf8@1.1.1",
       "externalReferences": [
         {
           "url": "git+https://github.com/dcodeIO/protobuf.js.git",
@@ -31505,12 +31505,12 @@
           "comment": "as detected from PackageJson property \"bugs.url\""
         },
         {
-          "url": "https://registry.npmjs.org/@protobufjs/utf8/-/utf8-1.1.0.tgz",
+          "url": "https://registry.npmjs.org/@protobufjs/utf8/-/utf8-1.1.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "56f9f7cd9ae1419924044f0b4ae5b77a6f7c73417080ee27c73bfa39d4b13ca24810a6366c66c79fe9a11883deaf3238b7077168ff3fd3ed3a1c1a707f7e392f"
+              "content": "a0e016001a307bc1006ccc9628cd2d6032a2f186a8c79d83f87599840209a905dba9ed3123f195ec584b5aa9442ab78c91f0e3b2147914a822de69e57b487a12"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -35639,7 +35639,7 @@
         "negrarosa-security-framework@1.0.0|rolldown@1.0.0-rc.17",
         "negrarosa-security-framework@1.0.0|tinyglobby@0.2.16",
         "negrarosa-security-framework@1.0.0|tsx@4.21.0",
-        "negrarosa-security-framework@1.0.0|yaml@2.6.0"
+        "negrarosa-security-framework@1.0.0|yaml@2.9.0"
       ]
     },
     {
@@ -37042,7 +37042,7 @@
       "dependsOn": [
         "negrarosa-security-framework@1.0.0|postcss-load-config@4.0.2|lilconfig@3.1.2",
         "negrarosa-security-framework@1.0.0|postcss@8.5.10",
-        "negrarosa-security-framework@1.0.0|yaml@2.6.0"
+        "negrarosa-security-framework@1.0.0|yaml@2.9.0"
       ]
     },
     {
@@ -37125,7 +37125,7 @@
       "ref": "negrarosa-security-framework@1.0.0|tinyglobby@0.2.16|picomatch@4.0.4"
     },
     {
-      "ref": "negrarosa-security-framework@1.0.0|yaml@2.6.0"
+      "ref": "negrarosa-security-framework@1.0.0|yaml@2.9.0"
     },
     {
       "ref": "negrarosa-security-framework@1.0.0|mitt@3.0.1"
@@ -37988,7 +37988,7 @@
         "negrarosa-security-framework@1.0.0|@protobufjs/inquire@1.1.0",
         "negrarosa-security-framework@1.0.0|@protobufjs/path@1.1.2",
         "negrarosa-security-framework@1.0.0|@protobufjs/pool@1.1.0",
-        "negrarosa-security-framework@1.0.0|@protobufjs/utf8@1.1.0",
+        "negrarosa-security-framework@1.0.0|@protobufjs/utf8@1.1.1",
         "negrarosa-security-framework@1.0.0|@types/node@25.5.0",
         "negrarosa-security-framework@1.0.0|long@5.3.2"
       ]
@@ -38267,7 +38267,7 @@
       "ref": "negrarosa-security-framework@1.0.0|@protobufjs/pool@1.1.0"
     },
     {
-      "ref": "negrarosa-security-framework@1.0.0|@protobufjs/utf8@1.1.0"
+      "ref": "negrarosa-security-framework@1.0.0|@protobufjs/utf8@1.1.1"
     },
     {
       "ref": "negrarosa-security-framework@1.0.0|cliui@8.0.1",
