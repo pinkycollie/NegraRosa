@@ -3,9 +3,9 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
   "version": 1,
-  "serialNumber": "urn:uuid:3b1f77e3-6e2b-413e-9f8b-d1ee9c1a79dc",
+  "serialNumber": "urn:uuid:979c70a3-f39d-4172-97ce-c9312e7f6980",
   "metadata": {
-    "timestamp": "2026-05-27T00:03:04.820Z",
+    "timestamp": "2026-05-27T00:04:28.132Z",
     "tools": {
       "components": [
         {
@@ -26220,8 +26220,8 @@
     {
       "type": "library",
       "name": "glob",
-      "version": "10.4.5",
-      "bom-ref": "negrarosa-security-framework@1.0.0|glob@10.4.5",
+      "version": "10.5.0",
+      "bom-ref": "negrarosa-security-framework@1.0.0|glob@10.5.0",
       "author": "Isaac Z. Schlueter",
       "description": "the most correct and second fastest glob implementation in JavaScript",
       "licenses": [
@@ -26232,7 +26232,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/glob@10.4.5",
+      "purl": "pkg:npm/glob@10.5.0",
       "externalReferences": [
         {
           "url": "git://github.com/isaacs/node-glob.git",
@@ -26250,12 +26250,12 @@
           "comment": "as detected from PackageJson property \"bugs.url\""
         },
         {
-          "url": "https://registry.npmjs.org/glob/-/glob-10.4.5.tgz",
+          "url": "https://registry.npmjs.org/glob/-/glob-10.5.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "ec1bfc445d24eb18e8edde00fcfc582db5027dbe9cf95a5ddbf981db244395ec3b25be611178820fd89b7ceef0a64f22e2c7af2ba0c59f2f61ec461b337fec1e"
+              "content": "0df5cdf037e127b347dce7bb7059aedcd0aed7029b911789f13a2bcd20056d22ab94d69048a7c8cea62a558f3395bb3634b05b5a9462539d865f63db68154d92"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -37075,7 +37075,7 @@
       "dependsOn": [
         "negrarosa-security-framework@1.0.0|@jridgewell/gen-mapping@0.3.13",
         "negrarosa-security-framework@1.0.0|commander@4.1.1",
-        "negrarosa-security-framework@1.0.0|glob@10.4.5",
+        "negrarosa-security-framework@1.0.0|glob@10.5.0",
         "negrarosa-security-framework@1.0.0|lines-and-columns@1.2.4",
         "negrarosa-security-framework@1.0.0|mz@2.7.0",
         "negrarosa-security-framework@1.0.0|pirates@4.0.6",
@@ -37793,7 +37793,7 @@
       "ref": "negrarosa-security-framework@1.0.0|commander@4.1.1"
     },
     {
-      "ref": "negrarosa-security-framework@1.0.0|glob@10.4.5",
+      "ref": "negrarosa-security-framework@1.0.0|glob@10.5.0",
       "dependsOn": [
         "negrarosa-security-framework@1.0.0|foreground-child@3.3.0",
         "negrarosa-security-framework@1.0.0|jackspeak@3.4.3",
