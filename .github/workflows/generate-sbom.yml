@@ -6,7 +6,7 @@ on:
   release:
     types: [published]
   schedule:
-    # Generate SBOM weekly on Sunday
+    # Generate SBOM monthly on Sunday
     - cron: '0 0 * * 0'
   workflow_dispatch:
 
@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22, 24, 26'
           cache: 'npm'
 
       - name: Install dependencies
