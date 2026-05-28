@@ -3,9 +3,9 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
   "version": 1,
-  "serialNumber": "urn:uuid:c0db06e0-8f10-41cd-a730-463ff9d7d8fc",
+  "serialNumber": "urn:uuid:89d6fdaa-e351-4106-b133-884914e43fbb",
   "metadata": {
-    "timestamp": "2026-05-27T00:08:07.168Z",
+    "timestamp": "2026-05-28T09:00:50.583Z",
     "tools": {
       "components": [
         {
@@ -4798,8 +4798,8 @@
     {
       "type": "library",
       "name": "esbuild",
-      "version": "0.27.5",
-      "bom-ref": "negrarosa-security-framework@1.0.0|esbuild@0.27.5",
+      "version": "0.27.7",
+      "bom-ref": "negrarosa-security-framework@1.0.0|esbuild@0.27.7",
       "description": "An extremely fast JavaScript and CSS bundler and minifier.",
       "licenses": [
         {
@@ -4809,7 +4809,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/esbuild@0.27.5",
+      "purl": "pkg:npm/esbuild@0.27.7",
       "externalReferences": [
         {
           "url": "git+https://github.com/evanw/esbuild.git",
@@ -4827,12 +4827,12 @@
           "comment": "as detected from PackageJson property \"bugs.url\""
         },
         {
-          "url": "https://registry.npmjs.org/esbuild/-/esbuild-0.27.5.tgz",
+          "url": "https://registry.npmjs.org/esbuild/-/esbuild-0.27.7.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "cdd4281c18ee0ea2acbd5e4e3da59a9ec3b07d243426cf948fd27ce5306f8f76c55b52635934942cc47075001cf2a31e21271b0a5c5e30ad2396bb41f658a784"
+              "content": "231a626d38f25679ab210a396aa3690a0a00080fdd4ca2d39613078a154785d9312b23ced6e041b61ba64f4add1e672c93db8ca272164b49b81658d6cc82e1df"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -12048,8 +12048,8 @@
       "type": "library",
       "name": "linux-x64",
       "group": "@esbuild",
-      "version": "0.27.5",
-      "bom-ref": "negrarosa-security-framework@1.0.0|@esbuild/linux-x64@0.27.5",
+      "version": "0.27.7",
+      "bom-ref": "negrarosa-security-framework@1.0.0|@esbuild/linux-x64@0.27.7",
       "description": "The Linux 64-bit binary for esbuild, a JavaScript bundler.",
       "scope": "optional",
       "licenses": [
@@ -12060,7 +12060,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40esbuild/linux-x64@0.27.5",
+      "purl": "pkg:npm/%40esbuild/linux-x64@0.27.7",
       "externalReferences": [
         {
           "url": "git+https://github.com/evanw/esbuild.git",
@@ -12078,12 +12078,12 @@
           "comment": "as detected from PackageJson property \"bugs.url\""
         },
         {
-          "url": "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.27.5.tgz",
+          "url": "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.27.7.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "f86ab8ed6aaae8f2ce399b81cd5488236ffff72c8734a64bbb07f309e9aa7b1a8e4024b3d33cb43b6ea4233ca9f4430d30afa7674b451c166b09e554b8cb3f7b"
+              "content": "873ce79800cfb7e3a6b18cf0d44137ddc700f873dd22a88246aedc41e2f5265ab681bd7e3b258190c0ab606049facc55cef7b664911579e3db2ccda2108652c4"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -34257,7 +34257,7 @@
         "negrarosa-security-framework@1.0.0|drizzle-orm@0.45.2",
         "negrarosa-security-framework@1.0.0|drizzle-zod@0.8.3",
         "negrarosa-security-framework@1.0.0|embla-carousel-react@8.6.0",
-        "negrarosa-security-framework@1.0.0|esbuild@0.27.5",
+        "negrarosa-security-framework@1.0.0|esbuild@0.27.7",
         "negrarosa-security-framework@1.0.0|express-session@1.19.0",
         "negrarosa-security-framework@1.0.0|express@5.2.1",
         "negrarosa-security-framework@1.0.0|firebase@12.12.0",
@@ -35211,9 +35211,9 @@
       ]
     },
     {
-      "ref": "negrarosa-security-framework@1.0.0|esbuild@0.27.5",
+      "ref": "negrarosa-security-framework@1.0.0|esbuild@0.27.7",
       "dependsOn": [
-        "negrarosa-security-framework@1.0.0|@esbuild/linux-x64@0.27.5"
+        "negrarosa-security-framework@1.0.0|@esbuild/linux-x64@0.27.7"
       ]
     },
     {
@@ -35609,7 +35609,7 @@
     {
       "ref": "negrarosa-security-framework@1.0.0|tsx@4.21.0",
       "dependsOn": [
-        "negrarosa-security-framework@1.0.0|esbuild@0.27.5",
+        "negrarosa-security-framework@1.0.0|esbuild@0.27.7",
         "negrarosa-security-framework@1.0.0|get-tsconfig@4.8.1"
       ]
     },
@@ -35631,7 +35631,7 @@
       "ref": "negrarosa-security-framework@1.0.0|vite@8.0.10",
       "dependsOn": [
         "negrarosa-security-framework@1.0.0|@types/node@25.5.0",
-        "negrarosa-security-framework@1.0.0|esbuild@0.27.5",
+        "negrarosa-security-framework@1.0.0|esbuild@0.27.7",
         "negrarosa-security-framework@1.0.0|jiti@1.21.6",
         "negrarosa-security-framework@1.0.0|lightningcss@1.32.0",
         "negrarosa-security-framework@1.0.0|vite@8.0.10|picomatch@4.0.4",
@@ -36248,7 +36248,7 @@
       "ref": "negrarosa-security-framework@1.0.0|embla-carousel@8.6.0"
     },
     {
-      "ref": "negrarosa-security-framework@1.0.0|@esbuild/linux-x64@0.27.5"
+      "ref": "negrarosa-security-framework@1.0.0|@esbuild/linux-x64@0.27.7"
     },
     {
       "ref": "negrarosa-security-framework@1.0.0|depd@2.0.0"
