@@ -58,7 +58,7 @@ jobs:
           echo "- [SPDX JSON](sbom-spdx.json)" >> docs/sbom/README.md
 
       - name: Upload SBOM artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom-files
           path: |
