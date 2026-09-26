@@ -18,6 +18,7 @@ import automlRouter from './automl';
 import visualRouter from './visual';
 import videoRouter from './video';
 import proxyRouter from './proxy';
+import pasetoRouter from './paseto';
 
 const router = Router();
 
@@ -63,5 +64,7 @@ router.use('/video', videoRouter);
 
 // Mount HTTPS Proxy - Tunneled connections through proxy servers
 router.use('/proxy', proxyRouter);
+// Mount PASETO authentication routes (DeafAuth, PinkSync, Fibonorse)
+router.use('/paseto', pasetoRouter);
 
 export default router;
