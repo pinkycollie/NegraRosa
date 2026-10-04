@@ -1,0 +1,208 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Is this a pre-release?'
+        required: false
+        type: boolean
+        default: false
+
+# Minimal permissions for security
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  build:
+    name: Build Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Create release archive
+        run: |
+          mkdir -p release
+          cp -r dist release/
+          cp -r client/dist release/client-dist 2>/dev/null || true
+          cp package.json release/
+          cp package-lock.json release/
+          cp Dockerfile release/
+          cp docker-compose.yml release/
+          cp DEPLOY.md release/
+          cp .env.example release/
+          cd release && tar -czvf ../negrarosa-${{ steps.version.outputs.version }}.tar.gz .
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ steps.version.outputs.version }}
+          path: negrarosa-${{ steps.version.outputs.version }}.tar.gz
+          retention-days: 30
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-${{ needs.build.outputs.version }}
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "# Release ${{ needs.build.outputs.version }}" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "## MBTQ Ecosystem Release" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "### Components" >> CHANGELOG.md
+          echo "- 🌹 **NegraRosa** - Inclusive Security Framework" >> CHANGELOG.md
+          echo "- 👐 **DeafAUTH** - Deaf-first Authentication" >> CHANGELOG.md
+          echo "- 🔄 **PinkSync** - Offline/Online Synchronization" >> CHANGELOG.md
+          echo "- 📊 **FibonacciSecurity** - Fibonacci-based Security Measurement" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "### Features" >> CHANGELOG.md
+          echo "- Visual-first authentication (no audio dependencies)" >> CHANGELOG.md
+          echo "- GENERATIVE UNITS for resource protection" >> CHANGELOG.md
+          echo "- Four pathways: Job, Business, Developer, Creative" >> CHANGELOG.md
+          echo "- Overspending protection at Fibonacci levels" >> CHANGELOG.md
+          echo "- Security badges and certifications" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "### Changes Since Last Release" >> CHANGELOG.md
+          
+          # Get commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            git log --oneline $LAST_TAG..HEAD >> CHANGELOG.md
+          else
+            git log --oneline -30 >> CHANGELOG.md
+          fi
+          
+          cat CHANGELOG.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.build.outputs.version }}
+          name: NegraRosa ${{ needs.build.outputs.version }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: ${{ inputs.prerelease || false }}
+          files: |
+            negrarosa-${{ needs.build.outputs.version }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker-release:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [build, create-release]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  notify:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: [create-release, docker-release]
+    permissions: {}
+    steps:
+      - name: Release summary
+        run: |
+          echo "=== Release ${{ needs.build.outputs.version }} Complete ==="
+          echo ""
+          echo "MBTQ Ecosystem Components Released:"
+          echo "  🌹 NegraRosa - Inclusive Security Framework"
+          echo "  👐 DeafAUTH - Deaf-first Authentication"
+          echo "  🔄 PinkSync - Offline/Online Synchronization"
+          echo "  📊 FibonacciSecurity - Trust Measurement"
+          echo ""
+          echo "Related Projects:"
+          echo "  - github.com/fibonroseTrust"
+          echo "  - mbtquniverse.com"
+          echo "  - mbtq.dev"
+          echo "  - vr4deaf.org"
+          echo ""
+          echo "Deaf-First ♿ | Open Source 🔓 | Security First 🔒"
