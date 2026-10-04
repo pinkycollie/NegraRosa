@@ -1,6 +1,7 @@
 // Simple script to test WHY submission methods
 import axios from 'axios';
 
+
 const API_URL = 'http://localhost:5000/api';
 
 // Test data

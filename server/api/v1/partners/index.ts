@@ -51,7 +51,7 @@ router.get('/', (req, res) => {
         type: 'TRUST_SCORING',
         status: 'ACTIVE',
         description: 'Progressive trust building and scoring system',
-        apiEndpoint: 'https://api.fibonrose-trust.example.com',
+        apiEndpoint: 'https://trusr.mbtq.dev/api',
         documentationUrl: 'https://docs.fibonrose-trust.example.com',
         integrationDate: '2024-11-05T00:00:00.000Z',
         features: [
@@ -67,8 +67,8 @@ router.get('/', (req, res) => {
         type: 'DATA_INTEGRATION',
         status: 'ACTIVE',
         description: 'Data synchronization and integration platform',
-        apiEndpoint: 'https://api.pinksync.example.com',
-        documentationUrl: 'https://docs.pinksync.example.com',
+        apiEndpoint: 'https://sync.mbtq.dev',
+        documentationUrl: 'https://MBTQ-dev.github.io/pinksynd/docs',
         integrationDate: '2025-02-01T00:00:00.000Z',
         features: [
           'Data synchronization',
@@ -103,7 +103,7 @@ router.get('/:id', (req, res) => {
     
     // Mock partner data - in production, this would be fetched from a database
     const partnerData = {
-      'vanuatu-compliance': {
+      'compliance': {
         id: 'vanuatu-compliance',
         name: 'Vanuatu Compliance',
         type: 'REGULATORY',
