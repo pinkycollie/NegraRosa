@@ -52,7 +52,4 @@ jobs:
             - **Count**: ${{ github.event.inputs.video_count || '100' }}
             - **Type**: ${{ github.event.inputs.video_type || 'tiny' }}
             - **Total Size**: {{ size }}
-            - **Purpose**: DeafAUTH visual verification
-            
-            These videos are microscopic (<100 bytes each) and ready for deployment.
-```
+            - **Purpose**: DeafAUTH visual verification 
