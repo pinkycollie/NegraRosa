@@ -3,9 +3,9 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
   "version": 1,
-  "serialNumber": "urn:uuid:173bd121-0000-42f7-a00d-6265e26d2a7c",
+  "serialNumber": "urn:uuid:f409ae3a-1387-4acf-b785-33a3ab66eaae",
   "metadata": {
-    "timestamp": "2026-10-04T04:35:25.811Z",
+    "timestamp": "2026-10-04T07:08:43.775Z",
     "tools": {
       "components": [
         {
@@ -10917,8 +10917,8 @@
     {
       "type": "library",
       "name": "browserslist",
-      "version": "4.28.1",
-      "bom-ref": "negrarosa-security-framework@1.0.0|browserslist@4.28.1",
+      "version": "4.29.3",
+      "bom-ref": "negrarosa-security-framework@1.0.0|browserslist@4.29.3",
       "author": "Andrey Sitnik",
       "description": "Share target browsers between different front-end tools, like Autoprefixer, Stylelint and babel-env-preset",
       "licenses": [
@@ -10929,7 +10929,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/browserslist@4.28.1",
+      "purl": "pkg:npm/browserslist@4.29.3",
       "externalReferences": [
         {
           "url": "git+https://github.com/browserslist/browserslist.git",
@@ -10947,12 +10947,12 @@
           "comment": "as detected from PackageJson property \"bugs.url\""
         },
         {
-          "url": "https://registry.npmjs.org/browserslist/-/browserslist-4.28.1.tgz",
+          "url": "https://registry.npmjs.org/browserslist/-/browserslist-4.29.3.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "642e417742e02578301aa5249d963fbe4510d38afc3579c9677c988b8bc3992899982fe975237435b3513f16696ed3b8b807c350015f7cef086683371a3f0890"
+              "content": "d51e248982971958aa10dd029e80eb5dcd52b43f67880c2efa3d9dba45b3ac3e1b260b03e250e6129d0245b73a13fbd82487d31f03e6c3268ab554ae74809d3c"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10976,8 +10976,8 @@
     {
       "type": "library",
       "name": "caniuse-lite",
-      "version": "1.0.30001777",
-      "bom-ref": "negrarosa-security-framework@1.0.0|caniuse-lite@1.0.30001777",
+      "version": "1.0.30001814",
+      "bom-ref": "negrarosa-security-framework@1.0.0|caniuse-lite@1.0.30001814",
       "author": "Ben Briggs",
       "description": "A smaller version of caniuse-db, with only the essentials!",
       "licenses": [
@@ -10988,7 +10988,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/caniuse-lite@1.0.30001777",
+      "purl": "pkg:npm/caniuse-lite@1.0.30001814",
       "externalReferences": [
         {
           "url": "git+https://github.com/browserslist/caniuse-lite.git",
@@ -11006,12 +11006,12 @@
           "comment": "as detected from PackageJson property \"bugs.url\""
         },
         {
-          "url": "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001777.tgz",
+          "url": "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001814.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "b6637e7c9c6ba0f9dd0bbe1e7c2769d768fed2b934447c15e49c1ad7359a155cb0d99c40b8f786f198160b75b3eee4a34f7a8c450e571d9e023a0426b0230901"
+              "content": "fd469fd65033af9f5770ca56d28f7a5a811fafe5572b6397e14f40805a22487b152781e9a67205523b58cecc831f6fad80035a41bdbfa31606c023daa4dd45a4"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -21746,8 +21746,8 @@
     {
       "type": "library",
       "name": "baseline-browser-mapping",
-      "version": "2.10.0",
-      "bom-ref": "negrarosa-security-framework@1.0.0|baseline-browser-mapping@2.10.0",
+      "version": "2.11.27",
+      "bom-ref": "negrarosa-security-framework@1.0.0|baseline-browser-mapping@2.11.27",
       "description": "A library for obtaining browser versions with their maximum supported Baseline feature set and Widely Available status.",
       "licenses": [
         {
@@ -21757,7 +21757,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/baseline-browser-mapping@2.10.0",
+      "purl": "pkg:npm/baseline-browser-mapping@2.11.27",
       "externalReferences": [
         {
           "url": "git+https://github.com/web-platform-dx/baseline-browser-mapping.git",
@@ -21775,12 +21775,12 @@
           "comment": "as detected from PackageJson property \"bugs.url\""
         },
         {
-          "url": "https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.10.0.tgz",
+          "url": "https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.11.27.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "948ca0d2ccd17d86e2cbaee3f4a37c232783eeaee1726aa727575d5a636dd7d22d1a934deb89a79659b150d14839d3a6e9bcbdee394beb07e94d326b9a78d600"
+              "content": "125635d83691386b9a9fe94c999f02be8fd951b5cf7bb12773ff5553f6f54f72a9e1dc32b5170d751f03a1224de523494ff0aebdc080d031c356630e09e3dd45"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -21804,8 +21804,8 @@
     {
       "type": "library",
       "name": "electron-to-chromium",
-      "version": "1.5.307",
-      "bom-ref": "negrarosa-security-framework@1.0.0|electron-to-chromium@1.5.307",
+      "version": "1.5.444",
+      "bom-ref": "negrarosa-security-framework@1.0.0|electron-to-chromium@1.5.444",
       "author": "Kilian Valkhof",
       "description": "Provides a list of electron-to-chromium version mappings",
       "licenses": [
@@ -21816,30 +21816,30 @@
           }
         }
       ],
-      "purl": "pkg:npm/electron-to-chromium@1.5.307",
+      "purl": "pkg:npm/electron-to-chromium@1.5.444",
       "externalReferences": [
         {
-          "url": "git+https://github.com/kilian/electron-to-chromium.git",
+          "url": "git+https://github.com/Kilian/electron-to-chromium.git",
           "type": "vcs",
           "comment": "as detected from PackageJson property \"repository.url\""
         },
         {
-          "url": "https://github.com/kilian/electron-to-chromium#readme",
+          "url": "https://github.com/Kilian/electron-to-chromium#readme",
           "type": "website",
           "comment": "as detected from PackageJson property \"homepage\""
         },
         {
-          "url": "https://github.com/kilian/electron-to-chromium/issues",
+          "url": "https://github.com/Kilian/electron-to-chromium/issues",
           "type": "issue-tracker",
           "comment": "as detected from PackageJson property \"bugs.url\""
         },
         {
-          "url": "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.307.tgz",
+          "url": "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.444.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "e73dee14a0568e2351e389c57187647178ca31b83929735d722bbb9a14cfa3db41ecd6ea48d3f6b129c647e7ea9276520b02a404dfa8c6289a8d6b38753e8e46"
+              "content": "e6cb3fb897e80d80c74f495f2734fa15b72c908cd138838f7f405b6c590672f0f3a0953b8bfffd183af0c081d056622cac01a21778a1a400c1448b2b105b75ad"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -21859,8 +21859,8 @@
     {
       "type": "library",
       "name": "node-releases",
-      "version": "2.0.36",
-      "bom-ref": "negrarosa-security-framework@1.0.0|node-releases@2.0.36",
+      "version": "2.0.57",
+      "bom-ref": "negrarosa-security-framework@1.0.0|node-releases@2.0.57",
       "author": "Sergey Rubanov",
       "description": "Node.js releases data",
       "licenses": [
@@ -21871,7 +21871,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/node-releases@2.0.36",
+      "purl": "pkg:npm/node-releases@2.0.57",
       "externalReferences": [
         {
           "url": "git+https://github.com/chicoxyzzy/node-releases.git",
@@ -21889,18 +21889,22 @@
           "comment": "as detected from PackageJson property \"bugs.url\""
         },
         {
-          "url": "https://registry.npmjs.org/node-releases/-/node-releases-2.0.36.tgz",
+          "url": "https://registry.npmjs.org/node-releases/-/node-releases-2.0.57.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "4dd0bc152807cfc330b70f60e4be2047f4a1f578523ffd031244317c41573a98ae9792221e01da9f65616186fa6a00d27e9e0abaf96d98602973c1cc814ac890"
+              "content": "9102bd2c6185887b6b5a236166d03b41bc35ec0433f9d9ac10a3834485535c0f7e7b9312ff681910185826dd771ab033e7f20e64a75d1ffd19dd33ff660a3ecb"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:constraint:engine:node",
+          "value": ">=18"
+        },
         {
           "name": "cdx:npm:package:development",
           "value": "true"
@@ -21914,8 +21918,8 @@
     {
       "type": "library",
       "name": "update-browserslist-db",
-      "version": "1.2.3",
-      "bom-ref": "negrarosa-security-framework@1.0.0|update-browserslist-db@1.2.3",
+      "version": "1.3.3",
+      "bom-ref": "negrarosa-security-framework@1.0.0|update-browserslist-db@1.3.3",
       "author": "Andrey Sitnik",
       "description": "CLI tool to update caniuse-lite to refresh target browsers from Browserslist config",
       "licenses": [
@@ -21926,7 +21930,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/update-browserslist-db@1.2.3",
+      "purl": "pkg:npm/update-browserslist-db@1.3.3",
       "externalReferences": [
         {
           "url": "git+https://github.com/browserslist/update-db.git",
@@ -21944,12 +21948,12 @@
           "comment": "as detected from PackageJson property \"bugs.url\""
         },
         {
-          "url": "https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.2.3.tgz",
+          "url": "https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.3.3.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "26cd26f5cc7ea8e803c68d1e32214612e796cedcfe778f8cdeb1a598a3d3f93e084bf8cfe32970dcdc29bba7294d33fc4753000b5905e156dd2eddc045fdb4f7"
+              "content": "a49dac61ac104b447f588f76f068f91a53e14c6cdb31e96ad3ee0836d49834357d12b289717eb18c65a4a06fd59c1ddda549b4d3300b6aa92b503efba4ee530d"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -36430,8 +36434,8 @@
     {
       "ref": "negrarosa-security-framework@1.0.0|autoprefixer@10.4.27",
       "dependsOn": [
-        "negrarosa-security-framework@1.0.0|browserslist@4.28.1",
-        "negrarosa-security-framework@1.0.0|caniuse-lite@1.0.30001777",
+        "negrarosa-security-framework@1.0.0|browserslist@4.29.3",
+        "negrarosa-security-framework@1.0.0|caniuse-lite@1.0.30001814",
         "negrarosa-security-framework@1.0.0|fraction.js@5.3.4",
         "negrarosa-security-framework@1.0.0|picocolors@1.1.1",
         "negrarosa-security-framework@1.0.0|postcss-value-parser@4.2.0",
@@ -37472,17 +37476,17 @@
       "ref": "negrarosa-security-framework@1.0.0|@rolldown/pluginutils@1.0.0-rc.7"
     },
     {
-      "ref": "negrarosa-security-framework@1.0.0|browserslist@4.28.1",
+      "ref": "negrarosa-security-framework@1.0.0|browserslist@4.29.3",
       "dependsOn": [
-        "negrarosa-security-framework@1.0.0|baseline-browser-mapping@2.10.0",
-        "negrarosa-security-framework@1.0.0|caniuse-lite@1.0.30001777",
-        "negrarosa-security-framework@1.0.0|electron-to-chromium@1.5.307",
-        "negrarosa-security-framework@1.0.0|node-releases@2.0.36",
-        "negrarosa-security-framework@1.0.0|update-browserslist-db@1.2.3"
+        "negrarosa-security-framework@1.0.0|baseline-browser-mapping@2.11.27",
+        "negrarosa-security-framework@1.0.0|caniuse-lite@1.0.30001814",
+        "negrarosa-security-framework@1.0.0|electron-to-chromium@1.5.444",
+        "negrarosa-security-framework@1.0.0|node-releases@2.0.57",
+        "negrarosa-security-framework@1.0.0|update-browserslist-db@1.3.3"
       ]
     },
     {
-      "ref": "negrarosa-security-framework@1.0.0|caniuse-lite@1.0.30001777"
+      "ref": "negrarosa-security-framework@1.0.0|caniuse-lite@1.0.30001814"
     },
     {
       "ref": "negrarosa-security-framework@1.0.0|fraction.js@5.3.4"
@@ -38688,18 +38692,18 @@
       "ref": "negrarosa-security-framework@1.0.0|entities@4.5.0"
     },
     {
-      "ref": "negrarosa-security-framework@1.0.0|baseline-browser-mapping@2.10.0"
+      "ref": "negrarosa-security-framework@1.0.0|baseline-browser-mapping@2.11.27"
     },
     {
-      "ref": "negrarosa-security-framework@1.0.0|electron-to-chromium@1.5.307"
+      "ref": "negrarosa-security-framework@1.0.0|electron-to-chromium@1.5.444"
     },
     {
-      "ref": "negrarosa-security-framework@1.0.0|node-releases@2.0.36"
+      "ref": "negrarosa-security-framework@1.0.0|node-releases@2.0.57"
     },
     {
-      "ref": "negrarosa-security-framework@1.0.0|update-browserslist-db@1.2.3",
+      "ref": "negrarosa-security-framework@1.0.0|update-browserslist-db@1.3.3",
       "dependsOn": [
-        "negrarosa-security-framework@1.0.0|browserslist@4.28.1",
+        "negrarosa-security-framework@1.0.0|browserslist@4.29.3",
         "negrarosa-security-framework@1.0.0|escalade@3.2.0",
         "negrarosa-security-framework@1.0.0|picocolors@1.1.1"
       ]
