@@ -23,6 +23,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 // Verification methods
 export const verificationTypes = z.enum([
+
+  "MFA"
   "PREPAID_CARD",
   "GOVERNMENT_ID",
   "UTILITY_BILL",
