@@ -6,7 +6,7 @@
   },
   "ai": {
     "openai": {
-      "model": "gpt-4-turbo"
+      "model": "{model_id}"
     }
   },
   "ssh": {
