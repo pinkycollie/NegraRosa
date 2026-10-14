@@ -23,9 +23,17 @@ export default defineConfig({
     minify: 'esbuild',
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'wouter'],
-          ui: ['lucide-react', 'framer-motion'],
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return undefined;
+          }
+          if (/[\\/]node_modules[\\/](react|react-dom|wouter)[\\/]/.test(id)) {
+            return 'vendor';
+          }
+          if (/[\\/]node_modules[\\/](lucide-react|framer-motion)[\\/]/.test(id)) {
+            return 'ui';
+          }
+          return undefined;
         },
       },
     },
